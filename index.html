@@ -2380,7 +2380,7 @@ function actRest(a,arg,b){
     case 'ikstart':{const[id,plan,tg]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m){m.ik={plan,target:tg?+tg:null,ok:false,n:0};S.ikPick=null;say('担当',m.name+'さんの育成を始めます（'+IKP[plan]+'）。');save();drawSheet();}break;}
     case 'ikstop':{const m=S.manga.find(x=>x.id===+arg);if(m){m.ik=null;save();drawSheet();}break;}
     case 'phoneorder':{const c=1e5*eraF();if(S.money<c||(S.flags.phone||0)>=1)break;S.money-=c;S.feeAcc=(S.feeAcc||0)+c;S.flags.phone=2;say('社長','電話線を申し込んだ。明日には開通するそうだ。');save();drawSheet();render();break;}
-    case 'placemode':{S.placeMode=true;S.placeNew={};S.view=arg==='unei'?'unei':'henshu';closeSheet();toast('点線をタップで机を置く。置いた机をタップで片付け');render();break;}
+    case 'placemode':{S.placeMode=false;break;}
     case 'placeend':{S.placeMode=false;save();render();break;}
     case 'spd':{if(+arg===0)S.paused=!S.paused;else{S.speed=+arg;S.paused=false;}save();render();break;}
     case 'dayev':{if(arg==='intro'){introNext();break;}
@@ -2466,7 +2466,7 @@ function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;const 
   const LAND=!OP&&sheet!=='title'&&(ORIPREF==='land'||(ORIPREF==='auto'&&VW>VH*1.15));app.classList.toggle('land',LAND);if(LAND){const W=app.clientWidth,Hh=app.clientHeight;app.style.setProperty('--stw',Math.floor(Math.min(W*0.64,W-330,Hh*OW/(CVH||OH)))+'px');}
   const aw=st.clientWidth,ah=st.clientHeight;if(!aw||!ah)return;
   const stk=false;if(stk!==STACK){STACK=stk;drawOffice.k=null;try{render();}catch(e){}}
-  const H=(OP||sheet==='title')?OH:(STACK?SH:(CVH||OH));let ww=Math.floor(Math.min(aw,ah*OW/H));let zoom=false;
+  const H=OP?(CVH||OH):(sheet==='title'?OH:(STACK?SH:(CVH||OH)));let ww=Math.floor(Math.min(aw,ah*OW/H));let zoom=false;
   const nrm=!LAND&&!STACK&&!OP&&sheet!=='title';
   if(nrm&&ZOOMPREF!=='off'){const z=Math.floor(Math.min(aw*2.4,(ah-12)*OW/H));if(z>aw*1.15){ww=z;zoom=true;}}
   w.style.width=ww+'px';cv.style.aspectRatio=OW+'/'+H;st.classList.toggle('zoom',zoom);
@@ -2491,7 +2491,7 @@ function look(o){
   if(!giv&&![...FEM_PEN].some(x=>nm.endsWith(x))&&/[ーぁ-ん]$/.test(nm)&&h(9)<0.2)fem=true;
   const isManga=o.story!=null;
   const hs=isManga?Math.floor(h(1)*HSET.length):Math.floor(h(1)*5);
-  const style=fem?['long','bob','hime','pony','bob','long'][Math.floor(h(2)*6)]:['nanasan','short','spiky','short','oldback','nanasan'][Math.floor(h(2)*6)];
+  const style=fem?['long','bob','hime','pony','bob','long','twin'][Math.floor(h(2)*7)]:['nanasan','short','spiky','short','afro','nanasan','regent','short'][Math.floor(h(2)*8)];
   const L={fem,hs,style,eye:['dot','dot','big','narrow','smile'][Math.floor(h(3)*5)],brow:['flat','flat','angry','worry'][Math.floor(h(4)*4)],
     mouth:['smile','smile','flat','open','frown'][Math.floor(h(5)*5)],glasses:h(6)<0.22,blush:fem?h(7)<0.7:h(7)<0.15,
     mus:!fem&&h(8)<0.12,beard:!fem&&h(10)<0.08,bald:!fem&&h(11)<0.35,ribbon:fem&&h(12)<0.4,
@@ -2506,7 +2506,91 @@ function lookCol(o,opt={}){
     bald:old&&L.bald&&!L.fem};
 }
 // --- 大きい顔（32×32） ---
-function face32(cvs,o,opt={}){
+function face32(cvs,o,opt={}){return face48(cvs,o,opt);}
+// ===== 顔アイコン（48×48・アニメっぽく・かわいく） =====
+function face48(cvs,o,opt={}){
+  if(!cvs||!o)return;const W=48;cvs.width=W;cvs.height=W;const c=cvs.getContext('2d');
+  const K=lookCol(o,opt),L=K.L;const G=[...Array(W)].map(()=>Array(W).fill(null));
+  const set=(x,y,cl)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<W&&y<W)G[y][x]=cl;};
+  const get=(x,y)=>(x>=0&&y>=0&&x<W&&y<W)?G[y][x]:null;
+  const ell=(cx,cy,rx,ry,cl,cond)=>{for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++)for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++){const dx=(x-cx)/rx,dy=(y-cy)/ry;if(dx*dx+dy*dy<=1&&(!cond||cond(x,y)))set(x,y,cl);}};
+  const rect=(x0,y0,x1,y1,cl)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,cl);};
+  const skin=K.skin,skinS=K.skinS,hair=K.hair,hairS=K.hairS,hairH=K.hairH;const st=K.bald?'bald':(L.style==='oldback'?'afro':(L.style||'short'));
+  const tri=(a,b,c2,cl)=>{const xs=[a[0],b[0],c2[0]],ys=[a[1],b[1],c2[1]];for(let y=Math.floor(Math.min(...ys));y<=Math.ceil(Math.max(...ys));y++)for(let x=Math.floor(Math.min(...xs));x<=Math.ceil(Math.max(...xs));x++){const px=x+0.5,py=y+0.5;const d=(p,q,r2)=>(p[0]-r2[0])*(q[1]-r2[1])-(q[0]-r2[0])*(p[1]-r2[1]);const P0=[px,py];const d1=d(P0,a,b),d2=d(P0,b,c2),d3=d(P0,c2,a);if(!((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0)))set(x,y,cl);}};
+  const FX=24,FY=24;// 顔のまん中
+  // --- 服 ---
+  for(let y=39;y<48;y++){const w=y===39?9:y===40?13:y<43?16:18;for(let x=FX-w;x<FX+w;x++)set(x,y,x>=FX+w-5?K.shirtS:K.shirt);}
+  rect(20,34,27,40,skinS);
+  if(K.tie||!L.fem){for(const [x,y] of [[18,39],[19,40],[20,41],[21,41],[29,39],[28,40],[27,41],[26,41],[19,39],[28,39]])set(x,y,'#ffffff');}
+  if(K.tie){rect(23,41,24,47,'#b23a2e');rect(22,40,25,41,'#8e2a22');}
+  else if(L.ribbon){for(const [x,y] of [[20,41],[21,41],[21,42],[26,41],[27,41],[26,42],[22,42],[25,42]])set(x,y,'#d94a6a');rect(23,41,24,42,'#b23a52');}
+  // --- うしろの髪 ---
+  const back=(cl)=>{
+    if(st==='long'||st==='hime')for(let y=16;y<=43;y++){const w=13.5+Math.min(1.5,(y-16)/8);for(let x=Math.round(FX-w);x<=Math.round(FX+w);x++){if(y>34&&Math.abs(x+0.5-FX)<w-4.5)continue;set(x,y,cl);}}
+    if(st==='bob')ell(FX,25,14.5,12.5,cl);
+    if(st==='pony'){ell(FX,20,13,10,cl);for(let y=10;y<=38;y++){const cx=40+Math.sin((y-10)/9)*1.5,w=y<14?2:y>34?1.5:3.2;for(let x=Math.round(cx-w);x<=Math.round(cx+w);x++)set(x,y,cl);}}
+    if(st==='twin'){ell(FX,19,13,9,cl);for(const sd of [-1,1])for(let y=12;y<=42;y++){const cx=FX+sd*(17+Math.sin((y-12)/8)*1.2+(y>20?(y-20)*0.12:0)),w=y<15?2.5:y>38?1.6:3.6;for(let x=Math.round(cx-w);x<=Math.round(cx+w);x++)set(x,y,cl);}}};
+  back(hair);
+  if(st==='afro'){ell(FX,16,16.5,13,hair);for(let i=0;i<14;i++){const a=i/14*Math.PI*2;ell(FX+Math.cos(a)*15,16+Math.sin(a)*11.5,3.8,3.8,hair);}}
+  if(st==='spiky'){const n=9;for(let i=0;i<n;i++){const a=Math.PI*(1.0+i/(n-1)),w=0.2,L2=i%2?15:17;tri([FX+Math.cos(a-w)*10,17+Math.sin(a-w)*10],[FX+Math.cos(a)*L2,15+Math.sin(a)*L2],[FX+Math.cos(a+w)*10,17+Math.sin(a+w)*10],hair);}}
+  // --- 顔（あごが少しとがった、やわらかい輪郭） ---
+  for(let y=10;y<=37;y++)for(let x=8;x<=40;x++){const dy=(y-FY)/13.2;const rx=y<FY?11.6:11.6*Math.sqrt(Math.max(0,1-Math.pow((y-FY)/13.4,2)*0.92))*(1-Math.max(0,(y-30))*0.035);const dx=(x+0.5-FX)/Math.max(1,rx);if(Math.abs(dy)<=1&&Math.abs(dx)<=1)set(x,y,(x>=FX+7&&y>=FY)||y>=34?skinS:skin);}
+  ell(12.2,26,1.6,2.6,skin);ell(35.8,26,1.6,2.6,skinS);
+  // --- 前の髪（髪型ごと） ---
+  const H=hair;
+  const cap=(bot,fn)=>{for(let y=4;y<=bot;y++)for(let x=8;x<=40;x++){const dx=(x+0.5-FX)/13.2,dy=(y-17)/13.4;if(dx*dx+dy*dy<=1&&(!fn||fn(x,y)))set(x,y,H);}};
+  if(st==='bald'){for(let y=17;y<=26;y++){set(11,y,GRAY[0]);set(12,y,GRAY[0]);set(36,y,GRAY[1]);set(35,y,GRAY[1]);}}
+  else if(st==='nanasan'){cap(21,(x,y)=>y<=12||(x>=13&&x<=33&&y<=Math.round(13+(33-x)*0.3)-((x%4)===0?1:0)));for(let y=14;y<=25;y++){set(12,y,H);set(13,y,H);set(35,y,H);set(36,y,H);}for(let y=6;y<=12;y++)set(31,y,hairS);for(const x0 of [17,22,27])for(let k=0;k<5;k++)set(x0+k,13+Math.round((33-x0-k)*0.3)-4+k*0,hairS);}
+  else if(st==='short'){cap(19,(x,y)=>y<=13||y<=13+((x*7)%5<2?3:1));for(let y=15;y<=25;y++){set(12,y,H);set(13,y,H);set(35,y,H);set(36,y,H);}}
+  else if(st==='spiky'){cap(18,(x,y)=>y<=14||(y<=17&&(x%5)<3));for(let y=14;y<=24;y++){set(12,y,H);set(13,y,H);set(35,y,H);set(36,y,H);}}
+  else if(st==='afro'){for(let i=0;i<7;i++)ell(13.5+i*3.5,13.5+(i%2),2.6,2.6,H);for(let y=13;y<=26;y++){set(11,y,H);set(12,y,H);set(36,y,H);set(37,y,H);}}
+  else if(st==='regent'){cap(12);for(let y=10;y<=24;y++){set(12,y,H);set(13,y,H);set(35,y,H);set(36,y,H);}
+    ell(FX,5.5,11,5.5,H);ell(FX-1,4,8.5,3.5,H);ell(FX-3,9,10.5,3.6,H);ell(12,11.5,3.4,2.4,H);
+    for(let x=15;x<=32;x++)set(x,Math.round(1.5+Math.pow((x-23.5)/9,2)*3),hairH);for(let x=13;x<=31;x++)set(x,Math.round(6+Math.pow((x-21)/10,2)*3),hairS);for(let x=11;x<=29;x++)set(x,Math.round(10.5+Math.pow((x-19)/10,2)*2),hairS);
+    for(let y=12;y<=17;y++)set(21+Math.round((y-12)*0.3),y,H);}
+  else if(st==='hime'){cap(21,(x,y)=>y<=20);rect(11,14,14,34,H);rect(34,14,37,34,H);}
+  else if(st==='long'||st==='bob'||st==='pony'||st==='twin'){cap(21,(x,y)=>y<=12||y<=17+((x*5)%7<2?3:((x*3)%4===0?1:0))||(x<15||x>33)&&y<=24);
+    for(let y=15;y<=(st==='bob'?33:28);y++){set(11,y,H);set(12,y,H);set(36,y,H);set(37,y,H);}}
+  if(st==='twin'){for(const sx of [FX-17,FX+17])rect(sx-2,11,sx+2,13,L.ribbon?'#d94a6a':'#e8c76a');}
+  if(st==='pony')rect(38,10,42,12,'#e8c76a');
+  // かげと天使の輪
+  for(let y=0;y<W;y++)for(let x=0;x<W;x++)if(G[y][x]===H){const b=get(x,y+1);if(b===skin||b===skinS)set(x,y,hairS);}
+  if(st!=='bald'){for(let x=14;x<=33;x++){const y=Math.round(9+Math.pow((x-23.5)/10,2)*3);if(get(x,y)===H)set(x,y,hairH);if((x%3)&&get(x,y+1)===H)set(x,y+1,hairH);}}
+  else{rect(19,9,22,10,'#fde2c3');}
+  // --- まゆ ---
+  const bc=K.old?'#8a8a8a':hairS;const ex1=19,ex2=29,ey=26;
+  const br={flat:[[0,0],[1,0],[2,0],[3,0]],angry:[[0,-1],[1,0],[2,0],[3,1]],worry:[[0,1],[1,0],[2,0],[3,-1]]}[L.brow]||[[0,0],[1,0],[2,0],[3,0]];
+  for(const [dx,dy] of br){set(ex1-2+dx,ey-6+dy,bc);set(ex2+2-dx,ey-6+dy,bc);}
+  // --- 目（アニメっぽく、ハイライト入り） ---
+  const EC='#2b2026',IR=L.fem?'#5a3a6a':'#3a2a26',IR2=L.fem?'#8a5aa0':'#6a4a3a';
+  for(const [ex,s2] of [[ex1,-1],[ex2,1]]){
+    if(L.eye==='smile'){for(const [dx,dy] of [[-2,1],[-1,0],[0,-1],[1,-1],[2,0],[3,1]])set(ex+dx,ey+dy,EC);continue;}
+    if(L.eye==='narrow'){for(let x=ex-2;x<=ex+2;x++){set(x,ey,EC);set(x,ey+1,IR);}set(ex+(s2>0?3:-3),ey-1,EC);continue;}
+    const h=L.eye==='big'?6:5,top=ey-(h>5?3:2);
+    for(let y=top;y<top+h;y++)for(let x=ex-2;x<=ex+1;x++)set(x,y,y<top+2?IR:IR2);
+    for(let x=ex-3;x<=ex+2;x++)set(x,top-1,EC);set(s2<0?ex-3:ex+2,top,EC);
+    for(let y=top+1;y<top+h-1;y++){set(ex-1,y,EC);set(ex,y,EC);}
+    if(L.fem){set(ex-2,top,'#ffffff');set(ex-1,top,'#ffffff');set(ex-2,top+1,'#ffffff');set(ex-1,top+1,'#ffffff');set(ex+1,top+h-2,'#ffffff');set(ex+1,top+h-3,'#f0e8ff');}else set(ex-2,top,'#e8e0d8');
+    if(L.fem)set(s2<0?ex-4:ex+3,top-1,EC);}
+  // --- 鼻・口・ほっぺ ---
+  set(24,30,skinS);
+  const mc='#8e3b2e';const mo=opt.mouth||L.mouth;
+  if(mo==='smile'){for(const [x,y] of [[22,33],[23,34],[24,34],[25,34],[26,33]])set(x,y,mc);}
+  if(mo==='flat'){for(let x=22;x<=25;x++)set(x,34,mc);}
+  if(mo==='open'){rect(22,33,26,35,'#6b2a22');rect(23,35,25,35,'#e07a6e');set(22,35,null);set(26,35,null);for(let x=22;x<=26;x++)if(!get(x,35))set(x,35,skin);}
+  if(mo==='frown'){for(const [x,y] of [[22,35],[23,34],[24,34],[25,34],[26,35]])set(x,y,mc);}
+  if(L.blush){for(const cx of [16.5,31.5])ell(cx,31,2.2,1,'#f2a0a0',(x,y)=>get(x,y)===skin||get(x,y)===skinS);}
+  if(L.mus){for(let x=21;x<=27;x++)set(x,32,K.old?'#c8c8c8':hairS);}
+  if(L.beard){const bcl=K.old?'#c8c8c8':hairS;for(let y=33;y<=37;y++)for(let x=14;x<=34;x++){const g0=get(x,y);if((g0===skin||g0===skinS)&&!(y<=35&&x>=22&&x<=26))set(x,y,bcl);}}
+  if(L.glasses){const gc='#3a3a3a';for(const ex of [ex1,ex2]){for(let x=ex-4;x<=ex+3;x++){set(x,ey-4,gc);set(x,ey+3,gc);}for(let y=ey-4;y<=ey+3;y++){set(ex-4,y,gc);set(ex+3,y,gc);}}for(let x=23;x<=25;x++)set(x,ey-2,gc);}
+  // --- 外側のふちどり ---
+  const N=G.map(r=>r.slice());const OLc='#2b2026';
+  for(let y=0;y<W;y++)for(let x=0;x<W;x++)if(!G[y][x]&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>get(x+a,y+b)))N[y][x]=OLc;
+  c.fillStyle=opt.bg||'#e9dcc4';c.fillRect(0,0,W,W);
+  for(let y=0;y<W;y++)for(let x=0;x<W;x++)if(N[y][x]){c.fillStyle=N[y][x];c.fillRect(x,y,1,1);}
+}
+
+function face32old(cvs,o,opt={}){
   if(!cvs||!o)return;const c=cvs.getContext('2d');cvs.width=32;cvs.height=32;
   const K=lookCol(o,opt),L=K.L;
   const W=32,G=[...Array(W)].map(()=>Array(W).fill(null));
@@ -2838,44 +2922,31 @@ function drawShell(){
 }
 function lerp(a,b,u){return a+(b-a)*Math.max(0,Math.min(1,u));}
 let OP=null;
-function opBub(list){const key=JSON.stringify(list);if(key===opBub.k)return;opBub.k=key;$('bubbles').innerHTML=list.map(([x,y,t])=>'<span class="bub" style="left:'+(Math.max(26,Math.min(174,x))/OW*100)+'%;top:'+(y/OH*100)+'%">'+t+'</span>').join('');}
+function opBub(list){const key=JSON.stringify(list);if(key===opBub.k)return;opBub.k=key;$('bubbles').innerHTML=list.map(([x,y,t])=>'<span class="bub" style="left:'+(Math.max(26,Math.min(174,x))/OW*100)+'%;top:'+(y/(CVH||OH)*100)+'%">'+t+'</span>').join('');}
 function opCap(t){const v=twTick(t,15,null);if($('opcapt').textContent!==v)$('opcapt').textContent=v;}
-function startOpening(){OP={t0:performance.now()};$('onav').hidden=true;const el=$('opcap');el.hidden=false;const w=$('officeWrap');el.style.top=(w.offsetTop+w.offsetHeight)+'px';}
-function endOpening(){if(!OP)return;OP=null;$('opcap').hidden=true;$('bubbles').innerHTML='';opBub.k=null;drawOffice.k=null;start();}
+function startOpening(){OP={t0:performance.now()};$('onav').hidden=true;{const pn=$('panel');if(pn)pn.style.display='none';const st=$('stage');if(st)st.style.alignItems='flex-start';}const el=$('opcap');el.hidden=false;const w=$('officeWrap');el.style.top=(w.offsetTop+w.offsetHeight)+'px';}
+function endOpening(){if(!OP)return;OP=null;cv.style.transform='';{const pn=$('panel');if(pn)pn.style.display='';const st=$('stage');if(st)st.style.alignItems='';}$('opcap').hidden=true;$('bubbles').innerHTML='';opBub.k=null;drawOffice.k=null;start();}
 function drawOpening(){
-  const e=(performance.now()-OP.t0)/1000/1.9;const f=Math.floor(tick/3)%2;
-  if(e<5.5){
-    drawStreet();
-    const x=lerp(-16,93,e/4.2);if(e<4.4)walker(x,102,PRES,f);
-    opBub(e>2&&e<4.4?[[x+7,100,'ここが神田か…']]:[]);
-    opCap('昭和45年（1970年）1月。遠い親戚の遺産で、1億円を手にしたあなた。子どものころからの夢は、漫画雑誌をつくること。');
-  } else if(e<10.5){
-    const u=e-5.5;drawShell();
-    chibi(48,92,FUDO,false);
-    const px=lerp(121,96,u/1.6),py=lerp(132,96,u/1.6);
-    if(u<1.6)walker(px,py,PRES,f);else chibi(96,96,PRES,false,{tie:true});
-    const b=[];if(u>1.8&&u<3.4)b.push([103,94,'がらーん……']);if(u>3.2&&u<4.4)b.push([103,94,'ここにしよう！']);if(u>4)b.push([55,90,'まいど！契約成立です']);opBub(b);
-    if(u>4.2){OB(70,40,22,18,'#fffdf6');P(73,44,14,1,'#8a8a8a');P(73,47,14,1,'#8a8a8a');P(73,50,10,1,'#8a8a8a');OB(80,48,9,9,'#b23a2e');P(82,50,5,5,'#e05a4a');}
+  {const el=$('opcap'),w=$('officeWrap');if(el&&w){const tp=(w.offsetTop+w.offsetHeight)+'px';if(el.style.top!==tp)el.style.top=tp;}}
+  const T=(performance.now()-OP.t0)/1000;const E3=6.4;
+  if(T<E3){NR.op3(T);opBub([]);opCap('昭和45年（1970年）1月。遠い親戚の遺産で、1億円を手にしたあなた。子どものころからの夢は、漫画雑誌をつくること。');return;}
+  const e=(T-E3)/1.9+5.5;
+  const at=(p,t)=>p?[[p[0],p[1]-2,t]]:[];
+  if(e<10.5){
+    const u=e-5.5;const sp=NR.opRoom(2,u,[],u<0.3?1-u/0.3:0);
+    const b=[];if(u>1.8&&u<3.4)b.push(...at(sp.pres,'がらーん……'));if(u>3.2&&u<4.4)b.push(...at(sp.pres,'ここにしよう！'));if(u>4)b.push(...at(sp.fudo,'まいど！契約成立です'));opBub(b);
+    if(u>4.2&&sp.fudo){const x=sp.fudo[0]+8,y=sp.fudo[1]+6;OB(x,y,22,18,'#fffdf6');P(x+3,y+4,14,1,'#8a8a8a');P(x+3,y+7,14,1,'#8a8a8a');P(x+3,y+10,10,1,'#8a8a8a');OB(x+10,y+8,9,9,'#b23a2e');P(x+12,y+10,5,5,'#e05a4a');}
     opCap('神田のマンションの一室を、800万円で買った。何もない部屋。ここを、漫画雑誌の編集部にする。');
   } else if(e<16.5){
-    const u=e-10.5;const sh=Math.floor(tick/2)%2?1:-1;
-    g.save();g.translate(u>1&&u<5?sh:0,0);drawShell();
-    for(let i=0;i<3;i++){const tx=40+i*45+Math.sin(tick*0.15+i)*8,ty=70+(i%2)*30;const wx=u<1?lerp(121,tx,u):tx,wy=u<1?lerp(132,ty,u):ty;walker(wx,wy,WORKER(i),f);helmet(wx,wy);}
-    if(u>1&&u<5)for(let k=0;k<7;k++){const dx=20+((tick*7+k*53)%160),dy=60+((tick*5+k*37)%70),r=3+((tick+k)%4);g.fillStyle='rgba(200,190,170,.75)';g.fillRect(dx-r,dy-r,r*2,r*2);}
-    if(u>2.5){OB(30,108,26,8,'#c9a066');P(42,109,2,6,'#e0c08a');OB(150,112,20,10,'#c9a066');}
-    g.restore();
-    const W=['トンテンカン！','ドカドカ！','ガガガ…','よいしょ！','トントン'];opBub(u>1&&u<5.4?[[40+((Math.floor(e*1.6)*37)%120),60+((Math.floor(e*1.6)*23)%50),W[Math.floor(e*1.6)%W.length]],[150-((Math.floor(e*1.6)*29)%90),100,W[(Math.floor(e*1.6)+2)%W.length]]]:[]);
+    const u=e-10.5;const shake=u>1&&u<5;cv.style.transform=shake?'translateX('+(Math.floor(tick/2)%2?2:-2)+'px)':'';
+    const sp=NR.opRoom(3,u,[],0);
+    if(shake)for(let k=0;k<7;k++){const dx=20+((tick*7+k*53)%160),dy=70+((tick*5+k*37)%130),r=3+((tick+k)%4);g.fillStyle='rgba(200,190,170,.75)';g.fillRect(dx-r,dy-r,r*2,r*2);}
+    const W=['トンテンカン！','ドカドカ！','ガガガ…','よいしょ！','トントン'];const n=Math.floor(e*1.6);
+    opBub(u>1&&u<5.4?[...at(sp['w'+(n%3)],W[n%W.length]),...at(sp['w'+((n+1)%3)],W[(n+2)%W.length])]:[]);
     opCap('内装と机で200万円。工事の人たちが入って、トンテンカン、ドカドカ！');
   } else if(e<23){
-    const u=e-16.5;drawShell();
-    OB(90,36,20,16,'#6b2a22');P(92,38,16,3,'#8e3b2e');
-    const kx=lerp(121,93,u/2),ky=lerp(132,38,u/2);
-    if(u>=2)chibi(93,38,KIRYU,false,{tie:true});
-    OB(74,50,52,10,'#b07d47');P(75,51,50,1,'#d4a26a');OB(74,59,52,8,'#7a4e28');P(76,61,48,1,'#5a3a1c');papers(78,52);lamp(104,49);
-    chairTop(15,62);OB(8,80,30,16,'#b07d47');P(9,81,28,1,'#d4a26a');OB(8,95,30,7,'#7a4e28');papers(24,81);
-    chibi(140,96,PRES,false,{tie:true});
-    if(u<2)walker(kx,ky,KIRYU,f);
-    const b=[];if(u<1.2)b.push([147,94,'できた！']);if(u>2.2)b.push([100,37,'社長！手伝わせてくれ。編集長をやろう！']);if(u>4.6)b.push([147,94,'たのむぞ、桐生！']);opBub(b);
+    cv.style.transform='';const u=e-16.5;const sp=NR.opRoom(4,u,[],0);
+    const b=[];if(u<1.2)b.push(...at(sp.pres,'できた！'));if(u>2.2)b.push(...at(sp.kiryu,'社長！手伝わせてくれ。編集長をやろう！'));if(u>4.6)b.push(...at(sp.pres,'たのむぞ、桐生！'));opBub(b);
     opCap('机がひとつと、編集長の席。そこへ、大学の友人・桐生がやってきた。ここから、日本イチの漫画雑誌をめざす！');
   } else endOpening();
 }
@@ -3128,6 +3199,108 @@ const NR=(()=>{
 const W=120,D=62,H=72;
 function hex(c){if(c.startsWith('rgb'))return c.match(/\d+/g).slice(0,3).map(Number);return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];}
 function sh(c,f){const [r,g,b]=hex(c);const k=v=>Math.max(0,Math.min(255,Math.round(v*f)));return 'rgb('+k(r)+','+k(g)+','+k(b)+')';}
+// ===== 部屋の人の頭（顔アイコンと同じ髪型・目） =====
+function headA(ctx,X,Y,r,lk,skin,hair,dir,s){
+  const ell=(x,y,rx,ry,col,a0,a1)=>{ctx.beginPath();ctx.ellipse(x,y,Math.max(0.5,rx),Math.max(0.5,ry),0,a0||0,a1||Math.PI*2);ctx.fillStyle=col;ctx.fill();};
+  const poly=(pts,col)=>{ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=col;ctx.fill();};
+  const line=(x0,y0,x1,y1,col,w)=>{ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();};
+  const HS=sh(hair,0.7),HH=sh(hair,1.7),SS=sh(skin,0.85),ec='#2a1e18';
+  const st=lk.bald?'bald':(lk.st||({0:'nanasan',1:'short',2:'bob',3:'spiky'})[lk.hs||0]||'short');
+  const gS=ctx.createRadialGradient(X-r*0.35,Y-r*0.35,r*0.2,X,Y,r*1.1);gS.addColorStop(0,sh(skin,1.08));gS.addColorStop(1,sh(skin,0.84));
+  const spikes=(cx,cy,n,len,a0,a1,col)=>{for(let i=0;i<n;i++){const a=a0+(a1-a0)*(i+0.5)/n,w=(a1-a0)/n*0.62;poly([[cx+Math.cos(a-w)*r*0.8,cy+Math.sin(a-w)*r*0.8],[cx+Math.cos(a)*len*(i%2?0.85:1),cy+Math.sin(a)*len*(i%2?0.85:1)],[cx+Math.cos(a+w)*r*0.8,cy+Math.sin(a+w)*r*0.8]],col);}};
+  const afro=(cx,cy,R,col)=>{ell(cx,cy,R,R*0.86,col);for(let i=0;i<12;i++){const a=i/12*Math.PI*2;ell(cx+Math.cos(a)*R*0.92,cy+Math.sin(a)*R*0.8,R*0.3,R*0.28,col);}};
+  const gloss=(cx,cy,rx,ry)=>{ctx.save();ctx.globalAlpha=0.55;ctx.strokeStyle=HH;ctx.lineWidth=Math.max(1,r*0.1);ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,Math.PI*1.15,Math.PI*1.75);ctx.stroke();ctx.restore();};
+  const fem=!!lk.fem||['long','bob','hime','pony','twin'].includes(st);
+  // ---- 正面 ----
+  if(dir==='down'){
+    // うしろの髪
+    if(st==='long'||st==='hime')poly([[X-r*1.12,Y-r*0.4],[X+r*1.12,Y-r*0.4],[X+r*1.2,Y+r*1.45],[X-r*1.2,Y+r*1.45]],hair);
+    if(st==='bob')ell(X,Y+r*0.12,r*1.2,r*1.0,hair);
+    if(st==='pony'){ell(X+r*1.12,Y+r*0.25,r*0.32,r*0.85,hair);ell(X+r*1.0,Y-r*0.45,r*0.22,r*0.18,'#e8c76a');}
+    if(st==='twin'){for(const sx of [-1,1]){ell(X+sx*r*1.32,Y+r*0.55,r*0.36,r*1.0,hair);ell(X+sx*r*1.08,Y-r*0.35,r*0.2,r*0.18,lk.ribbon?'#d94a6a':'#e8c76a');}}
+    if(st==='afro')afro(X,Y-r*0.5,r*1.42,hair);
+    if(st==='spiky')spikes(X,Y-r*0.2,9,r*1.95,Math.PI*1.02,Math.PI*1.98,hair);
+    // 耳と顔
+    ell(X-r*0.98,Y+r*0.1,r*0.2,r*0.3,SS);ell(X+r*0.98,Y+r*0.1,r*0.2,r*0.3,sh(skin,0.75));ell(X,Y,r*0.95,r*1.05,gS);
+    // 前の髪
+    if(st==='bald'){ell(X-r*0.88,Y-r*0.05,r*0.2,r*0.42,hair);ell(X+r*0.88,Y-r*0.05,r*0.2,r*0.42,hair);ctx.save();ctx.globalAlpha=0.5;ell(X-r*0.3,Y-r*0.6,r*0.28,r*0.14,'#ffffff');ctx.restore();}
+    else{
+      if(st!=='afro')ell(X,Y-r*0.38,r*1.02,r*0.72,hair,Math.PI,Math.PI*2);
+      if(st==='nanasan'){poly([[X-r*1.0,Y-r*0.4],[X+r*1.0,Y-r*0.42],[X+r*0.9,Y-r*0.02],[X+r*0.45,Y-r*0.22],[X+r*0.05,Y-r*0.1],[X-r*0.35,Y-r*0.2],[X-r*0.75,Y-r*0.02],[X-r*0.98,Y-r*0.1]],hair);
+        line(X+r*0.25,Y-r*0.6,X+r*0.45,Y-r*0.22,HS,Math.max(1,r*0.07));line(X-r*0.3,Y-r*0.62,X-r*0.35,Y-r*0.2,HS,Math.max(1,r*0.07));ell(X-r*0.92,Y,r*0.16,r*0.32,hair);ell(X+r*0.92,Y,r*0.16,r*0.32,hair);}
+      if(st==='short'||st==='spiky'){const n=6;const pts=[[X-r*1.0,Y-r*0.4]];for(let i=0;i<=n;i++){const x=X-r*0.95+i*r*1.9/n;pts.push([x,Y-r*(i%2?0.28:0.12)]);}pts.push([X+r*1.0,Y-r*0.4]);poly(pts,hair);ell(X-r*0.92,Y-r*0.05,r*0.15,r*0.32,hair);ell(X+r*0.92,Y-r*0.05,r*0.15,r*0.32,hair);}
+      if(st==='afro'){for(let i=0;i<7;i++)ell(X-r*0.9+i*r*0.3,Y-r*0.42+(i%2)*r*0.06,r*0.24,r*0.22,hair);}
+      if(st==='regent'){ell(X,Y-r*0.62,r*0.98,r*0.42,hair);ell(X-r*0.05,Y-r*1.12,r*0.82,r*0.55,hair);ell(X-r*0.18,Y-r*0.82,r*0.82,r*0.32,hair);
+        line(X-r*0.6,Y-r*1.25,X+r*0.4,Y-r*1.45,HH,Math.max(1,r*0.09));line(X-r*0.75,Y-r*0.85,X+r*0.3,Y-r*1.0,HS,Math.max(1,r*0.08));line(X-r*0.15,Y-r*0.6,X-r*0.05,Y-r*0.22,hair,Math.max(1,r*0.1));}
+      if(['long','bob','hime','pony','twin'].includes(st)){
+        if(st==='hime')poly([[X-r*1.0,Y-r*0.42],[X+r*1.0,Y-r*0.42],[X+r*0.95,Y-r*0.05],[X-r*0.95,Y-r*0.05]],hair);
+        else{const n=7;const pts=[[X-r*1.0,Y-r*0.42]];for(let i=0;i<=n;i++){const x=X-r*0.98+i*r*1.96/n;pts.push([x,Y-r*(i%2?0.2:0.02)]);}pts.push([X+r*1.0,Y-r*0.42]);poly(pts,hair);}
+        const lo=st==='hime'?0.75:st==='bob'?0.55:0.35;ell(X-r*0.9,Y+r*lo*0.4,r*0.18,r*(0.45+lo*0.5),hair);ell(X+r*0.9,Y+r*lo*0.4,r*0.18,r*(0.45+lo*0.5),hair);}
+      if(st==='spiky')for(let i=0;i<3;i++)line(X-r*0.5+i*r*0.5,Y-r*0.95,X-r*0.45+i*r*0.5,Y-r*0.5,HS,Math.max(1,r*0.06));
+      gloss(X,Y-r*(st==='afro'?0.75:0.55),r*0.75,r*0.45);}
+    // まゆ
+    const by=Y-r*0.14,bc=lk.bald?'#8a8a8a':HS,bw=Math.max(1,r*0.08);const bt=lk.brow==='angry'?0.08:lk.brow==='worry'?-0.08:0;
+    if(st!=='hime'&&st!=='nanasan'||true){line(X-r*0.52,by-r*bt,X-r*0.2,by+r*bt,bc,bw);line(X+r*0.2,by+r*bt,X+r*0.52,by-r*bt,bc,bw);}
+    // 目
+    for(const sx of [-1,1]){const ex=X+sx*r*0.36,ey=Y+r*0.16;
+      if(lk.eye==='smile'){ctx.strokeStyle=ec;ctx.lineWidth=Math.max(1,r*0.09);ctx.beginPath();ctx.arc(ex,ey+r*0.06,r*0.13,Math.PI*1.1,Math.PI*1.9);ctx.stroke();continue;}
+      if(lk.eye==='narrow'){line(ex-r*0.14,ey,ex+r*0.14,ey,ec,Math.max(1,r*0.09));continue;}
+      const ry=r*(lk.eye==='big'?0.24:0.2);ell(ex,ey,r*0.14,ry,ec);ell(ex,ey+ry*0.35,r*0.1,ry*0.5,fem?'#7a5a9a':'#5a4436');
+      if(fem){ell(ex-r*0.05,ey-ry*0.45,r*0.065,r*0.065,'#ffffff');ell(ex+r*0.05,ey+ry*0.45,r*0.035,r*0.035,'#ffffff');line(ex+sx*r*0.12,ey-ry*0.9,ex+sx*r*0.22,ey-ry*1.05,ec,Math.max(1,r*0.06));}
+      else ell(ex-r*0.04,ey-ry*0.5,r*0.035,r*0.035,'#e8e0d8');}
+    // 口・ほっぺ
+    const mo=lk.mouth||'smile',mc='#8e3b2e';
+    if(mo==='open')ell(X,Y+r*0.58,r*0.13,r*0.09,'#6b2a22');
+    else if(mo==='frown'){ctx.strokeStyle=mc;ctx.lineWidth=Math.max(1,r*0.07);ctx.beginPath();ctx.arc(X,Y+r*0.66,r*0.14,Math.PI*1.2,Math.PI*1.8);ctx.stroke();}
+    else if(mo==='flat')line(X-r*0.13,Y+r*0.56,X+r*0.13,Y+r*0.56,mc,Math.max(1,r*0.07));
+    else{ctx.strokeStyle=mc;ctx.lineWidth=Math.max(1,r*0.07);ctx.beginPath();ctx.arc(X,Y+r*0.46,r*0.14,Math.PI*0.2,Math.PI*0.8);ctx.stroke();}
+    if(lk.blush){ctx.save();ctx.globalAlpha=0.45;ell(X-r*0.6,Y+r*0.4,r*0.17,r*0.1,'#e87a7a');ell(X+r*0.6,Y+r*0.4,r*0.17,r*0.1,'#e87a7a');ctx.restore();}
+    if(lk.glasses){ctx.strokeStyle='#2a2a2a';ctx.lineWidth=Math.max(1,(s||1)*0.55);ctx.strokeRect(X-r*0.62,Y-r*0.02,r*0.5,r*0.36);ctx.strokeRect(X+r*0.12,Y-r*0.02,r*0.5,r*0.36);line(X-r*0.12,Y+r*0.1,X+r*0.12,Y+r*0.1,'#2a2a2a',Math.max(1,(s||1)*0.5));}
+    if(lk.shades){ctx.fillStyle='#1a1a1a';ctx.fillRect(X-r*0.62,Y-r*0.02,r*0.5,r*0.3);ctx.fillRect(X+r*0.12,Y-r*0.02,r*0.5,r*0.3);ctx.fillRect(X-r*0.12,Y+r*0.04,r*0.24,r*0.06);}
+    if(lk.mus){ctx.fillStyle=hair;ctx.fillRect(X-r*0.3,Y+r*0.36,r*0.6,r*0.12);}
+    if(lk.beard){ctx.save();ctx.globalAlpha=0.9;ell(X,Y+r*0.72,r*0.6,r*0.32,HS);ctx.restore();ell(X,Y+r*0.56,r*0.12,r*0.07,'#6b2a22');}
+    return;}
+  // ---- うしろ姿 ----
+  if(dir==='up'){
+    if(st==='afro'){afro(X,Y-r*0.3,r*1.42,hair);return;}
+    if(st==='spiky')spikes(X,Y-r*0.1,9,r*1.95,Math.PI*1.02,Math.PI*1.98,hair);
+    if(st==='twin')for(const sx of [-1,1]){ell(X+sx*r*1.25,Y+r*0.5,r*0.36,r*1.0,hair);ell(X+sx*r*1.0,Y-r*0.35,r*0.2,r*0.18,lk.ribbon?'#d94a6a':'#e8c76a');}
+    ell(X-r*0.98,Y+r*0.15,r*0.2,r*0.3,SS);ell(X+r*0.98,Y+r*0.15,r*0.2,r*0.3,sh(skin,0.7));
+    if(st==='bald'){ell(X,Y,r*0.95,r*1.05,gS);ell(X,Y+r*0.45,r*0.95,r*0.5,hair,0,Math.PI);return;}
+    ell(X,Y,r*0.97,r*1.06,hair);gloss(X,Y-r*0.4,r*0.7,r*0.45);
+    if(st==='long'||st==='hime')poly([[X-r*1.05,Y],[X+r*1.05,Y],[X+r*1.1,Y+r*1.5],[X-r*1.1,Y+r*1.5]],hair);
+    if(st==='bob')ell(X,Y+r*0.5,r*1.12,r*0.7,hair);
+    if(st==='pony'){ell(X,Y+r*0.9,r*0.3,r*0.85,hair);ell(X,Y+r*0.15,r*0.2,r*0.15,'#e8c76a');}
+    if(st==='regent')ell(X,Y-r*0.85,r*0.8,r*0.5,hair);
+    return;}
+  // ---- 横向き ----
+  const f=dir==='right'?1:-1;
+  if(st==='afro')afro(X-f*r*0.15,Y-r*0.4,r*1.42,hair);
+  if(st==='spiky')spikes(X-f*r*0.15,Y-r*0.2,8,r*1.9,Math.PI*1.0,Math.PI*2.0,hair);
+  if(st==='long'||st==='hime')ell(X-f*r*0.5,Y+r*0.45,r*0.62,r*1.05,hair);
+  if(st==='bob')ell(X-f*r*0.3,Y+r*0.2,r*0.88,r*0.88,hair);
+  if(st==='pony'){ell(X-f*r*1.15,Y+r*0.2,r*0.32,r*0.82,hair);ell(X-f*r*0.92,Y-r*0.35,r*0.18,r*0.16,'#e8c76a');}
+  if(st==='twin'){ell(X-f*r*0.95,Y+r*0.55,r*0.34,r*1.0,hair);ell(X-f*r*0.85,Y-r*0.3,r*0.18,r*0.16,lk.ribbon?'#d94a6a':'#e8c76a');}
+  ell(X,Y,r*0.95,r*1.05,gS);
+  if(st!=='bald'&&st!=='afro'){ell(X-f*r*0.15,Y-r*0.25,r*0.92,r*0.82,hair);gloss(X-f*r*0.1,Y-r*0.5,r*0.6,r*0.4);}
+  if(st==='afro')for(let i=0;i<4;i++)ell(X+f*r*(0.6-i*0.3),Y-r*0.45+(i%2)*r*0.06,r*0.24,r*0.22,hair);
+  if(st==='nanasan'||(fem&&st!=='hime'))ell(X+f*r*0.5,Y-r*0.3,r*0.42,r*0.3,hair);
+  if(st==='hime')poly([[X+f*r*0.95,Y-r*0.45],[X+f*r*0.2,Y-r*0.6],[X+f*r*0.2,Y-r*0.08],[X+f*r*0.95,Y-r*0.08]],hair);
+  if(st==='regent'){ell(X+f*r*0.45,Y-r*0.88,r*0.85,r*0.48,hair);line(X-f*r*0.2,Y-r*1.1,X+f*r*1.0,Y-r*1.0,HH,Math.max(1,r*0.09));}
+  if(st==='bald'){ell(X-f*r*0.35,Y-r*0.05,r*0.35,r*0.35,hair);}
+  ell(X-f*r*0.05,Y+r*0.12,r*0.18,r*0.28,SS);
+  const ex=X+f*r*0.55,ey=Y+r*0.14;
+  if(lk.eye==='smile'){ctx.strokeStyle=ec;ctx.lineWidth=Math.max(1,r*0.09);ctx.beginPath();ctx.arc(ex,ey+r*0.06,r*0.12,Math.PI*1.1,Math.PI*1.9);ctx.stroke();}
+  else if(lk.eye==='narrow')line(ex-r*0.1,ey,ex+r*0.12,ey,ec,Math.max(1,r*0.09));
+  else{const ry=r*(lk.eye==='big'?0.22:0.19);ell(ex,ey,r*0.11,ry,ec);ell(ex,ey+ry*0.35,r*0.08,ry*0.5,fem?'#7a5a9a':'#5a4436');if(fem)ell(ex-f*r*0.03,ey-ry*0.45,r*0.055,r*0.055,'#ffffff');}
+  line(ex-r*0.15,ey-r*0.3,ex+r*0.15,ey-r*0.3+(lk.brow==='angry'?r*0.06:0),lk.bald?'#8a8a8a':HS,Math.max(1,r*0.08));
+  line(X+f*r*0.5,Y+r*0.56,X+f*r*0.7,Y+r*0.56,'#8e3b2e',Math.max(1,r*0.07));
+  if(lk.blush){ctx.save();ctx.globalAlpha=0.45;ell(X+f*r*0.45,Y+r*0.38,r*0.15,r*0.09,'#e87a7a');ctx.restore();}
+  if(lk.glasses){ctx.strokeStyle='#2a2a2a';ctx.lineWidth=Math.max(1,(s||1)*0.55);if(lk.shades){ctx.fillStyle='#1a1a1a';ctx.fillRect(ex-r*0.22,Y-r*0.02,r*0.44,r*0.32);}ctx.strokeRect(ex-r*0.22,Y-r*0.02,r*0.44,r*0.32);}
+  if(lk.mus){ctx.fillStyle=hair;ctx.fillRect(X+f*r*0.4,Y+r*0.38,r*0.35,r*0.1);}
+}
+
+let HEADK=1.5;
 function cig(ctx,X,Y,r,f,lit){// くわえタバコ＋煙  X,Y:口  f:向き(1右,-1左,0正面)
   const dx=f?f:0.8,dy=f?0.15:0.35;const L=r*0.75;
   ctx.save();ctx.lineCap='round';ctx.strokeStyle='#f4f2ec';ctx.lineWidth=Math.max(1.2,r*0.16);ctx.beginPath();ctx.moveTo(X,Y);ctx.lineTo(X+dx*L,Y+dy*L);ctx.stroke();
@@ -3221,13 +3394,14 @@ function draw(ctx,opt){
       if(a1.top)for(let i=0;i<3;i++)box(10+i*20,26+i*20,8,32,h+i%2*2,h+4+i%2*2,['#fbf8ef','#e8c76a','#3d6fa8'][i],{fg:1,rg:1,tg:1});return;}
     return;}
   // ===== 歩く人 =====
-  if(opt.walker){const lk=opt.look||{},dir=opt.dir,ph=opt.phase||0;
+  if(opt.walker){const lk=opt.look||{},dir=opt.dir,ph=opt.phase||0;const WK=opt.sit?'':(lk.walk||''),YK=WK==='yankee',OLD=WK==='old',GEN=WK==='genki';
     const shirt=lk.shirt||'#f4f2ec',skin=lk.skin||'#f2c9a0',hair=lk.hair||'#2a2220',jk=lk.jacket||null,pants=lk.pants||'#3a3e48',shoe='#1e1a18';
-    const cx=0,cy=0;const run=!!opt.run;const sw=Math.sin(ph),bob=Math.abs(Math.cos(ph))*(run?3.2:1.6);const G=lk.girth||1,HT=lk.tall||1;
+    let cx=0,cy=0;const run=!!opt.run;const sw=Math.sin(ph),bob=Math.abs(Math.cos(ph))*(run?3.2:GEN?3.4:YK?0.8:OLD?0.8:1.6);const G=lk.girth||1,HT=lk.tall||1;
     const mv=dir==='down'?[0,-1]:dir==='up'?[0,1]:dir==='right'?[1,0]:[-1,0];
     const side=dir==='left'||dir==='right';
+    if(YK){const sway=Math.sin(ph)*3;if(side)cy+=sway;else cx+=sway;}
     const hw=(side?9:19)*(side?G*1.15:G),hd=(side?19:9)*(side?G:G*1.15);// 胴の半分の幅・奥行き
-    const SIT=!!opt.sit;const SL=SIT&&lk.slouch;const FUP=SIT&&lk.feetUp;const z0=0,zh=SIT?44:72*HT+bob,zt=SIT?(SL?90:98):(126+(G-1)*-4)*HT+bob;const lean=run?5:(SL?-15:0);
+    const SIT=!!opt.sit;const SL=SIT&&lk.slouch;const FUP=SIT&&lk.feetUp;const z0=0,zh=SIT?44:72*HT+bob,zt=SIT?(SL?90:98):(126+(G-1)*-4)*HT+bob-(YK?8:OLD?7:0);const lean=run?5:(SL?-15:(YK?7:OLD?6:GEN?-2:0));
     const parts=[];
     if(opt.feetOnly){const pants=lk.pants||'#3a3e48';const f0=opt.footF||0;const rr=sAt(0,0,60);
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
@@ -3240,13 +3414,18 @@ function draw(ctx,opt){
         ctx.fillStyle='#6a625a';ctx.beginPath();ctx.ellipse(Sh[0]+mv[0]*rr*1.2,Sh[1]-rr*0.6,rr*3.4,rr*2.4,0,0,7);ctx.fill();}
       ctx.restore();return;}
     // 足（2本）：横幅方向にずらし、進む方向に振る
-    const legs=[];for(const k of [-1,1]){const off=side?[0,k*7*G]:[k*7*G,0];const sv=sw*k*(run?16:10);const lx=cx+off[0]+mv[0]*sv,ly=cy+off[1]+mv[1]*sv;
+    const legs=[];for(const k of [-1,1]){const spr=YK?10:OLD?6:7;const off=side?[0,k*spr*G]:[k*spr*G,0];const sv=sw*k*(run?16:YK?7:OLD?5:GEN?13:10);const lx=cx+off[0]+mv[0]*sv,ly=cy+off[1]+mv[1]*sv;
       if(SIT){const LL=SL?36:26;const ex=lx+mv[0]*LL,ey=ly+mv[1]*LL;const hx=mv[0]?0:5.5,hy=mv[1]?0:5.5;legs.push({y:Math.min(ly,ey),x:lx,d:()=>{if(FUP){box(Math.min(lx,lx+mv[0]*14)-5.5,Math.max(lx,lx+mv[0]*14)+5.5,Math.min(ly,ly+mv[1]*14)-5.5,Math.max(ly,ly+mv[1]*14)+5.5,zh-8,zh+4,pants,{fg:1,rg:1,tg:1});return;}box(Math.min(lx,ex)-hx,Math.max(lx,ex)+hx,Math.min(ly,ey)-hy,Math.max(ly,ey)+hy,zh-8,zh+2,pants,{fg:1,rg:1,tg:1});box(ex-4.5,ex+4.5,ey-4.5,ey+4.5,5,zh-6,pants,{fg:1,rg:1,tg:1});box(ex-5+mv[0]*4,ex+5+mv[0]*4,ey-5+mv[1]*4,ey+5+mv[1]*4,0,5,shoe,{fg:1,rg:1,tg:1});}});continue;}
+      if(YK){const kx=side?lx:lx+k*5,ky=side?ly+k*5:ly,hx=side?lx:cx+k*7,hy=side?cy+k*7:ly;const zk=zh*0.48;
+        legs.push({y:ly,x:lx,d:()=>{box(Math.min(hx,kx)-5,Math.max(hx,kx)+5,Math.min(hy,ky)-5,Math.max(hy,ky)+5,zk,zh+2,pants,{fg:1,rg:1,tg:1});box(kx-5,kx+5,ky-5,ky+5,6,zk+3,pants,{fg:1,rg:1,tg:1});
+          const fx=side?0:k*3,fy=side?k*3:0;box(kx-5+mv[0]*3+fx,kx+5+mv[0]*4+fx,ky-5+mv[1]*3+fy,ky+5+mv[1]*4+fy,0,6,shoe,{fg:1,rg:1,tg:1});}});continue;}
       legs.push({y:ly,x:lx,d:()=>{box(lx-5,lx+5,ly-5,ly+5,6,zh+2,pants,{fg:1,rg:1,tg:1});box(lx-5+mv[0]*3,lx+5+mv[0]*4,ly-5+mv[1]*3,ly+5+mv[1]*4,0,6,shoe,{fg:1,rg:1,tg:1});}});}
-    const arms=[];for(const k of [-1,1]){const off=side?[0,k*(hd+1)]:[k*(hw+1),0];const sv=-sw*k*(run?13:8);const ax=cx+off[0],ay=cy+off[1];
+    const arms=[];for(const k of [-1,1]){const off=side?[0,k*(hd+1)]:[k*(hw+1),0];const sv=YK?0:-sw*k*(run?13:GEN?14:OLD?4:8);const ax=cx+off[0],ay=cy+off[1];
       arms.push({y:ay+mv[1]*sv*0.5,x:ax,d:()=>{let ex=ax+mv[0]*sv,ey=ay+mv[1]*sv,ez=zh+6;const c=jk||shirt;
         const ax2=ax+mv[0]*lean*0.5,ay2=ay+mv[1]*lean*0.5;
         const seg=(x0,y0,z0,x1,y1,z1,cc)=>{poly([[x0-4,y0-4,z0],[x0+4,y0-4,z0],[x1+4,y1-4,z1],[x1-4,y1-4,z1]],sh(cc,0.85));poly([[x0+4,y0-4,z0],[x0+4,y0+4,z0],[x1+4,y1+4,z1],[x1+4,y1-4,z1]],sh(cc,0.6));poly([[x0-4,y0-4,z0],[x0+4,y0-4,z0],[x0+4,y0+4,z0],[x0-4,y0+4,z0]],sh(cc,1.1));};
+        if(YK){const pc=lk.tee&&!jk?shirt:c;const elx=ax+(side?0:k*6)-mv[0]*2,ely=ay+(side?k*6:0)-mv[1]*2,elz=(zt+zh)/2+2;seg(ax2,ay2,zt-4,elx,ely,elz,pc);
+          const px=ax+(side?0:-k*2)+mv[0]*2,py=ay+(side?-k*2:0)+mv[1]*2;seg(elx,ely,elz,px,py,zh+10,lk.tee&&!jk?skin:c);return;}
         if(SL){const elx=cx+mv[0]*(lean-1)+(side?0:k*21),ely=cy+mv[1]*(lean-1)+(side?k*21:0),elz=zt+12;seg(ax2,ay2,zt-4,elx,ely,elz,lk.tee&&!jk?shirt:c);ex=cx+mv[0]*(lean-9)+(side?0:k*6);ey=cy+mv[1]*(lean-9)+(side?k*6:0);ez=zt+20;seg(elx,ely,elz,ex,ey,ez,lk.tee&&!jk?skin:c);box(ex-3.5,ex+3.5,ey-3.5,ey+3.5,ez-6,ez+1,skin,{fg:1,rg:1,tg:1});return;}
         
         if(lk.tee&&!jk){const t=0.38,mx=ax2+(ex-ax2)*t,my=ay2+(ey-ay2)*t,mz=zt-4+(ez-zt+4)*t;seg(mx,my,mz,ex,ey,ez,skin);seg(ax2,ay2,zt-4,mx,my,mz,c);}
@@ -3266,25 +3445,13 @@ function draw(ctx,opt){
     near.forEach(o=>o.d());
     box(cx-4+lx0,cx+4+lx0,cy-4+ly0,cy+4+ly0,zt,zt+7,sh(skin,0.9),{fg:1,rg:1,tg:1});
     // 頭
-    const C0=pj(cx+lx0,cy+ly0,zt+20);const r=12.5*sAt(cx+lx0,cy+ly0,zt+20);const X=C0[0],Y=C0[1];
+    const C0=pj(cx+lx0,cy+ly0,zt+20*HEADK);const r=12.5*HEADK*sAt(cx+lx0,cy+ly0,zt+20*HEADK);const X=C0[0],Y=C0[1];
     const ell=(x,y,rx,ry,col,a0,a1)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,a0||0,a1||Math.PI*2);ctx.fillStyle=col;ctx.fill();};
     const gS=ctx.createRadialGradient(X-r*0.35,Y-r*0.35,r*0.2,X,Y,r*1.1);gS.addColorStop(0,sh(skin,1.08));gS.addColorStop(1,sh(skin,0.82));
     const gH=ctx.createRadialGradient(X-r*0.3,Y-r*0.4,r*0.2,X,Y,r*1.1);gH.addColorStop(0,sh(hair,1.6));gH.addColorStop(1,hair);
-    const ec='#2a1e18';
-    if(dir==='down'){ell(X-r*0.98,Y+r*0.1,r*0.2,r*0.3,sh(skin,0.85));ell(X+r*0.98,Y+r*0.1,r*0.2,r*0.3,sh(skin,0.75));ell(X,Y,r*0.95,r*1.05,gS);
-      ell(X,Y-r*0.42,r*1.0,r*0.68,hair,Math.PI,Math.PI*2);const hs=lk.hs||0;ctx.fillStyle=hair;
-      if(hs===0){ctx.beginPath();ctx.moveTo(X-r*1.0,Y-r*0.42);ctx.lineTo(X+r*0.2,Y-r*0.42);ctx.quadraticCurveTo(X-r*0.3,Y-r*0.1,X-r*0.95,Y+r*0.05);ctx.fill();}
-      if(hs===2){ell(X-r*0.95,Y+r*0.3,r*0.28,r*0.95,hair);ell(X+r*0.95,Y+r*0.3,r*0.28,r*0.95,hair);ctx.beginPath();ctx.moveTo(X-r,Y-r*0.45);ctx.lineTo(X+r,Y-r*0.45);ctx.lineTo(X+r*0.8,Y-r*0.12);ctx.lineTo(X-r*0.8,Y-r*0.12);ctx.fill();}
-      ell(X-r*0.36,Y+r*0.12,r*0.1,r*0.14,ec);ell(X+r*0.36,Y+r*0.12,r*0.1,r*0.14,ec);ctx.fillStyle=ec;ctx.fillRect(X-r*0.52,Y-r*0.12,r*0.3,r*0.07);ctx.fillRect(X+r*0.22,Y-r*0.12,r*0.3,r*0.07);
-      ctx.fillStyle=sh(skin,0.7);ctx.fillRect(X-r*0.18,Y+r*0.52,r*0.36,r*0.07);
-      if(lk.glasses){ctx.strokeStyle='#2a2a2a';ctx.lineWidth=Math.max(1,s*0.55);ctx.strokeRect(X-r*0.62,Y-r*0.02,r*0.5,r*0.34);ctx.strokeRect(X+r*0.12,Y-r*0.02,r*0.5,r*0.34);}
-      if(lk.blush){ctx.save();ctx.globalAlpha=0.35;ell(X-r*0.6,Y+r*0.38,r*0.16,r*0.1,'#e07a7a');ell(X+r*0.6,Y+r*0.38,r*0.16,r*0.1,'#e07a7a');ctx.restore();}}
-    else if(dir==='up'){ell(X-r*0.98,Y+r*0.15,r*0.2,r*0.3,sh(skin,0.8));ell(X+r*0.98,Y+r*0.15,r*0.2,r*0.3,sh(skin,0.7));ell(X,Y,r*0.97,r*1.06,gH);if((lk.hs||0)===2)ell(X,Y+r*0.6,r*1.08,r*0.6,hair);}
-    else{const f=dir==='right'?1:-1;ell(X,Y,r*0.95,r*1.05,gS);ell(X-f*r*0.15,Y-r*0.25,r*0.92,r*0.82,hair);if((lk.hs||0)===2)ell(X-f*r*0.45,Y+r*0.35,r*0.55,r*0.75,hair);
-      ell(X-f*r*0.05,Y+r*0.12,r*0.18,r*0.28,sh(skin,0.85));ell(X+f*r*0.55,Y+r*0.1,r*0.1,r*0.14,ec);ctx.fillStyle=ec;ctx.fillRect(X+f*r*0.55-r*0.15,Y-r*0.12,r*0.3,r*0.07);
-      ctx.fillStyle=sh(skin,0.7);ctx.fillRect(X+f*r*0.6-r*0.1,Y+r*0.55,r*0.2,r*0.07);if(lk.glasses){ctx.strokeStyle='#2a2a2a';ctx.lineWidth=Math.max(1,s*0.55);if(lk.shades){ctx.fillStyle='#1a1a1a';ctx.fillRect(X+f*r*0.55-r*0.22,Y-r*0.02,r*0.44,r*0.32);}ctx.strokeRect(X+f*r*0.55-r*0.22,Y-r*0.02,r*0.44,r*0.32);}
-      if(lk.stub){ctx.save();ctx.globalAlpha=0.35;ell(X+f*r*0.4,Y+r*0.6,r*0.45,r*0.3,'#3a3430');ctx.restore();}
-      if(lk.smoke)cig(ctx,X+f*r*0.72,Y+r*0.55,r,f,lk.smoke);}
+    headA(ctx,X,Y,r,lk,skin,hair,dir,s);
+    if(dir==='left'||dir==='right'){const f=dir==='right'?1:-1;if(lk.stub){ctx.save();ctx.globalAlpha=0.35;ell(X+f*r*0.4,Y+r*0.6,r*0.45,r*0.3,'#3a3430');ctx.restore();}if(lk.smoke)cig(ctx,X+f*r*0.72,Y+r*0.55,r,f,lk.smoke);}
+    if(lk.helmet){ell(X,Y-r*0.3,r*1.12,r*0.95,'#f2c230',Math.PI,Math.PI*2);ctx.fillStyle='#fff2a0';ctx.fillRect(X-r*0.5,Y-r*1.05,r*0.6,r*0.18);ctx.fillStyle='#c49a20';ctx.fillRect(X-r*1.3,Y-r*0.36,r*2.6,r*0.2);}
     return;}
   // ===== 人（座っている） =====
   const personDraw=(face,P0,part)=>{const doB=part!=='arms',doA=part!=='body';const lk=P0||{};const cx=opt.rev?W/2:(3+W-42)/2;
@@ -3326,7 +3493,7 @@ function draw(ctx,opt){
     // 首
     const yh=face?yb+8+(FU?4:0):yb+8;box(cx-4,cx+4,yh-3,yh+3,zsh-1,zsh+7,shade(skin,0.9),{fg:1,rg:1,tg:1});
     // 頭（画面上で描く）
-    const C0=pj(cx,yh,zsh+20);const r=12.5*sAt(cx,yh,zsh+20);const X=C0[0],Y=C0[1];
+    const C0=pj(cx,yh,zsh+20*HEADK);const r=12.5*HEADK*sAt(cx,yh,zsh+20*HEADK);const X=C0[0],Y=C0[1];
     const circ=(x,y,rr,col)=>{ctx.beginPath();ctx.arc(x,y,rr,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();};
     const ell=(x,y,rx,ry,col,a0,a1)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,a0||0,a1||Math.PI*2);ctx.fillStyle=col;ctx.fill();};
     const gS=ctx.createRadialGradient(X-r*0.35,Y-r*0.35,r*0.2,X,Y,r*1.1);gS.addColorStop(0,shade(skin,1.08));gS.addColorStop(1,shade(skin,0.82));
@@ -3339,35 +3506,8 @@ function draw(ctx,opt){
         ctx.strokeStyle=shade(lk.tee&&!jacket?skin:sc,sx>0?0.85:1);ctx.beginPath();ctx.moveTo(sxp,syp);ctx.lineTo(ex,ey);ctx.stroke();
         if(lk.tee&&!jacket){ctx.strokeStyle=shade(shirt,1);ctx.beginPath();ctx.moveTo(sxp,syp);ctx.lineTo(sxp+(ex-sxp)*0.4,syp+(ey-syp)*0.4);ctx.stroke();}}
       ctx.restore();}
-    if(face){
-      ell(X-r*0.98,Y+r*0.1,r*0.2,r*0.3,shade(skin,0.85));ell(X+r*0.98,Y+r*0.1,r*0.2,r*0.3,shade(skin,0.75));// 耳
-      ell(X,Y,r*0.95,r*1.05,gS);
-      // 髪
-      const hs=lk.hs||0;ctx.fillStyle=hair;
-      if(lk.bald){ell(X-r*0.85,Y-r*0.1,r*0.22,r*0.45,hair);ell(X+r*0.85,Y-r*0.1,r*0.22,r*0.45,hair);}
-      else{ell(X,Y-r*0.42,r*1.0,r*0.68,hair,Math.PI,Math.PI*2);
-        if(hs===0){ctx.beginPath();ctx.moveTo(X-r*1.0,Y-r*0.42);ctx.lineTo(X+r*0.2,Y-r*0.42);ctx.quadraticCurveTo(X-r*0.3,Y-r*0.1,X-r*0.95,Y+r*0.05);ctx.fill();}// 七三
-        if(hs===1){ctx.beginPath();ctx.moveTo(X-r*1.0,Y-r*0.45);ctx.lineTo(X+r*1.0,Y-r*0.45);ctx.lineTo(X+r*0.9,Y-r*0.15);ctx.lineTo(X-r*0.9,Y-r*0.15);ctx.fill();}// ぱっつん
-        if(hs===2){ell(X-r*0.95,Y+r*0.3,r*0.28,r*0.95,hair);ell(X+r*0.95,Y+r*0.3,r*0.28,r*0.95,hair);ctx.beginPath();ctx.moveTo(X-r*1.0,Y-r*0.45);ctx.lineTo(X+r*1.0,Y-r*0.45);ctx.lineTo(X+r*0.8,Y-r*0.12);ctx.lineTo(X-r*0.8,Y-r*0.12);ctx.fill();}// ボブ
-        if(hs===3){ell(X,Y-r*0.95,r*0.55,r*0.4,hair);}// もじゃ
-        ctx.save();ctx.globalAlpha=0.25;ell(X-r*0.35,Y-r*0.8,r*0.35,r*0.14,'#ffffff');ctx.restore();}
-      // 顔
-      const ec='#2a1e18';ell(X-r*0.36,Y+r*0.12,r*0.1,r*0.14,ec);ell(X+r*0.36,Y+r*0.12,r*0.1,r*0.14,ec);
-      ctx.fillStyle=ec;ctx.fillRect(X-r*0.52,Y-r*0.12,r*0.3,r*0.07);ctx.fillRect(X+r*0.22,Y-r*0.12,r*0.3,r*0.07);
-      ctx.fillStyle=shade(skin,0.7);ctx.fillRect(X-r*0.18,Y+r*0.52,r*0.36,r*0.07);
-      if(lk.blush){ctx.save();ctx.globalAlpha=0.35;ell(X-r*0.6,Y+r*0.38,r*0.16,r*0.1,'#e07a7a');ell(X+r*0.6,Y+r*0.38,r*0.16,r*0.1,'#e07a7a');ctx.restore();}
-      if(lk.glasses){ctx.strokeStyle='#2a2a2a';ctx.lineWidth=Math.max(1,s*0.55);ctx.strokeRect(X-r*0.62,Y-r*0.02,r*0.5,r*0.34);ctx.strokeRect(X+r*0.12,Y-r*0.02,r*0.5,r*0.34);ctx.beginPath();ctx.moveTo(X-r*0.12,Y+r*0.1);ctx.lineTo(X+r*0.12,Y+r*0.1);ctx.stroke();}
-      if(lk.mus){ctx.fillStyle=hair;ctx.fillRect(X-r*0.3,Y+r*0.38,r*0.6,r*0.12);}
-      if(lk.shades){ctx.fillStyle='#1a1a1a';ctx.fillRect(X-r*0.62,Y-r*0.02,r*0.5,r*0.3);ctx.fillRect(X+r*0.12,Y-r*0.02,r*0.5,r*0.3);ctx.fillRect(X-r*0.12,Y+r*0.04,r*0.24,r*0.06);}
-      if(lk.stub){ctx.save();ctx.globalAlpha=0.3;ell(X,Y+r*0.6,r*0.6,r*0.32,'#3a3430');ctx.restore();}
-      if(lk.smoke)cig(ctx,X+r*0.12,Y+r*0.56,r,0,lk.smoke);
-
-    } else {
-      ell(X-r*0.98,Y+r*0.15,r*0.2,r*0.3,shade(skin,0.8));ell(X+r*0.98,Y+r*0.15,r*0.2,r*0.3,shade(skin,0.7));
-      const gH=ctx.createRadialGradient(X-r*0.3,Y-r*0.4,r*0.2,X,Y,r*1.1);gH.addColorStop(0,shade(hair,1.6));gH.addColorStop(1,hair);
-      if(lk.bald){ell(X,Y,r*0.95,r*1.05,gS);ell(X,Y+r*0.45,r*0.95,r*0.5,hair,0,Math.PI);}
-      else{ell(X,Y,r*0.97,r*1.06,gH);if((lk.hs||0)===2)ell(X,Y+r*0.6,r*1.08,r*0.6,hair);}
-    }
+    headA(ctx,X,Y,r,lk,skin,hair,face?'down':'up',s);
+    if(face){if(lk.stub){ctx.save();ctx.globalAlpha=0.3;ell(X,Y+r*0.6,r*0.6,r*0.32,'#3a3430');ctx.restore();}if(lk.smoke)cig(ctx,X+r*0.12,Y+r*0.56,r,0,lk.smoke);}
   };
   const C=opt.col||'#9aa2a6';
   if(opt.shadowOnly){ctx.save();ctx.globalAlpha=0.28;poly([[-2,-4,0],[W+10,-4,0],[W+14,D+2,0],[2,D+2,0]],'#1a1208');ctx.globalAlpha=0.18;poly([[-6,-8,0],[W+16,-8,0],[W+20,D+4,0],[-2,D+4,0]],'#1a1208');if(opt.chair){const cx=opt.rev?W/2:(3+W-42)/2,ym=opt.chair==='back'?D-4:-14;ctx.globalAlpha=0.25;poly([[cx-24,ym-18,0],[cx+28,ym-18,0],[cx+30,ym+22,0],[cx-22,ym+22,0]],'#1a1208');}ctx.restore();return;}
@@ -3538,7 +3678,7 @@ function roomLayer(cfg){const L=lay(),g=L.getContext('2d');
   P4(g,[[-14,RD,WH],[RW+14,RD,WH],[RW+14,RD+14,WH],[-14,RD+14,WH]],'#6b5440');
   g.globalAlpha=0.18;P4(g,[[0,RD-40,0],[RW,RD-40,0],[RW,RD,0],[0,RD,0]],'#2a1e10');g.globalAlpha=1;
   // ドア（奥の壁・左）
-  BR(g,30,118,0,206,'#5a3a22');BR(g,36,112,0,200,'#8a5a2e');BR(g,42,72,110,190,'#9a6a3a');BR(g,78,106,110,190,'#9a6a3a');BR(g,42,72,14,100,'#9a6a3a');BR(g,78,106,14,100,'#9a6a3a');BR(g,98,104,96,104,'#e8c76a',0.3);
+  LR(g,836,924,0,206,'#5a3a22');LR(g,842,918,0,200,'#8a5a2e',0.2);LR(g,848,878,110,190,'#9a6a3a',0.4);LR(g,884,912,110,190,'#9a6a3a',0.4);LR(g,848,878,14,100,'#9a6a3a',0.4);LR(g,884,912,14,100,'#9a6a3a',0.4);LR(g,848,854,96,104,'#e8c76a',0.6);
   cfg.wallDeco&&cfg.wallDeco(g);return L;}
 // --- 部品（スプライト）：場所ごとに一度描いたら取っておく ---
 const SPR=new Map();const TMP=document.createElement('canvas');TMP.width=1400;TMP.height=1000;
@@ -3562,6 +3702,7 @@ function lookOf(st,opt={}){if(!st)return {};const K0=lookCol(st);const L=K0.L;co
     tie:(!L.fem&&(su||K0.tie||lead||(!isArt&&st.id%3)))?TIEC[st.id%TIEC.length]:null,hair:K0.hair,skin:K0.skin,hs,glasses:L.glasses,mus:L.mus,blush:L.fem&&L.blush,bald:K0.bald,
     cardigan:(!su&&L.fem&&st.id%2===0&&!isArt)?SHIRT[(st.id*5)%SHIRT.length]:null,pants:L.fem?'#4a3e5a':(isArt?'#4a4038':'#3a3e48')};
   if(st.id===9001){o.jacket=su||'#2c3e66';o.tie='#b23a2e';}
+  o.st=L.style==='oldback'?'afro':L.style;o.walk=o.st==='regent'?'yankee':(st.age||30)>=55?'old':((st.jonetsu||0)>=85&&(st.age||30)<30?'genki':'');o.eye=L.eye;o.brow=L.brow;o.mouth=L.mouth;o.beard=L.beard;o.ribbon=L.ribbon;
   o.fem=!!L.fem;return Object.assign(o,opt);}
 const lk2key=o=>JSON.stringify(o);
 const hsh=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
@@ -3575,6 +3716,7 @@ function roughLook(st,lk){const id=st.id||0;const r=hsh(id*1.7);const o=Object.a
   if(st.role==='chief'){Object.assign(o,{jacket:null,tie:null,cardigan:null,tee:1,shirt:'#26242a',chain:1,shades:1,stub:1});}
   else if(r<0.85){o.jacket=null;o.cardigan=null;o.tee=1;o.shirt=ROUGH[id%ROUGH.length];if(o.shirt!=='#f4f2ec'||hsh(id*3.1)<0.5)o.tie=null;}
   if(!o.fem&&hsh(id*2.3)<0.4)o.stub=1;
+  if(!o.walk&&(o.st==='spiky'||o.st==='afro')&&hsh(id*5.7)<0.6)o.walk='yankee';
   const sm=smokeNow(id,st.role==='chief'?0.45:0.3);if(sm)o.smoke=sm;
   return o;}
 // 冷徹な運営部
@@ -3588,7 +3730,7 @@ function navBuild(key,obst){if(NG.key===key)return NG;const NW2=Math.ceil(RW/10)
   for(let cy=0;cy<NH2;cy++)for(let cx=0;cx<NW2;cx++){const x=cx*10+5,y=cy*10+5;if(x<44||y>RD-22||y<8||x>RW-44)bl[cy*NW2+cx]=1;}
   for(const [x,y,w,h] of obst){for(let cy=Math.floor(y/10);cy<=Math.floor((y+h-1)/10);cy++)for(let cx=Math.floor(x/10);cx<=Math.floor((x+w-1)/10);cx++)if(cx>=0&&cy>=0&&cx<NW2&&cy<NH2)bl[cy*NW2+cx]=1;}
   // ドアの前はあける
-  for(let cy=Math.floor((RD-80)/10);cy<NH2;cy++)for(let cx=3;cx<=11;cx++)if(cy*NW2+cx<bl.length&&cy<NH2-2)bl[cy*NW2+cx]=0;
+  for(let cy=82;cy<=93;cy++)for(let cx=1;cx<=11;cx++)if(cy*NW2+cx<bl.length)bl[cy*NW2+cx]=0;
   Object.assign(NG,{key,bl,NW2,NH2,cache:new Map()});return NG;}
 function nFree(cx,cy){return cx>=0&&cy>=0&&cx<NG.NW2&&cy<NG.NH2&&!NG.bl[cy*NG.NW2+cx];}
 function nNear(cx,cy){if(nFree(cx,cy))return [cx,cy];for(let r=1;r<20;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;if(nFree(cx+dx,cy+dy))return [cx+dx,cy+dy];}return [cx,cy];}
@@ -3626,7 +3768,7 @@ function seatsUnei(){const M={};const L=decorOn;const OU2=hasF('ousetsu2');
     M[p+'1']={side:'right',X0:ix,Y0:y,ix,y,clean:1};M[p+'2']={side:'left',X0:ix+62,Y0:y,ix,y,clean:1};});
   return M;}
 function sideSit(o){return o.side==='right'?[o.ix-14,o.y+79.5]:[o.ix+121,o.y+60];}
-function headW(o){if(o.side){const p=sideSit(o);return [p[0],p[1],120];}const w=o.w||120;return [o.X0+w/2,o.Y0+62+14,124];}
+function headW(o){const dz=(HEADK-1)*20;if(o.side){const p=sideSit(o);return [p[0],p[1],120+dz];}const w=o.w||120;return [o.X0+w/2,o.Y0+62+14,124+dz];}
 function standPt(o){if(o.side)return o.side==='right'?[o.ix-40,o.y+80]:[o.ix+150,o.y+60];const w=o.w||120;return [o.X0+w/2,o.Y0+62+46];}
 function obstOf(o){if(o.side)return o.side==='right'?[[o.ix-50,o.y,112,120]]:[[o.ix+62,o.y,112,120]];const w=o.w||120;const r=[[o.X0-4,o.Y0-2,w+8,66]];const cx=o.X0+w/2;r.push([cx-26,o.Y0+62-20,52,44]);return r;}
 function propObst(p){const a=p.pa||{};const X=p.X0,Y=p.Y0;switch(p.prop){case 'plant':return [[X-14,Y-14,28,28]];case 'sofa':return [[X,Y,a.w||110,40]];case 'table':return [[X,Y,a.w||90,a.d||46]];case 'partX':return [[X,Y,a.len,6]];case 'partY':return [[X,Y,6,a.len]];
@@ -3638,7 +3780,7 @@ function busyOf(st){if(!st)return 1;try{return Math.max(1,Math.min(4,1+serials()
 function clutterLv(){if(!S.mag||!S.mag.launched)return 0;let n=0;try{n=serials().length;}catch(e){}return n>=6?2:1;}
 // 壁ぎわの書庫と散らかり（背景に描きこむ）
 function wallsHenshu(lv,skip){const O=[];let q=12345;const R=()=>{q=(q*1103515245+12345)%2147483648;return (q>>8)%10000/10000;};const BOXC=['#c49a5e','#b88a50','#d2aa70','#c8a068'];let sd=1;
-  for(let i=0;i<15;i++){const y=40+i*60;O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30},{prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
+  for(let i=0;i<15;i++){const y=40+i*60;if(y<820)O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
   const put1=(kind,x,y,z,sxk,syk)=>{const ang=(R()-0.5)*0.7;sd++;let o;
     if(kind==='box'){const w=32+R()*16,dd=26+R()*10;o={prop:'cbox',pa:{w,d:dd,h:20+R()*12,n:R()<0.35?2:1,open:R()<0.3,z0:z,col:BOXC[(R()*4)|0],seed:sd}};}
     else if(kind==='bun')o={prop:'bundle',pa:{n:1+((R()*3)|0),z0:z,seed:sd}};
@@ -3647,11 +3789,11 @@ function wallsHenshu(lv,skip){const O=[];let q=12345;const R=()=>{q=(q*110351524
     O.push(Object.assign(o,{X0:x,Y0:y,ang,sx:sxk,sy:syk,z0:z}));};
   const pick=(fl)=>{const r=R();return fl?(r<0.34?'box':r<0.58?'heap':r<0.8?'bun':'env'):(r<0.35?'box':r<0.65?'heap':r<0.9?'bun':'env');};
   for(let i=0;i<15;i++){const y=40+i*60;for(const side of [0,1]){const r=R();const n=r<0.22?0:r<0.65?1:2;for(let k=0;k<n;k++){const yy=y+6+k*26+R()*8;const kd=pick(0),xx=side?RW-38+R()*4:4+R()*4;
-      if(lv>=1)put1(kd,xx,yy,90,side?RW-44:44,yy+12);else{R();R();R();R();R();}}}}
+      if(lv>=1&&(side||y<800))put1(kd,xx,yy,90,side?RW-44:44,yy+12);else{R();R();R();R();R();}}}}
   for(const side of [0,1]){let y=70;while(y<920){const r=R();if(skip.some(([a,b])=>y>a-30&&y<b)){y+=20;continue;}if(r<0.3){y+=50+R()*80;continue;}
-      const n=2+((R()*3)|0);for(let k=0;k<n&&y<920&&!skip.some(([a,b])=>y>a-30&&y<b);k++){const kind=pick(1);const xo=R()*22;const x=side?RW-86-xo:44+xo;if(lv>=2)put1(kind,x,y,0,side?x+14:x+18,y+14);else{R();R();R();R();R();R();}y+=18+R()*26;}
+      const n=2+((R()*3)|0);for(let k=0;k<n&&y<920&&!skip.some(([a,b])=>y>a-30&&y<b);k++){const kind=pick(1);const xo=R()*22;const x=side?RW-86-xo:44+xo;if(lv>=2&&(side||y<780))put1(kind,x,y,0,side?x+14:x+18,y+14);else{R();R();R();R();R();R();}y+=18+R()*26;}
       y+=20+R()*40;}}
-  O.push({prop:'lowcab',X0:130,Y0:RD-40,pa:{side:'B',len:120,h:200,d:40,unit:60},sx:190,sy:RD-20});
+  O.push({prop:'lowcab',X0:10,Y0:RD-40,pa:{side:'B',len:240,h:200,d:40,unit:60},sx:130,sy:RD-20});
   O.push({prop:'lowcab',X0:460,Y0:RD-40,pa:{side:'B',len:190,h:200,d:40,unit:63},sx:555,sy:RD-20});
   if(lv>=1)O.push({prop:'cbox',X0:140,Y0:RD-36,pa:{w:40,d:32,h:26,n:2,z0:200,seed:5},sx:160,sy:RD-20,z0:200},{prop:'bundle',X0:500,Y0:RD-36,pa:{n:3,z0:200,seed:6},sx:516,sy:RD-20,z0:200});
   O.push({prop:'lowcab',X0:40,Y0:10,pa:{side:'B',len:200,h:90,d:40},sx:140,sy:30});
@@ -3659,9 +3801,9 @@ function wallsHenshu(lv,skip){const O=[];let q=12345;const R=()=>{q=(q*110351524
   if(lv>=1)for(const x0 of [40,420]){let x=x0+6;while(x<x0+190){if(R()<0.25){x+=40;continue;}put1(pick(0),x,16+R()*6,90,x+16,24);x+=30+R()*20;}}
   return O;}
 function wallsUnei(OU2){const O=[];
-  for(let i=0;i<15;i++){const y=40+i*60;if(!(OU2&&y<150))O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
-  for(const y of [120,300,480,660,840]){if(!(OU2&&y<150))O.push({prop:'binders',X0:32,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:22,sy:y+20});O.push({prop:'binders',X0:RW-8,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:RW-18,sy:y+20});}
-  O.push({prop:'lowcab',X0:130,Y0:RD-40,pa:{side:'B',len:120,h:200,d:40,unit:60},sx:190,sy:RD-20});
+  for(let i=0;i<15;i++){const y=40+i*60;if(!(OU2&&y<150)&&y<820)O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
+  for(const y of [120,300,480,660,840]){if(!(OU2&&y<150)&&y<800)O.push({prop:'binders',X0:32,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:22,sy:y+20});O.push({prop:'binders',X0:RW-8,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:RW-18,sy:y+20});}
+  O.push({prop:'lowcab',X0:10,Y0:RD-40,pa:{side:'B',len:240,h:200,d:40,unit:60},sx:130,sy:RD-20});
   O.push({prop:'lowcab',X0:460,Y0:RD-40,pa:{side:'B',len:190,h:200,d:40,unit:63},sx:555,sy:RD-20});
   O.push({prop:'binders',X0:150,Y0:RD-34,pa:{n:12,z0:200,d:26},sx:190,sy:RD-20},{prop:'binders',X0:500,Y0:RD-34,pa:{n:16,z0:200,d:26},sx:555,sy:RD-20});
   if(!OU2)O.push({prop:'lowcab',X0:40,Y0:10,pa:{side:'B',len:200,h:90,d:40},sx:140,sy:30},{prop:'binders',X0:60,Y0:16,pa:{n:10,z0:90,d:24},sx:100,sy:28});
@@ -3669,7 +3811,7 @@ function wallsUnei(OU2){const O=[];
 function propsHenshu(){return [];}
 function propsUnei(){const O=[];const OU2=hasF('ousetsu2');
   if(!OU2)O.push({prop:'plant',X0:270,Y0:40,sx:270,sy:40});
-  O.push({prop:'plant',X0:70,Y0:900,sx:70,sy:900});
+  O.push({prop:'plant',X0:70,Y0:760,sx:70,sy:760});
   O.push({prop:'partY',X0:398,Y0:60,pa:{len:180},sx:400,sy:150},{prop:'partX',X0:398,Y0:300,pa:{len:222},sx:510,sy:302});
   O.push({prop:'sofa',X0:452,Y0:220,pa:{w:120,col:'#3a3f4a',facing:'viewer'},sx:512,sy:240});
   O.push({prop:'table',X0:467,Y0:150,pa:{w:90,d:46,cups:1},sx:512,sy:173});
@@ -3699,8 +3841,8 @@ function bgCanvas(room,statics,deco,floorProps){const key=room+'|'+RKEY+'|'+(roo
 function wallUnei(g){
   clock(g,560,206);
   // 郵便受け（ドアの横）
-  BR(g,4,26,108,140,'#3a5a7a');BR(g,6,24,110,138,'#4a6a8a',0.3);BR(g,8,22,128,132,'#1a2a3a',0.4);
-  const n=Math.min(6,S.mailbox||0);for(let i=0;i<n;i++)BR(g,7+((i*5)%12),15+((i*5)%12),140+i*3,146+i*3,['#fbf8ef','#f0e6c8','#e8f0ff'][i%3],0.6);
+  LR(g,790,816,108,140,'#3a5a7a');LR(g,792,814,110,138,'#4a6a8a',0.3);LR(g,794,812,128,132,'#1a2a3a',0.4);
+  const n=Math.min(6,S.mailbox||0);for(let i=0;i<n;i++)LR(g,793+((i*5)%12),801+((i*5)%12),140+i*3,146+i*3,['#fbf8ef','#f0e6c8','#e8f0ff'][i%3],0.6);
   // 左の壁：売上グラフと書店地図
   const hist=(S.history||[]).slice(-6).map(x=>x.sold||0);const mx=Math.max(1,...hist);
   LR(g,560,700,112,206,'#fbf8ef',0.2);LR(g,566,694,118,200,'#ffffff',0.3);(hist.length?hist:[30,46,40,62,58,74]).forEach((v,i)=>{const h=hist.length?Math.max(4,v/mx*64):v;LR(g,576+i*19,588+i*19,124,124+h,i===hist.length-1?'#d94a3a':'#3d6fa8',0.4);});
@@ -3713,7 +3855,7 @@ function blitWalker(ctx,ents,st,lk,x,y,dir,ph,opt={}){const idx=opt.still?'s':St
   ents.push({k:camD(x,y),d:()=>{const p=pjs(x,y,0);ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#1a1208';ctx.beginPath();ctx.ellipse(p[0]+2,p[1],8*s,3.5*s,0,0,7);ctx.fill();ctx.restore();
     put(ctx,spr(key,{walker:1,dir,phase:opt.still?0:(+idx)/8*Math.PI*2,look:L0,run:opt.run,sit:opt.sit},qx,qy,'W'),x,y);}});
   if(opt.feetUp)ents.push({k:camD(opt.fk[0],opt.fk[1]),d:()=>put(ctx,spr('f|'+key,{walker:1,dir,sit:1,feetOnly:1,footF:opt.footF,look:L0},qx,qy,'W'),x,y)});
-  const zt=opt.sit?98:126;const hc=toL(x,y,zt+20);const top=hc[1]-13*s/K/4;if(st&&st.id!=null)OSPOT[st.id]=[hc[0],top];return [hc[0],top];}
+  const zt=opt.sit?98:126;const hc=toL(x,y,zt+20*HEADK);const top=hc[1]-13*HEADK*s/K/4;if(st&&st.id!=null)OSPOT[st.id]=[hc[0],top];return [hc[0],top];}
 function compose(room,statics,ents,deco,floorProps){const ctx=g;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
   ctx.drawImage(bgCanvas(room,statics,deco,floorProps||[]),0,0);
   const all=statics.map(o=>({k:camD(o.sx,o.sy),d:()=>put(ctx,spr(o.key,o,o.X0,o.Y0,o.prop?'P':'M'),o.X0,o.Y0)})).concat(ents);
@@ -3734,13 +3876,13 @@ function henshu(bs){setRoom(660,980);const SE=seatsHenshu();const SM=seatMap();c
   const lv=clutterLv();const deco=wallsHenshu(lv,[[140,523]]);const P=propsHenshu();const ents=[];const statics=[];
   const obst=[];for(const id in SE)obst.push(...obstOf(SE[id]));for(const p of P.concat(deco))obst.push(...propObst(p));
   navBuild('h|'+lv,obst);
-  const DOOR=[74,RD-50];
+  const DOOR=[66,880];
   for(const id in SE){const o=SE[id];const st=SM[id];let lk=null;
     if(st){const pr=presence(st);const away=(REP.has(st.id)&&pr===1);
       if(pr===1&&!away){lk=roughLook(st,lookOf(st));
         if(o.side){if(feetNow(st.id,0.15)){lk.slouch=1;lk.feetUp=1;}}
         else if(id==='chief'&&feetNow(st.id,0.5))lk.feetUp=1;
-        if(!o.side){const hl=toL(...headW(o));OSPOT[st.id]=[hl[0],hl[1]-13*s/K/4];}}
+        if(!o.side){const hl=toL(...headW(o));OSPOT[st.id]=[hl[0],hl[1]-13*HEADK*s/K/4];}}
       else if(pr&&pr.f!=null){const pts=rt(DOOR,standPt(o));const a=along(pts,Math.min(0.999,pr.f));const d=pr.dir<0?{up:'down',down:'up',left:'right',right:'left'}[a.dir]:a.dir;
         const sp=blitWalker(g,ents,st,roughLook(st,lookOf(st)),a.x,a.y,d,phOf(st));if(pr.dir<0&&pr.why&&pr.f>0.45)bs.push([sp[0],sp[1],pr.why==='kaishu'?'原稿回収、いってきます！':'打ち合わせ、いってきます！','']);}
       else if(pr&&pr.rep&&st.role==='tantou'){const tm=st.team||0;const v=byRole('vice').find(x=>x.team===tm);const vo=SE['v'+tm];const px=vo.X0+(tm?-26:vo.w+26),py=vo.Y0+20;const sp=blitWalker(g,ents,st,roughLook(st,lookOf(st)),px,py,tm?'right':'left',0,{still:1});bs.push([sp[0],sp[1],(v?'副編、':'')+tanLine(st,pr.why),'']);}}
@@ -3754,7 +3896,7 @@ function henshu(bs){setRoom(660,980);const SE=seatsHenshu();const SM=seatMap();c
   {const nos=S.staff.filter(x=>(x.role==='mi'||(!capOf(x.role)&&DESKS_OF[x.role]))&&!REP.has(x.id)&&presence(x)===1).slice(0,5);
     nos.forEach((x,i)=>{const L0=110+((x.id*37)%60),span=330;const t=(tick*1.2+x.id*90)%(span*2);const fwd=t<span;const px=L0+(fwd?t:span*2-t),py=80+((x.id*13)%40);blitWalker(g,ents,x,lookOf(x),px,py,fwd?'right':'left',phOf(x));});
     if(nos.length){const x=nos[Math.floor(tick/150)%nos.length];if(OSPOT[x.id]&&Math.floor(tick/75)%2===0)bs.push([OSPOT[x.id][0],OSPOT[x.id][1],x.role==='kenshu'?'研修中…':'席がない…','']);}}
-  dayqDraw(g,ents,bs,'henshu',[74,RD-60],'down');
+  dayqDraw(g,ents,bs,'henshu',[70,880],'right');
   if(S.intro){blitWalker(g,ents,PRES,lookOf(PRES),330,560,'down',0,{still:1});}
   compose('henshu',statics,ents,deco);
   {const on=byRole('tantou').filter(x=>presence(x)===1&&OSPOT[x.id]);const w=Math.floor(tick/180);if(on.length&&hash(w*7.7)<0.35){const x=on[Math.floor(hash(w*3.1)*on.length)];const Lw=['もしもし、先生ですか？','持ち込みのご予約ですね！','締め切りは来週ですよ！','ネーム、拝見しました！','はい、編集部です！'];bs.push([OSPOT[x.id][0],OSPOT[x.id][1],'☎ '+Lw[w%Lw.length],'']);}}
@@ -3766,14 +3908,14 @@ function unei(bs){setRoom(660,980);const SE=seatsUnei();const UM=uneiMap();const
   const floorProps=[{prop:'rug',X0:420,Y0:80,pa:{w:190,d:200,col:'#2e4a6a',bd:'#8a6a3a'}}].concat(OU2?[{prop:'rug',X0:14,Y0:8,pa:{w:256,d:134,col:'#8a2e2e',bd:'#5a3a6a'}}]:[]).concat(decorOn('rug')?[{prop:'rug',X0:215,Y0:730,pa:{w:230,d:50,col:'#7a2a2a',bd:'#c9a24a'}}]:[]);
   const obst=[];for(const id in SE)obst.push(...obstOf(SE[id]));for(const p of P.concat(deco))obst.push(...propObst(p));
   navBuild('u|'+(OU2?1:0)+JSON.stringify(S.decor||{})+JSON.stringify(S.decorOff||{}),obst);
-  const DOOR=[74,RD-50];const ht=(S.clock||{t:0.3}).t;
+  const DOOR=[66,880];const ht=(S.clock||{t:0.3}).t;
   for(const id in SE){const o=SE[id];let st=id==='pres'?PRES:UM[id];let lk=null;
-    if(id==='pres'){if(ht>=0.03&&ht<0.72&&!S.meetK){lk=lookOf(PRES);const sm=smokeNow(PRES.id||1,0.15);if(sm)lk.smoke=sm;const hl=toL(...headW(o));OSPOT[PRES.id]=OSPOT.pres=[hl[0],hl[1]-13*s/K/4];}}
+    if(id==='pres'){if(ht>=0.03&&ht<0.72&&!S.meetK){lk=lookOf(PRES);const sm=smokeNow(PRES.id||1,0.15);if(sm)lk.smoke=sm;const hl=toL(...headW(o));OSPOT[PRES.id]=OSPOT.pres=[hl[0],hl[1]-13*HEADK*s/K/4];}}
     else if(st){const pr=presence(st);const away=REP.has(st.id)&&pr===1;
-      if(pr===1&&!away){lk=suitLook(st,lookOf(st));if(!o.side){const hl=toL(...headW(o));OSPOT[st.id]=[hl[0],hl[1]-13*s/K/4];}}
+      if(pr===1&&!away){lk=suitLook(st,lookOf(st));if(!o.side){const hl=toL(...headW(o));OSPOT[st.id]=[hl[0],hl[1]-13*HEADK*s/K/4];}}
       else if(pr&&pr.f!=null){const pts=rt(DOOR,standPt(o));const a=along(pts,Math.min(0.999,pr.f));const d=pr.dir<0?{up:'down',down:'up',left:'right',right:'left'}[a.dir]:a.dir;blitWalker(g,ents,st,suitLook(st,lookOf(st)),a.x,a.y,d,phOf(st));}
       else if(pr&&pr.rep){const sp0=standPt(o);const sp=blitWalker(g,ents,st,suitLook(st,lookOf(st)),sp0[0],sp0[1],'down',0,{still:1});const L0=OUTLINES[st.role==='senden'?'senden':'eigyo'];bs.push([sp[0],sp[1],L0[(dayKey()+st.id)%L0.length],'']);}
-      else if(pr&&pr.err){const tg=pr.err==='mail'?[60,RD-60]:[560,RD-60];const u=pr.u;const k=u<0.3?u/0.3:u>0.7?(1-u)/0.3:1;const pts=rt(standPt(o),tg);const a=along(pts,Math.min(0.999,k));const d=u>0.7?{up:'down',down:'up',left:'right',right:'left'}[a.dir]:a.dir;
+      else if(pr&&pr.err){const tg=pr.err==='mail'?[64,800]:[560,RD-60];const u=pr.u;const k=u<0.3?u/0.3:u>0.7?(1-u)/0.3:1;const pts=rt(standPt(o),tg);const a=along(pts,Math.min(0.999,k));const d=u>0.7?{up:'down',down:'up',left:'right',right:'left'}[a.dir]:a.dir;
         const sp=blitWalker(g,ents,st,suitLook(st,lookOf(st)),a.x,a.y,k>=1?'up':d,phOf(st),{still:k>=1});if(k>=1){if(pr.err==='mail')S.mailbox=0;bs.push([sp[0],sp[1],pr.err==='mail'?'郵便です、計算計算…':'資料、資料…','']);}}
       else if(pr&&pr.pres){const sp=blitWalker(g,ents,st,suitLook(st,lookOf(st)),250+pr.k*55,750,'up',0,{still:1});bs.push([sp[0],sp[1],PRESLINES[st.role],'']);}}
     pushDesk(statics,ents,id,o,st,lk,'u');}
@@ -3793,7 +3935,7 @@ function unei(bs){setRoom(660,980);const SE=seatsUnei();const UM=uneiMap();const
       if(two){const lb2=toL(145,150,150);bs.push([lb2[0],lb2[1],S.meetK.label||'顔合わせ中','sign']);}
       if(MKx){{const sc=byRole('zatsumu')[0];OSPOT.sec=sc&&OSPOT[sc.id]?OSPOT[sc.id]:toL(545,830,130);}const el=(absT()-MKx.a0)/0.07;const k=Math.min(MKx.lines.length-1,Math.floor(el*MKx.lines.length));const [id,tx]=MKx.lines[k];if(OSPOT[id])bs.push([OSPOT[id][0],OSPOT[id][1],tx,'']);}
       if(MM&&MM.lines&&MM.lines.length){const k=Math.min(MM.lines.length-1,Math.floor((S.clock.t-MM.t0)/(MM.t1-MM.t0)*MM.lines.length));const [id,tx]=MM.lines[k];if(OSPOT[id])bs.push([OSPOT[id][0],OSPOT[id][1],tx,'']);}};}
-  dayqDraw(g,ents,bs,'unei',[74,RD-60],'down');
+  dayqDraw(g,ents,bs,'unei',[70,880],'right');
   compose('unei',statics,ents,deco,floorProps);
   if(henshuLater){henshuLater();henshuLater=null;}
 }
@@ -3802,15 +3944,135 @@ function dayqDraw(ctx,ents,bs,room,DP,dir){(S.dayq||[]).forEach((e,i)=>{if(!e.on
   if(e.kind==='visit'){const m=S.manga.find(x=>x.id===e.o.id);if(m){blitWalker(ctx,ents,null,lookOf(m),DP[0],DP[1],dir,0,{still:1});}const sc=room==='unei'&&byRole('zatsumu')[0]&&OSPOT[byRole('zatsumu')[0].id];const dl=toL(DP[0],DP[1],160);bs.push(sc?[sc[0],sc[1],'社長、'+(m?m.name:'')+'先生がお見えです！','red ev',i]:[dl[0],dl[1],'ピンポーン！ '+(m?m.name+'先生が来社':'来客'),'red ev',i]);return;}
   if(e.kind==='door'){blitWalker(ctx,ents,null,lookOf({id:e.who||7,age:20,name:'客',shirt:'#c47a1e'}),DP[0],DP[1],dir,0,{still:1});const dl=toL(DP[0],DP[1],160);bs.push([dl[0],dl[1],'ピンポーン！','red ev',i]);}
   else{const sec=room==='unei'&&byRole('zatsumu').length&&OSPOT[byRole('zatsumu')[0].id];const tn=room!=='unei'?byRole('tantou').find(x=>presence(x)===1&&OSPOT[x.id]):null;const pl=sec?OSPOT[byRole('zatsumu')[0].id]:tn?OSPOT[tn.id]:toL(room==='unei'?545:330,room==='unei'?830:830,120);bs.push([pl[0],pl[1],tn?'リリン♪ 社長、お電話です！':'リリン♪','red ev',i]);}});}
+// ===== OP：ビルのまわりをグルっと → 窓から部屋へ → いつもの角度（6秒） =====
+const OPX=(()=>{
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const nrm=a=>{const l=Math.hypot(...a);return [a[0]/l,a[1]/l,a[2]/l];};
+  const ez=t=>t<0?0:t>1?1:t*t*(3-2*t);const lp=(a,b,t)=>a+(b-a)*t;const L3=(a,b,t)=>[lp(a[0],b[0],t),lp(a[1],b[1],t),lp(a[2],b[2],t)];
+  let OC=null,og=null,OW2=400,OH2=474,FOC=1,CX=200,CY=0;let CAM={C:[0,0,0],F:[0,1,0],R:[1,0,0],U:[0,0,1]};
+  function look(C,T){const F=nrm(sub(T,C));const R=nrm(cross(F,[0,0,1]));const U=cross(R,F);CAM={C,F,R,U};}
+  const NEAR=4;const toCam=p=>{const d=sub(p,CAM.C);return [dot(d,CAM.R),dot(d,CAM.U),dot(d,CAM.F)];};const scr=q=>[CX+FOC*q[0]/q[2],CY-FOC*q[1]/q[2]];
+  function clipNear(ps){const out=[];for(let i=0;i<ps.length;i++){const a=ps[i],b=ps[(i+1)%ps.length];const ia=a[2]>=NEAR,ib=b[2]>=NEAR;if(ia)out.push(a);if(ia!==ib){const t=(NEAR-a[2])/(b[2]-a[2]);out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,NEAR]);}}return out;}
+  let G=null,OUR=[],INW=[];
+  const grp=(n,pt,ord,inside)=>{const o={n,pt,polys:[],ord,inside:!!inside};G.push(o);return o;};
+  const quad=(gp,pts,col,a)=>{const p={pts,col,alpha:a??1};gp.polys.push(p);return p;};
+  const QY=(gp,Y,x0,x1,z0,z1,c,a)=>quad(gp,[[x0,Y,z0],[x1,Y,z0],[x1,Y,z1],[x0,Y,z1]],c,a);
+  const QX=(gp,X,y0,y1,z0,z1,c,a)=>quad(gp,[[X,y0,z0],[X,y1,z0],[X,y1,z1],[X,y0,z1]],c,a);
+  const QZ=(gp,Z,x0,x1,y0,y1,c,a)=>quad(gp,[[x0,y0,Z],[x1,y0,Z],[x1,y1,Z],[x0,y1,Z]],c,a);
+  const ZF=330,FH=330,BX0=-395,BX1=1105,BY0=-190,BY1=1010,BTOP=FH*5;
+  function facadeY(gp,Y,x0,x1,cols,floors,winW,our){const wall=gp.wall;const wz0=120,wz1=226;
+    for(const z0 of floors){const z1=z0+FH;QY(gp,Y,x0,x1,z0,z0+wz0,wall);QY(gp,Y,x0,x1,z0+wz1,z1,wall);
+      let x=x0;for(const c of cols){QY(gp,Y,x,c-winW/2,z0+wz0,z0+wz1,wall);x=c+winW/2;}QY(gp,Y,x,x1,z0+wz0,z0+wz1,wall);
+      for(const c of cols){const a=c-winW/2,b=c+winW/2;const fr='#6b4a30';QY(gp,Y,a-6,b+6,z0+wz0-6,z0+wz0,fr);QY(gp,Y,a-6,b+6,z0+wz1,z0+wz1+6,fr);QY(gp,Y,a-6,a,z0+wz0,z0+wz1,fr);QY(gp,Y,b,b+6,z0+wz0,z0+wz1,fr);
+        if(our&&our(z0,c)){OUR.push(QY(gp,Y,a,b,z0+wz0,z0+wz1,'#ffe9a0',0.85),QY(gp,Y,a,b,z0+wz1-24,z0+wz1,'#fff6d0',0.6));}
+        else{QY(gp,Y,a,b,z0+wz0,z0+wz1,gp.glass||'#9fc8e0');QY(gp,Y,a,b,z0+wz1-26,z0+wz1,'#c8e4f4');QY(gp,Y,(a+b)/2-2,(a+b)/2+2,z0+wz0,z0+wz1,fr);}}}}
+  function building(x0,x1,y0,y1,h,col,o={}){
+    const floors=[];for(let z=o.ground?FH:0;z<h-10;z+=FH)floors.push(z);const cols=o.cols||[];const ww=o.winW||170;
+    const fy=grp([0,1,0],[(x0+x1)/2,y1,h/2]);fy.wall=col;
+    if(o.ground){QY(fy,y1,x0,x1,0,FH,sh(col,0.92));if(o.door){const d=o.door;QY(fy,y1,d-150,d+150,215,240,'#2b2a26');QY(fy,y1,d-130,d+130,0,215,'#6b4a30');QY(fy,y1,d-122,d-4,0,206,'#8a6040');QY(fy,y1,d+4,d+122,0,206,'#8a6040');QY(fy,y1,d-16,d-8,90,120,'#e8c76a');QY(fy,y1,d+8,d+16,90,120,'#e8c76a');}}
+    facadeY(fy,y1,x0,x1,cols,floors,ww,o.our);QY(fy,y1,x0-12,x1+12,h-24,h+6,o.trim||sh(col,0.75));
+    const by=grp([0,-1,0],[(x0+x1)/2,y0,h/2]);by.wall=sh(col,0.8);by.glass='#7f9fb8';facadeY(by,y0,x0,x1,cols,floors.length?floors:[0],ww,null);if(o.ground)QY(by,y0,x0,x1,0,FH,sh(col,0.72));
+    const lx=grp([-1,0,0],[x0,(y0+y1)/2,h/2]);QX(lx,x0,y0,y1,0,h,sh(col,0.86));for(const z of floors)for(let y=y0+150;y<y1-120;y+=300)QX(lx,x0,y,y+150,z+120,z+226,'#8fb0c8');
+    const rx=grp([1,0,0],[x1,(y0+y1)/2,h/2]);QX(rx,x1,y0,y1,0,h,sh(col,0.7));for(const z of floors)for(let y=y0+150;y<y1-120;y+=300)QX(rx,x1,y,y+150,z+120,z+226,'#7f9fb8');
+    const tp=grp([0,0,1],[(x0+x1)/2,(y0+y1)/2,h]);QZ(tp,h,x0,x1,y0,y1,'#b8b4a8');QZ(tp,h+1,x0+30,x1-30,y0+30,y1-30,'#a39f94');for(let x=x0+120;x<x1-60;x+=240)QZ(tp,h+2,x,x+70,(y0+y1)/2-50,(y0+y1)/2+50,'#8a877e');}
+  function build(){G=[];OUR=[];INW=[];
+    const gr=grp(null,null,0);QZ(gr,0,-9000,9000,-9000,9000,'#8a8a7a');
+    QZ(gr,0.5,-9000,9000,1010,1250,'#cfc8b8');for(let x=-6000;x<7000;x+=120)QZ(gr,0.8,x,x+6,1010,1250,'#b8b0a0');
+    QZ(gr,0.5,-9000,9000,1250,1850,'#5a5a5e');for(let x=-6000;x<7000;x+=360)QZ(gr,0.8,x,x+170,1540,1560,'#e8e8e0');QZ(gr,0.5,-9000,9000,1850,2090,'#cfc8b8');
+    building(BX0,BX1,BY0,BY1,BTOP,'#e8d8b0',{cols:[-245,55,355,655,955],ground:true,door:355,our:(z0,c)=>z0===FH&&c===355,trim:'#b8a070'});
+    building(-1700,-800,-100,900,FH*3,'#8fa3b8',{cols:[-1550,-1250,-950],winW:120});
+    building(1500,2400,-100,900,FH*3,'#b8a890',{cols:[1650,1950,2250],winW:120});
+    building(-1200,1900,-1900,-800,FH*4,'#9aa8b8',{cols:[-1000,-600,-200,200,600,1000,1400,1700],winW:120});
+    for(const [a,b,c,d,n,col] of [[-7000,-5200,-7000,-5800,11,'#8a9ab0'],[-4800,-3000,-7500,-6200,14,'#7d8ea6'],[-2600,-600,-7200,-6000,9,'#a0aec0'],[-200,2000,-7800,-6400,16,'#8697ad'],[2400,4400,-7000,-5800,12,'#97a6ba'],[4800,6800,-7400,-6000,10,'#8a9ab0'],[-7600,-6200,-3000,-1000,8,'#93a2b6'],[-7600,-6200,1000,3000,6,'#a6b2c2'],[6200,7600,-3000,-1000,9,'#8899ae'],[6200,7600,1000,3000,7,'#9fadbf'],[-4000,-2000,6500,7800,6,'#b0a898'],[2000,4500,6500,7800,7,'#a8a090']]){const cs=[];for(let x=a+180;x<b-100;x+=300)cs.push(x);building(a,b,c,d,FH*n,col,{cols:cs,winW:120});}
+    // うちの部屋の中（2階）
+    const z=ZF,fl='#c9a878',wl='#ece5d0',ko='#7d8fa8';
+    const f0=grp([0,0,1],[330,490,z],1,1);QZ(f0,z+0.5,0,660,0,980,fl);for(let y=11;y<980;y+=22)QZ(f0,z+0.8,0,660,y,y+1.5,sh(fl,0.87));
+    const bw=grp([0,-1,0],[330,980,z+125],1,1);QY(bw,980,0,660,z,z+120,wl);QY(bw,980,0,660,z+226,z+250,wl);QY(bw,980,0,270,z+120,z+226,wl);QY(bw,980,440,660,z+120,z+226,wl);
+    QY(bw,979.5,0,660,z,z+95,ko);INW.push(QY(bw,979.8,270,440,z+120,z+226,'#a9cbe0',0),QY(bw,979.7,270,440,z+120,z+150,'#c9e0ee',0),QY(bw,979.6,354,357,z+120,z+226,'#c9c0a6',0));
+    QY(bw,979,264,446,z+114,z+120,'#c9c0a6');QY(bw,979,264,446,z+226,z+232,'#c9c0a6');QY(bw,979,264,270,z+120,z+226,'#c9c0a6');QY(bw,979,440,446,z+120,z+226,'#c9c0a6');
+    const lw=grp([1,0,0],[0,490,z+125],1,1);QX(lw,0,-40,980,z,z+250,'#d9d0b8');QX(lw,0.5,-40,980,z,z+95,sh(ko,0.9));QX(lw,1,836,924,z,z+206,'#5a3a22');QX(lw,1.5,842,918,z,z+200,'#8a5a2e');QX(lw,2,848,854,z+96,z+104,'#e8c76a');
+    const rw=grp([-1,0,0],[660,490,z+125],1,1);QX(rw,660,-40,980,z,z+250,sh('#d9d0b8',0.88));QX(rw,659.5,-40,980,z,z+95,sh(ko,0.8));
+    const fw=grp([0,1,0],[330,0,z+125],1,1);QY(fw,0,0,660,z,z+250,'#e3dbc3');QY(fw,0.5,0,660,z,z+95,sh(ko,0.85));
+    const cl=grp([0,0,-1],[330,490,z+250],1,1);QZ(cl,z+250,0,660,0,980,'#f4efe2');
+    const tu=grp(null,[355,995,z+170],2,1);QZ(tu,z+120,270,440,980,BY1,'#c9c0a6');QX(tu,270,980,BY1,z+120,z+226,'#b8ae94');QX(tu,440,980,BY1,z+120,z+226,'#b8ae94');QZ(tu,z+226,270,440,980,BY1,'#a89e84');}
+  // 道路を走る車（箱）
+  const CARC=['#c0392b','#7ab8d8','#3e7d4f','#f2c230','#2f5a9a'];
+  function cars(t){const L=[];const span=12000;
+    [[0,1400,1],[4000,1400,1],[8000,1400,1],[2000,1700,-1],[7000,1700,-1]].forEach(([ph,y,d],i)=>{const u=((t*1300+ph)%span);const x=d>0?-6000+u:6000-u;const len=i===2?520:400,c=CARC[i%5];
+      const add=(x0,x1,y0,y1,z0,z1,col)=>{L.push([[0,1,0],[(x0+x1)/2,y1,(z0+z1)/2],g=>QY(g,y1,x0,x1,z0,z1,sh(col,0.92))]);L.push([[0,-1,0],[(x0+x1)/2,y0,(z0+z1)/2],g=>QY(g,y0,x0,x1,z0,z1,sh(col,0.7))]);
+        L.push([[-1,0,0],[x0,(y0+y1)/2,(z0+z1)/2],g=>QX(g,x0,y0,y1,z0,z1,sh(col,0.8))]);L.push([[1,0,0],[x1,(y0+y1)/2,(z0+z1)/2],g=>QX(g,x1,y0,y1,z0,z1,sh(col,0.75))]);L.push([[0,0,1],[(x0+x1)/2,(y0+y1)/2,z1],g=>QZ(g,z1,x0,x1,y0,y1,sh(col,1.08))]);};
+      add(x,x+len,y,y+170,30,130,c);if(i===2)add(d>0?x+len-130:x,d>0?x+len:x+130,y+10,y+160,130,250,c);else add(x+90,x+len-110,y+15,y+155,130,215,'#cde8f5');});
+    return L;}
+  function billboards(){// 太陽と雲（遠くの点に描く）
+    const pts=[{p:[9000,-14000,9000],k:'sun'},{p:[-8000,-12000,6000],k:'cl'},{p:[2000,-15000,7500],k:'cl'},{p:[12000,4000,6500],k:'cl'},{p:[-13000,2000,7000],k:'cl'},{p:[-3000,15000,7000],k:'cl'},{p:[9000,13000,8000],k:'cl'}];
+    for(const b of pts){const q=toCam(b.p);if(q[2]<10)continue;const s=scr(q);if(s[0]<-60||s[0]>OW2+60||s[1]<-60||s[1]>OH2)continue;
+      if(b.k==='sun'){const r=16;og.fillStyle='#ffc83a';for(let k=0;k<8;k++){const an=k/8*Math.PI*2;og.fillRect(Math.round(s[0]+Math.cos(an)*(r+8))-2,Math.round(s[1]+Math.sin(an)*(r+8))-2,5,5);}
+        og.beginPath();og.arc(s[0],s[1],r+2,0,7);og.fillStyle='#e89a2a';og.fill();og.beginPath();og.arc(s[0],s[1],r,0,7);og.fillStyle='#ffd84a';og.fill();og.beginPath();og.arc(s[0],s[1],r*0.55,0,7);og.fillStyle='#fff3b0';og.fill();}
+      else{og.fillStyle='#ffffff';og.fillRect(s[0]-28,s[1]-6,56,12);og.fillRect(s[0]-16,s[1]-14,30,10);og.fillRect(s[0]-36,s[1]-1,10,7);}}}
+  function render(t,inside){
+    if(!inside){const gd=og.createLinearGradient(0,0,0,OH2);gd.addColorStop(0,'#b8dcf2');gd.addColorStop(0.6,'#9fd0ee');gd.addColorStop(1,'#cfe6f4');og.fillStyle=gd;}else og.fillStyle='#2a2420';
+    og.fillRect(0,0,OW2,OH2);if(!inside)billboards();
+    const extra=[];if(!inside)for(const [n,pt,f] of cars(t)){const gp={n,pt,polys:[],ord:1};f(gp);extra.push(gp);}
+    const list=G.concat(extra).filter(gp=>{if(inside&&!gp.inside)return false;if(!gp.n)return true;return dot(sub(CAM.C,gp.pt),gp.n)>0;});
+    for(const gp of list)gp.k=gp.ord===0?1e12:(gp.ord===2?Math.hypot(...sub(gp.pt,CAM.C))-40:Math.hypot(...sub(gp.pt,CAM.C)));
+    list.sort((a,b)=>b.k-a.k);
+    for(const gp of list)for(const p of gp.polys){if(p.alpha<=0.01)continue;let q=clipNear(p.pts.map(toCam));if(q.length<3)continue;q=q.map(scr);
+      og.globalAlpha=p.alpha;og.beginPath();q.forEach((s,i)=>i?og.lineTo(s[0],s[1]):og.moveTo(s[0],s[1]));og.closePath();og.fillStyle=p.col;og.fill();}
+    og.globalAlpha=1;}
+  function camAt(t,GT,GCAM){const WIN=[355,BY1,ZF+173];
+    if(t<0.5){look([355,BY1+3900,560],[355,BY1-200,760]);return false;}
+    if(t<4.0){const u=ez((t-0.5)/3.5);const a=Math.PI/2+u*Math.PI*2;const R=lp(3900+(BY1-410),900+(BY1-410)-600,u*u);
+      const h=u<0.5?lp(560,2200,ez(u*2)):lp(2200,ZF+190,ez((u-0.5)*2));look([355+Math.cos(a)*R,410+Math.sin(a)*R,h],L3([355,BY1-200,760],WIN,ez(Math.min(1,u*1.1))));return false;}
+    if(t<4.7){const u=ez((t-4.0)/0.7);const C=[355,lp(BY1+300,940,u),lp(ZF+190,ZF+200,u)];look(C,L3([355,BY1-600,ZF+175],GT,ez(u)));const a=1-ez((t-4.0)/0.5);for(const p of OUR)p.alpha=a*(p.col==='#ffe9a0'?0.85:0.6);return C[1]<BY1-5;}
+    {const u=ez((t-4.7)/1.3);const P0=[355,940,ZF+200];const r0=Math.hypot(P0[0]-GT[0],P0[1]-GT[1]),r1=Math.hypot(GCAM[0]-GT[0],GCAM[1]-GT[1]);
+      const a0=Math.atan2(P0[1]-GT[1],P0[0]-GT[0]),a1=Math.atan2(GCAM[1]-GT[1],GCAM[0]-GT[0]);const a=lp(a0,a1,u),r=lp(r0,r1,u),h=lp(P0[2],GCAM[2],u);
+      look([GT[0]+Math.cos(a)*r,GT[1]+Math.sin(a)*r,h],GT);return true;}}
+  // t秒のコマを g に描く（部屋の大きさ・カメラはゲームと同じ）
+  function draw3(t){setRoom(660,980);OW2=OUTW/2;OH2=Math.round(OUTH/2);
+    if(!OC||OC.height!==OH2){OC=document.createElement('canvas');OC.width=OW2;OC.height=OH2;og=OC.getContext('2d');}
+    FOC=F/K/2;CX=OX/K/2;CY=OY/K/2;if(!G)build();if(t<4)for(const p of OUR)p.alpha=p.col==='#ffe9a0'?0.85:0.6;
+    const GT=[CAM0().x,CAM0().y+CAMC.h/Math.tan(CAMC.p*Math.PI/180),ZF],GCAM=[CAM0().x,CAM0().y,CAMC.h+ZF];
+    const inside=camAt(Math.min(6,t),GT,GCAM);const iw=CAM.C[1]<960?1:0;for(const p of INW)p.alpha=iw;render(t,inside);
+    const ctx=g;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(OC,0,0,OW2,OH2,0,0,OUTW,OUTH);ctx.restore();}
+  const CAM0=()=>({x:RW/2,y:-CAMC.d});
+  return {draw3,last:()=>OC};})();
+// OPの部屋のシーン（新しい部屋で、人が歩く）
+function opRoom(stage,u,bs,fade){setRoom(660,980);const ents=[],statics=[];const L=lookOf;
+  const path=(pts,t)=>{t=Math.max(0,Math.min(1,t));let tot=0;const seg=[];for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(d);tot+=d;}let r=t*tot;for(let i=0;i<seg.length;i++){if(r<=seg[i]){const k=seg[i]?r/seg[i]:0;const a=pts[i],b=pts[i+1];return {x:a[0]+(b[0]-a[0])*k,y:a[1]+(b[1]-a[1])*k,dir:dirOf(b[0]-a[0],b[1]-a[1])};}r-=seg[i];}const e=pts[pts.length-1];return {x:e[0],y:e[1],dir:'down'};};
+  const ph=tick*0.45;const sp={};
+  const deco=[];
+  if(stage===2){// 契約
+    const fu=blitWalker(g,ents,null,L(FUDO),240,560,'right',0,{still:1});sp.fudo=fu;
+    if(u<1.6){const a=path([[60,880],[110,760],[330,560]],u/1.6);sp.pres=blitWalker(g,ents,null,L(PRES),a.x,a.y,a.dir,ph);}else sp.pres=blitWalker(g,ents,null,L(PRES),330,560,'left',0,{still:1});}
+  else if(stage===3){// 工事
+    for(let i=0;i<3;i++){const tx=180+i*150+Math.sin(tick*0.15+i)*40,ty=300+(i%2)*260;const a=u<1?path([[60,880],[tx,ty]],u):{x:tx,y:ty,dir:Math.sin(tick*0.15+i)>0?'right':'left'};
+      sp['w'+i]=blitWalker(g,ents,null,Object.assign(L(WORKER(i)),{helmet:1,shirt:'#3d5a8a',pants:'#3d4a5a'}),a.x,a.y,a.dir,ph+i);}
+    if(u>2.5)statics.push({prop:'cbox',X0:90,Y0:640,pa:{w:60,d:40,h:34,n:2,seed:3},sx:120,sy:660,key:'op|b1'},{prop:'cbox',X0:470,Y0:300,pa:{w:50,d:36,h:30,seed:5},sx:495,sy:318,key:'op|b2'},{prop:'bundle',X0:520,Y0:700,pa:{n:3,seed:4},sx:536,sy:712,key:'op|b3'});}
+  else if(stage===4){// 机と、桐生
+    const sit=u>=2;const kl=L(KIRYU);
+    statics.push(Object.assign({},EXEC,{X0:250,Y0:790,key:'op|chief|'+(sit?1:0),person:sit?stripLk(kl):undefined,items:[['lamp',130,40,1],['phone',14,36],['tray',98,22]],sx:330,sy:821}));
+    statics.push({X0:142,Y0:150,rot:1,rev:0,chairOnly:'front',sx:111,sy:229,key:'op|c1'},{X0:142,Y0:150,rot:1,rev:0,items:[['phone',64,8],['cup',90,30]],sx:173,sy:210,key:'op|d1'});
+    if(!sit){const a=path([[60,880],[200,880],[330,890]],u/2);sp.kiryu=blitWalker(g,ents,null,kl,a.x,a.y,a.dir,ph);}else{const hl=toL(330,62+790+14,124);sp.kiryu=[hl[0],hl[1]-3];}
+    sp.pres=blitWalker(g,ents,null,L(PRES),330,560,'up',0,{still:1});}
+  compose('op'+stage,statics,ents,deco,[]);
+  if(fade>0){const oc=OPX.last();if(oc){const ctx=g;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=fade;ctx.imageSmoothingEnabled=false;ctx.drawImage(oc,0,0,oc.width,oc.height,0,0,OUTW,OUTH);ctx.restore();}}
+  return sp;}
+
 function heightL(room){setRoom(660,980);return OUTH/4;}
-return {henshu,unei,heightL,clear:()=>{SPR.clear();for(const k in BG)delete BG[k];}};
+function setHeadK(k){HEADK=k;SPR.clear();for(const kk in BG)delete BG[kk];}
+function peekWalk(list,ph,dir){setRoom(660,980);const ents=[];list.forEach(([st,lk],i)=>{const L0=lookOf(st,lk||{});blitWalker(g,ents,null,L0,110+i*150,150,dir,ph);});compose('peekw',[],ents,[],[]);}
+function peek(st,lk){setRoom(660,980);const ents=[],statics=[];const L0=lookOf(st,lk||{});
+  blitWalker(g,ents,null,L0,150,130,'down',0,{still:1});blitWalker(g,ents,null,L0,270,130,'right',Math.PI*0.5);blitWalker(g,ents,null,L0,390,130,'up',0,{still:1});
+  statics.push(Object.assign({},VICE,{X0:440,Y0:60,key:'peek|'+lk2key(L0),person:stripLk(L0),items:[['phone',10,38],['cup',90,14]],sx:503,sy:91}));
+  compose('peek',statics,ents,[],[]);}
+return {setHeadK,peek,peekWalk,op3:OPX.draw3,opRoom,henshu,unei,heightL,clear:()=>{SPR.clear();for(const k in BG)delete BG[k];}};
 
 
 })();
 function setCvN(h){const W2=OW*4,H2=Math.round(h*4);if(cv.width===W2&&cv.height===H2&&CVH===h)return;CVH=h;cv.width=W2;cv.height=H2;g.setTransform(4,0,0,4,0,0);g.imageSmoothingEnabled=false;layout();}
 function drawOffice(){
   tick++;if(S)applyPres();
-  if(OP||sheet==='title')setCvH(OH);
+  if(OP)setCvN(NR.heightL('henshu'));else if(sheet==='title')setCvH(OH);
   if(OP){drawOpening();requestAnimationFrame(()=>setTimeout(drawOffice,60));return;}
   if(sheet==='title'){drawStreet();const tc=$('titlecv');if(tc)tc.getContext('2d').drawImage(cv,0,0,OW*DS,OH*DS,0,0,tc.width,tc.height);drawOffice.k=null;requestAnimationFrame(()=>setTimeout(drawOffice,80));return;}
   for(const k in OSPOT)delete OSPOT[k];TRANS.length=0;
@@ -3840,7 +4102,7 @@ function bubble(x,y,t){
 }
 
 cv.addEventListener('click',e=>{
-  if(!S||!S.placeMode)return;const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*OW;let y=(e.clientY-r.top)/r.height*CVH;let vw=S.view;if(STACK){const UY=OH+(SH-OH*2);if(y>=UY){vw='unei';y-=UY;}else vw='henshu';}
+  if(!S||!S.placeMode||true)return;const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*OW;let y=(e.clientY-r.top)/r.height*CVH;let vw=S.view;if(STACK){const UY=OH+(SH-OH*2);if(y>=UY){vw='unei';y-=UY;}else vw='henshu';}
   const L=[];if(vw==='unei'){L.push(['sec',138,38,24,26]);UPOS().map(([d,x0])=>[DP[d],x0,0]).forEach(([p,x0,dy])=>{L.push([p+'b',x0+7,72+dy,14,22],[p+'1',x0+7,106+dy,14,20]);if(S.big)L.push([p+'2',x0+35,72+dy,14,22],[p+'3',x0+35,106+dy,14,20]);});}
   else{for(const isl of [0,1]){const x0=isl?106:8;for(let i=0;i<3;i++){L.push(['t'+isl+'b'+i,x0+7+i*28,74,14,22]);L.push(['t'+isl+'f'+i,x0+7+i*28,110,14,20]);}}L.push(['v0',41,38,26,24],['v1',133,38,26,24]);}
   const own=L.find(([id,a,b,w,h])=>x>=a-2&&x<=a+w+2&&y>=b-2&&y<=b+h+2&&hasDesk(id));
@@ -3863,6 +4125,7 @@ musicUI();
 
 // ===== はじめ =====
 function migrate(){
+ S.placeMode=false;S.placeNew=null;
  for(const m of S.manga||[]){if(m.enshutsu==null)m.enshutsu=Math.round((m.ga+m.kousei)/2);if(m.est&&m.est.enshutsu==null)m.est.enshutsu=Math.round((m.est.ga+m.est.kousei)/2);}
  if(S.desks)for(const k of ['e2','s2','k2'])S.desks[k]=1;
  if(S.staff&&S.staff.length&&S.flags){if((S.flags.phone||0)<3)S.flags.phone=3;S.desks=Object.assign({t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,e2:1,sb:1,s1:1,s2:1,kb:1,k1:1,k2:1},S.desks||{});S.uneiV=1;}
