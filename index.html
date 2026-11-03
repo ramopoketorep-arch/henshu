@@ -150,6 +150,11 @@ input[type=text]{font:inherit;font-size:19px;padding:10px 12px;border-radius:6px
 #app.land .cmd,#app.land .ctl button{height:clamp(42px,17vh,80px);font-size:17px;border-radius:8px;white-space:nowrap;letter-spacing:-.04em}
 #app.land #sheet{left:var(--stw,60%);border-left:3px solid var(--line)}
 #app.land #toast{left:calc(var(--stw,60%) + (100% - var(--stw,60%))/2)}
+
+#stage.zoom{justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+#stage.zoom::-webkit-scrollbar{display:none}
+#stage.zoom #officeWrap{margin:0}
+#onav.fixed{z-index:4}
 </style>
 
 <div id="app">
@@ -1632,7 +1637,7 @@ function sheetHonsha(){
   if(tab==='pres'){
     const years=S.y-1970;
     h+='<div class="card"><div class="row" style="align-items:center;gap:12px;flex-wrap:nowrap"><canvas class="fc" data-fid="pres" width="32" height="32"></canvas><div><div class="who">'+esc(coName())+' 社長</div><div class="t" style="font-size:20px"><b>'+esc(presName())+'</b></div><div class="s">創業'+(1970)+'年・'+(years?years+'年目':'1年目')+'・称号「'+esc(TITLES[S.titleIdx][1])+'」</div></div></div></div>';
-    {const vv=window.visualViewport;const OL2={auto:'自動',port:'縦の並び',land:'横の並び'};h+='<div class="card"><div class="who">画面の並び</div><div class="row">'+['auto','port','land'].map(k=>'<button class="btn'+(ORIPREF===k?' sel':'')+'" data-act="oripref" data-arg="'+k+'">'+OL2[k]+'</button>').join('')+'</div><div class="s">うまく表示されないときは「縦の並び」か「横の並び」に固定してみてね。</div><div class="s" style="margin-top:6px">画面情報：内側 '+innerWidth+'×'+innerHeight+'・見える部分 '+(vv?Math.round(vv.width)+'×'+Math.round(vv.height):'-')+'・端末 '+screen.width+'×'+screen.height+'・倍率 '+devicePixelRatio+'</div></div>';}
+    {const vv=window.visualViewport;const OL2={auto:'自動',port:'縦の並び',land:'横の並び'};h+='<div class="card"><div class="who">画面の並び</div><div class="row">'+['auto','port','land'].map(k=>'<button class="btn'+(ORIPREF===k?' sel':'')+'" data-act="oripref" data-arg="'+k+'">'+OL2[k]+'</button>').join('')+'</div><div class="s">うまく表示されないときは「縦の並び」か「横の並び」に固定してみてね。</div><div class="line" style="align-items:center;margin-top:8px"><span>縦画面で部屋を拡大<br><span class="s">指で左右にスライドして見回せる</span></span><button class="btn" data-act="zoompref">'+(ZOOMPREF==='off'?'いまはオフ（拡大する）':'いまはオン（拡大しない）')+'</button></div><div class="s" style="margin-top:6px">画面情報：内側 '+innerWidth+'×'+innerHeight+'・見える部分 '+(vv?Math.round(vv.width)+'×'+Math.round(vv.height):'-')+'・端末 '+screen.width+'×'+screen.height+'・倍率 '+devicePixelRatio+'</div></div>';}
     h+='<div class="card"><div class="line" style="align-items:center"><span>アニメ演出</span><button class="btn" data-act="animoff">'+(S.animOff?'いまはオフ（つける）':'いまはオン（オフにする）')+'</button></div></div>';
     h+='<div class="card"><label class="s" for="presname">社長の名前</label><input type="text" id="presname" value="'+esc(P0.name||'')+'" maxlength="10" placeholder="例：山田 太郎"><label class="s" for="coname">会社の名前（出版社ランキングに出る）</label><input type="text" id="coname" value="'+esc(coName())+'" maxlength="12"></div>';
     const sb=(k,v,l)=>'<button class="btn'+(P0[k]===v?' sel':'')+'" data-act="pres" data-arg="'+k+':'+v+'">'+l+'</button>';
@@ -2333,6 +2338,7 @@ function actRest(a,arg,b){
     case 'stackpref':{STACKPREF=!STACKPREF;try{localStorage.setItem('henshu-stack',STACKPREF?'on':'off');}catch(e){}drawOffice.k=null;layout();render();drawSheet();break;}
     case 'call':doCall(arg);break;
     case 'decoroff':{S.decorOff=S.decorOff||{};S.decorOff[arg]=!S.decorOff[arg];drawOffice.k=null;save();drawSheet();render();break;}
+    case 'zoompref':{ZOOMPREF=ZOOMPREF==='off'?'on':'off';try{localStorage.setItem('henshu-zoom',ZOOMPREF);}catch(e){}layout.zk='';layout();render();drawSheet();break;}
     case 'oripref':{ORIPREF=arg;try{localStorage.setItem('henshu-orient',arg);}catch(e){}drawOffice.k=null;layout();render();drawSheet();break;}
     case 'animoff':{S.animOff=!S.animOff;save();clearInterval(comicAnim.h);clearInterval(p3Anim.h);if(sheet==='honsha')drawSheet();if(!$('pop').hidden)showPop();break;}
     case 'crisis':{const loanAmt=Math.round((2e7+(S.titleIdx||0)*1e7)*eraF()/1e6)*1e6;
@@ -2394,7 +2400,7 @@ function start(){
 // ===== ドット絵の編集室 =====
 const cv=$('office');let g=cv.getContext('2d');function withCtx(c,fn){const o=g;g=c;try{fn();}finally{g=o;}}
 g.imageSmoothingEnabled=false;
-const OW=200,OH=160,OL='#3a2a22',SH=323;let STACK=false;let ORIPREF='auto';try{ORIPREF=localStorage.getItem('henshu-orient')||'auto';}catch(e){}let STACKPREF=false;try{STACKPREF=localStorage.getItem('henshu-stack')==='on';}catch(e){}
+const OW=200,OH=160,OL='#3a2a22',SH=323;let STACK=false;let ZOOMPREF='on';try{ZOOMPREF=localStorage.getItem('henshu-zoom')||'on';}catch(e){}let ORIPREF='auto';try{ORIPREF=localStorage.getItem('henshu-orient')||'auto';}catch(e){}let STACKPREF=false;try{STACKPREF=localStorage.getItem('henshu-stack')==='on';}catch(e){}
 const DS=2;let CVH=0;function setCvH(h){if(CVH===h)return;CVH=h;cv.width=OW*DS;cv.height=h*DS;g.setTransform(DS,0,0,DS,0,0);g.imageSmoothingEnabled=false;layout();}
 // 細かいドット（2倍の細かさ）で描く：座標は 400×320 の世界
 const Q=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x)/2,Math.round(y)/2,w/2,h/2);};
@@ -2405,8 +2411,13 @@ function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;const 
   const LAND=!OP&&sheet!=='title'&&(ORIPREF==='land'||(ORIPREF==='auto'&&VW>VH*1.15));app.classList.toggle('land',LAND);if(LAND){const W=app.clientWidth,Hh=app.clientHeight;app.style.setProperty('--stw',Math.floor(Math.min(W*0.64,W-330,Hh*OW/(CVH||OH)))+'px');}
   const aw=st.clientWidth,ah=st.clientHeight;if(!aw||!ah)return;
   const stk=false;if(stk!==STACK){STACK=stk;drawOffice.k=null;try{render();}catch(e){}}
-  const H=(OP||sheet==='title')?OH:(STACK?SH:(CVH||OH));const ww=Math.floor(Math.min(aw,ah*OW/H));w.style.width=ww+'px';cv.style.aspectRatio=OW+'/'+H;
-  if(!LAND&&!STACK&&!OP&&sheet!=='title'){const ch=Math.ceil(ww*H/OW)+2;if(ah-ch>60){app.classList.add('one');st.style.flex='0 0 '+ch+'px';}}}
+  const H=(OP||sheet==='title')?OH:(STACK?SH:(CVH||OH));let ww=Math.floor(Math.min(aw,ah*OW/H));let zoom=false;
+  const nrm=!LAND&&!STACK&&!OP&&sheet!=='title';
+  if(nrm&&ZOOMPREF!=='off'){const z=Math.floor(Math.min(aw*2.4,(ah-12)*OW/H));if(z>aw*1.15){ww=z;zoom=true;}}
+  w.style.width=ww+'px';cv.style.aspectRatio=OW+'/'+H;st.classList.toggle('zoom',zoom);
+  if(nrm){const ch=Math.ceil(ww*H/OW)+2;if(ah-ch>40){app.classList.add('one');st.style.flex='0 0 '+ch+'px';}}
+  const nav=$('onav');if(nav){if(zoom){if(nav.parentElement!==app)app.appendChild(nav);const tp=(st.offsetTop+4)+'px';if(nav.style.top!==tp)nav.style.top=tp;nav.classList.add('fixed');}else if(nav.parentElement!==w){w.appendChild(nav);nav.style.top='';nav.classList.remove('fixed');}}
+  const zk=zoom?((S&&S.view)||'')+'|'+ww:'';if(zoom&&layout.zk!==zk){layout.zk=zk;requestAnimationFrame(()=>{st.scrollLeft=(ww-st.clientWidth)/2;});}if(!zoom)layout.zk='';}
 addEventListener('resize',()=>layout());try{window.visualViewport&&window.visualViewport.addEventListener('resize',()=>layout());}catch(e){}
 const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w,h);};
 const OB=(x,y,w,h,f)=>{P(x,y,w,h,OL);P(x+1,y+1,w-2,h-2,f);};
