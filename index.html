@@ -2416,6 +2416,7 @@ function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;const 
   if(nrm&&ZOOMPREF!=='off'){const z=Math.floor(Math.min(aw*2.4,(ah-12)*OW/H));if(z>aw*1.15){ww=z;zoom=true;}}
   w.style.width=ww+'px';cv.style.aspectRatio=OW+'/'+H;st.classList.toggle('zoom',zoom);
   if(nrm){const ch=Math.ceil(ww*H/OW)+2;if(ah-ch>40){app.classList.add('one');st.style.flex='0 0 '+ch+'px';}}
+  const tk=$('talk');if(tk){if(zoom){if(tk.parentElement!==app)app.appendChild(tk);const tp=Math.round(st.offsetTop+st.clientHeight*0.32)+'px';if(tk.style.top!==tp)tk.style.top=tp;if(tk.style.width!=='90%')tk.style.width='90%';tk.style.zIndex='4';}else if(tk.parentElement!==w){w.appendChild(tk);tk.style.top='36%';tk.style.width='';tk.style.zIndex='';}}
   const nav=$('onav');if(nav){if(zoom){if(nav.parentElement!==app)app.appendChild(nav);const tp=(st.offsetTop+4)+'px';if(nav.style.top!==tp)nav.style.top=tp;nav.classList.add('fixed');}else if(nav.parentElement!==w){w.appendChild(nav);nav.style.top='';nav.classList.remove('fixed');}}
   const zk=zoom?((S&&S.view)||'')+'|'+ww:'';if(zoom&&layout.zk!==zk){layout.zk=zk;requestAnimationFrame(()=>{st.scrollLeft=(ww-st.clientWidth)/2;});}if(!zoom)layout.zk='';}
 addEventListener('resize',()=>layout());try{window.visualViewport&&window.visualViewport.addEventListener('resize',()=>layout());}catch(e){}
