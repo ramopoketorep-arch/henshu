@@ -124,7 +124,7 @@ input[type=text]{font:inherit;font-size:19px;padding:10px 12px;border-radius:6px
 #pop .box>.btn:last-child{position:sticky;bottom:0;z-index:1;box-shadow:0 6px 0 6px var(--panel)}
 #pop .box>.row:last-child{position:sticky;bottom:-18px;background:var(--panel);margin-bottom:-18px;padding-bottom:18px;padding-top:8px;box-shadow:0 -8px 8px -4px var(--panel);z-index:1}
 #pop .quote{font-size:18px;background:#1b1a17;border-radius:6px;padding:8px 12px}
-#pop .box.animonly{max-width:360px}
+#pop .box.animonly{max-width:min(96vw,620px)!important;width:96vw}
 #pop .box.animonly::after{content:'タップでとばす';text-align:center;font-size:14px;color:var(--sub)}
 @keyframes popin{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
 .sh-body>*{flex-shrink:0}
@@ -651,7 +651,7 @@ function makeReports(){
   for(const v of byRole('vice')){
     const mine=list.filter(m=>{const t=staffById(m.tantou);return t&&t.team===v.team;});
     const late=mine.filter(m=>m.tags.includes('遅筆'));
-    S.reports.push({dept:'編集部',who:'副編集長・'+v.name,t:(v.team===0?'左':'右')+'のシマの連載は'+mine.length+'本。'+(late.length?'「'+late[0].title+'」の'+late[0].name+'先生が今月も危ないです。':'今月は原稿の進みも順調です。'),warn:!!late.length});
+    S.reports.push({dept:'編集部',who:'副編集長・'+v.name,t:hanName(v.team)+'の連載は'+mine.length+'本。'+(late.length?'「'+late[0].title+'」の'+late[0].name+'先生が今月も危ないです。':'今月は原稿の進みも順調です。'),warn:!!late.length});
   }
   if(S.lastResult&&lastRec&&lastRec.no)S.reports.unshift({type:'result',dept:'編集部',who:(c?'編集長・'+c.name:'社長（編集長がいない）')+'　先月号の報告',r:S.lastResult});
   for(const e of S.pendingEvents||[])S.reports.push(e);
@@ -764,6 +764,712 @@ function p3Anim(kind,o){clearInterval(p3Anim.h);const c=$('popanim');if(!c)retur
         if(f>46&&f%8<5){g.fillStyle='#b23a2e';g.font='bold 9px sans-serif';g.fillText('ポン！',100,30);}
       }});
     if(f===90)animReveal();if(f>160)clearInterval(p3Anim.h);},90);}
+// ===== 演出アニメ（新） =====
+// 360×220 の画面に、なめらかな線で描く。t は秒。カメラ（ズーム）とカット割りで見せる
+const A2={W:360,H:220};
+function animBox2(){return S.animOff?'':'<canvas id="popanim" data-v2="1" width="720" height="440" style="width:100%;aspect-ratio:36/22;border-radius:8px;background:#1a1410;display:block"></canvas>';}
+function a2Run(draw,dur){clearInterval(a2Run.h);cancelAnimationFrame(a2Run.r);const c=$('popanim');if(!c)return;const cx=c.getContext('2d');const t0=performance.now();let revealed=false;
+  const step=()=>{if(!document.body.contains(c))return;const t=(performance.now()-t0)/1000;const k=c.width/A2.W;cx.setTransform(k,0,0,k,0,0);cx.clearRect(0,0,A2.W,A2.H);cx.save();draw(cx,Math.min(t,dur+5));cx.restore();
+    if(!revealed&&t>dur){revealed=true;animReveal();}a2Run.r=requestAnimationFrame(step);};
+  a2Run.r=requestAnimationFrame(step);}
+// 道具
+const a2=(()=>{const ease=x=>x<0?0:x>1?1:x*x*(3-2*x),eo=x=>{x=Math.max(0,Math.min(1,x));return 1-(1-x)*(1-x)*(1-x);},cl=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const rr=(g,x,y,w,h,r,f)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();if(f){g.fillStyle=f;g.fill();}};
+  const tx=(g,s,x,y,sz,col,ol,al,font)=>{g.save();g.font=sz+"px "+(font||"'Mochiy Pop One',sans-serif");g.textAlign=al||'center';g.textBaseline='middle';g.lineJoin='round';if(ol){g.lineWidth=sz*0.28;g.strokeStyle=ol;g.strokeText(s,x,y);}g.fillStyle=col;g.fillText(s,x,y);g.restore();};
+  const head=(g,x,y,r,lk,dir)=>NR.headA(g,x,y,r,lk,lk.skin||'#f2c9a0',lk.hair||'#2a2220',dir||'down',r/12);
+  return {ease,eo,cl,rr,tx,head};})();
+// 放送開始：夜7時の茶の間 → テレビがつく → テレビにズーム（オープニング）→ 子どもたちが大よろこび
+function tvAnim2(o){const m=S.manga.find(x=>x.id===o.id)||{};const title=o.title||m.title||'まんが';const hero=m.look?NR.lookOf(m):{st:'spiky',eye:'big',brow:'angry',mouth:'open',hair:'#2a2220'};
+  const HERO=Object.assign({st:'spiky',eye:'big',brow:'angry',mouth:'open',hair:'#2a2a3a',skin:'#f6d2a8'},o.heroLk||{});
+  const KIDS=[{x:96,col:'#d9534a',hair:'#2a2220',st:'short'},{x:150,col:'#3a7ad0',hair:'#3a2a1e',st:'twin',fem:1,ribbon:1},{x:264,col:'#e0a020',hair:'#2a2220',st:'short'}];
+  const yr=S.y||1975,color=yr>=1972;
+  const {ease,eo,cl,rr,tx,head}=a2;
+  const TV={x:180,y:104,w:118,h:88};// テレビの画面の中心と大きさ（本体はひとまわり大きい）
+  const room=(g,t,lit)=>{// 茶の間
+    g.fillStyle='#d8c39a';g.fillRect(0,0,360,220);
+    g.fillStyle='#c4ab7e';for(const x of [20,340])g.fillRect(x-7,0,14,150);g.fillStyle='#8a6a44';g.fillRect(0,0,360,10);g.fillRect(0,144,360,6);
+    // 障子（夜の青）
+    g.fillStyle='#2c3a5a';g.fillRect(34,22,70,96);g.fillStyle='#e8e0cc';for(let i=0;i<4;i++)for(let j=0;j<5;j++)g.fillRect(36+i*17,24+j*18.8,15,17);g.fillStyle='rgba(40,60,110,0.35)';g.fillRect(34,22,70,96);
+    // 時計（7時）
+    g.save();g.translate(300,40);rr(g,-14,-20,28,44,5,'#6b4a2a');g.beginPath();g.arc(0,-6,10,0,7);g.fillStyle='#fbf6e6';g.fill();g.strokeStyle='#2a2220';g.lineWidth=1.6;g.beginPath();g.moveTo(0,-6);g.lineTo(0,-14);g.moveTo(0,-6);g.lineTo(-6,-3);g.stroke();
+    g.strokeStyle='#c9a24a';g.lineWidth=1.5;const sw=Math.sin(t*5)*0.35;g.beginPath();g.moveTo(0,6);g.lineTo(Math.sin(sw)*12,6+Math.cos(sw)*12);g.stroke();g.beginPath();g.arc(Math.sin(sw)*12,6+Math.cos(sw)*12,2.5,0,7);g.fillStyle='#c9a24a';g.fill();g.restore();
+    // たたみ
+    g.fillStyle='#c9c48a';g.fillRect(0,150,360,70);g.strokeStyle='#a8a266';g.lineWidth=1;for(let i=0;i<4;i++){g.beginPath();g.moveTo(0,160+i*18);g.lineTo(360,160+i*18);g.stroke();}g.fillStyle='#4a6a3a';g.fillRect(0,182,360,3);
+    if(!lit){g.fillStyle='rgba(20,20,50,0.18)';g.fillRect(0,0,360,220);}};
+  const tvBody=(g,on,scr)=>{const {x,y,w,h}=TV;
+    // アンテナ
+    g.strokeStyle='#3a3a3a';g.lineWidth=2;g.beginPath();g.moveTo(x-6,y-h/2-14);g.lineTo(x-30,y-h/2-46);g.moveTo(x+6,y-h/2-14);g.lineTo(x+26,y-h/2-50);g.stroke();rr(g,x-12,y-h/2-18,24,8,4,'#4a4a4a');
+    // 本体・脚
+    g.fillStyle='#4a3020';for(const dx of [-48,44])g.fillRect(x+dx,y+h/2+10,6,24);
+    rr(g,x-w/2-14,y-h/2-12,w+60,h+24,8,'#7a5232');rr(g,x-w/2-10,y-h/2-8,w+52,h+16,6,'#8e6240');
+    rr(g,x-w/2-4,y-h/2-4,w+8,h+8,10,'#2a2420');
+    // つまみ
+    for(let i=0;i<2;i++){g.beginPath();g.arc(x+w/2+20,y-h/2+16+i*24,7,0,7);g.fillStyle='#d8d0c0';g.fill();g.strokeStyle='#6a5a4a';g.lineWidth=1.5;g.beginPath();g.moveTo(x+w/2+20,y-h/2+16+i*24);g.lineTo(x+w/2+20+5,y-h/2+16+i*24-4);g.stroke();}
+    g.fillStyle='#5a3a24';for(let i=0;i<5;i++)g.fillRect(x+w/2+12,y+h/2-26+i*5,16,2);
+    // 画面
+    g.save();rr(g,x-w/2,y-h/2,w,h,12);g.clip();g.fillStyle='#2e3a36';g.fillRect(x-w/2,y-h/2,w,h);if(on)scr(g,x-w/2,y-h/2,w,h);
+    const gr=g.createLinearGradient(x-w/2,y-h/2,x+w/2,y+h/2);gr.addColorStop(0,'rgba(255,255,255,0.22)');gr.addColorStop(0.4,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(x-w/2,y-h/2,w,h);
+    g.fillStyle='rgba(0,0,0,0.12)';for(let yy=y-h/2;yy<y+h/2;yy+=2)g.fillRect(x-w/2,yy,w,1);g.restore();};
+  // テレビの中：オープニング
+  const opening=(g,X,Y,w,h,u)=>{// u: 0..1+
+    const cx=X+w/2,cy=Y+h/2;
+    if(!color){g.filter='grayscale(1)';}
+    const bg=g.createRadialGradient(cx,cy,4,cx,cy,w*0.8);bg.addColorStop(0,'#fff6c0');bg.addColorStop(1,'#ff8a3a');g.fillStyle=bg;g.fillRect(X,Y,w,h);
+    g.save();g.translate(cx,cy);g.rotate(u*0.6);g.fillStyle='rgba(255,255,255,0.55)';for(let i=0;i<16;i++){g.rotate(Math.PI/8);g.beginPath();g.moveTo(0,0);g.lineTo(w,-6);g.lineTo(w,6);g.closePath();g.fill();}g.restore();
+    // ヒーローが下からせり上がる
+    const hy=Y+h*0.62+(1-eo(u*1.6))*h*0.7;const hr=h*0.2;
+    g.fillStyle='#2a4a8a';rr(g,cx-hr*1.1,hy+hr*0.7,hr*2.2,hr*2.2,hr*0.5,'#2a4a8a');g.fillStyle='#f4f2ec';g.beginPath();g.moveTo(cx-hr*0.35,hy+hr*0.72);g.lineTo(cx+hr*0.35,hy+hr*0.72);g.lineTo(cx,hy+hr*1.25);g.fill();
+    head(g,cx,hy,hr,HERO,'down');
+    // タイトルが横からすべりこむ
+    const k=eo((u-0.35)*2.2);if(k>0){const fs=Math.min(h*0.2,w*0.9/Math.max(3,title.length+2));const xx=cx+(1-k)*w;g.save();g.translate(xx,Y+h*0.2);g.rotate(-0.08);
+      tx(g,'「'+title+'」',0,0,fs,'#e8382a','#fff');g.restore();}
+    if(u>0.9){const b=Math.min(1,(u-0.9)*4);g.globalAlpha=b;rr(g,X+6,Y+h-18,40,13,4,'#e8382a');tx(g,'第1話',X+26,Y+h-11.5,8,'#fff');g.globalAlpha=1;}
+    g.filter='none';};
+  const kids=(g,t,joy)=>{KIDS.forEach((k,i)=>{const ph=t*7+i*2;const j=joy?Math.abs(Math.sin(ph*0.9))*18*joy:Math.max(0,Math.sin(t*3+i*1.7))*2;const x=k.x,y=212-j;
+      // 体（うしろ姿・正座）
+      rr(g,x-24,y-30,48,46,16,k.col);g.fillStyle=NR.shade(k.col,0.8);g.fillRect(x-24,y+6,48,10);
+      // うで
+      g.strokeStyle=k.col;g.lineCap='round';g.lineWidth=11;
+      for(const s of [-1,1]){g.beginPath();g.moveTo(x+s*18,y-22);if(joy){const a=Math.sin(ph+s)*0.3;g.lineTo(x+s*(30+a*10),y-60);}else g.lineTo(x+s*24,y);g.stroke();
+        g.beginPath();g.arc(joy?x+s*30:x+s*24,joy?y-62:y+2,6,0,7);g.fillStyle='#f2c9a0';g.fill();}
+      head(g,x,y-46,23,{st:k.st,hair:k.hair,fem:k.fem,ribbon:k.ribbon,eye:'big',mouth:'open'},'up');});};
+  const sparkle=(g,t)=>{for(let i=0;i<14;i++){const a=i*2.4+t*0.8,r=60+((i*37)%90);const x=180+Math.cos(a)*r*1.4,y=110+Math.sin(a)*r*0.7;const s=3+Math.abs(Math.sin(t*6+i))*4;g.fillStyle=['#fff3a0','#ffd0e0','#a0e8ff'][i%3];g.beginPath();g.moveTo(x,y-s);g.lineTo(x+s*0.35,y-s*0.35);g.lineTo(x+s,y);g.lineTo(x+s*0.35,y+s*0.35);g.lineTo(x,y+s);g.lineTo(x-s*0.35,y+s*0.35);g.lineTo(x-s,y);g.lineTo(x-s*0.35,y-s*0.35);g.closePath();g.fill();}};
+  const T_ON=1.3,T_ZIN=1.9,T_ZOUT=4.1,END=5.6;
+  return {dur:END,draw:(g,t)=>{
+    // カメラ：テレビの画面へズーム → もどる
+    let z=1;if(t>T_ZIN&&t<T_ZOUT)z=1+1.75*ease((t-T_ZIN)/0.7);if(t>=T_ZOUT)z=1+1.75*(1-eo((t-T_ZOUT)/0.25));
+    const zk=(z-1)/1.75,fx=180+(TV.x-180)*zk,fy=110+(TV.y-110)*zk;g.save();g.translate(180,110);g.scale(z,z);g.translate(-fx,-fy);
+    const on=t>T_ON;room(g,t,on);
+    if(on){g.save();const gl=g.createRadialGradient(TV.x,TV.y,10,TV.x,TV.y,200);gl.addColorStop(0,color?'rgba(255,220,150,0.35)':'rgba(220,230,255,0.3)');gl.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gl;g.fillRect(0,0,360,220);g.restore();}
+    tvBody(g,on,(g2,X,Y,w,h)=>{const u=t-T_ON;
+      if(u<0.35){// ブラウン管がつく：横の線 → 広がる
+        const k=eo(u/0.35);g2.fillStyle='#fff';const hh=Math.max(1.5,h*k);g2.fillRect(X,Y+h/2-hh/2,w*Math.min(1,u/0.12),hh);}
+      else opening(g2,X,Y,w,h,(t-T_ON-0.35)/1.9);});
+    g.restore();
+    const joy=t>T_ZOUT?eo((t-T_ZOUT)/0.3):0;g.save();g.translate(0,(z-1)/1.75*190);kids(g,t,joy);g.restore();
+    if(t<T_ON){g.globalAlpha=cl((t-0.1)*3,0,1)*cl((T_ON-t)*4,0,1);tx(g,'夜7時……',24,24,15,'#fff','#2a2220','left');g.globalAlpha=1;}
+    if(joy>0){sparkle(g,t);g.save();g.translate(84,60);g.rotate(-0.12);const s=0.6+0.4*eo((t-T_ZOUT)/0.3);g.scale(s,s);tx(g,'わーっ！',0,0,26,'#ffe060','#c8302a');g.restore();}
+    if(t>T_ZOUT+0.6){const k=eo((t-T_ZOUT-0.6)/0.4);g.fillStyle='rgba(20,16,12,0.78)';g.fillRect(0,220-30*k,360,30);g.globalAlpha=k;tx(g,'アニメ「'+title+'」放送開始！',180,220-15*k,14,'#ffd970');g.globalAlpha=1;}
+  }};}
+// ---- 人（全身）：x,y は足もと。s=1 で身長およそ95 ----
+// P: {arms:'down'|'up'|'fwd'|'cross'|'wave'|'none', hands:[[x,y],[x,y]]（体の中心からの相対）, bow:角度, jump, walk:位相, sit:1（足を描かない）, mouth, eye, brow, blush, sweat}
+function a2Person(g,x,y,s,lk0,dir,P={}){const lk=Object.assign({},lk0||{});for(const k of ['mouth','eye','brow','blush'])if(P[k]!=null)lk[k]=P[k];
+  const sk=lk.skin||'#f2c9a0',shirt=lk.shirt||'#f4f2ec',jk=lk.jacket||lk.cardigan||null,body=jk||shirt,pants=lk.pants||'#3a3e48';
+  const side=dir==='left'||dir==='right',f=dir==='left'?-1:1;const L=22*s,TH=32*s,TW=(side?17:27)*s,HR=16*s;const jy=P.jump||0;
+  g.save();g.translate(x,y-jy);g.lineCap='round';g.lineJoin='round';
+  // 影
+  g.save();g.globalAlpha=0.18;g.fillStyle='#000';g.beginPath();g.ellipse(0,jy,TW*0.75,4*s,0,0,7);g.fill();g.restore();
+  // 足
+  if(P.sit==='chair'&&side){g.strokeStyle=pants;g.lineWidth=9*s;g.beginPath();g.moveTo(0,-L);g.lineTo(f*20*s,-L);g.lineTo(f*22*s,-2*s);g.stroke();g.fillStyle='#2a2420';g.beginPath();g.ellipse(f*25*s,-2*s,6*s,3.2*s,0,0,7);g.fill();}
+  if(!P.sit){const w=P.walk!=null?Math.sin(P.walk)*7*s:0;g.strokeStyle=pants;g.lineWidth=8*s;
+    if(side){for(const k of [-1,1]){g.beginPath();g.moveTo(0,-L);g.lineTo(f*w*k,-2*s);g.stroke();g.fillStyle='#2a2420';g.beginPath();g.ellipse(f*w*k+f*3*s,-2*s,6*s,3.2*s,0,0,7);g.fill();}}
+    else{for(const k of [-1,1]){g.beginPath();g.moveTo(k*6*s,-L);g.lineTo(k*6*s,-2*s-(w*k>0?w*0.4:0));g.stroke();g.fillStyle='#2a2420';g.beginPath();g.ellipse(k*6*s,-2*s,5.5*s,3*s,0,0,7);g.fill();}}}
+  // 上半身（おじぎは腰で回す）
+  g.translate(0,-L);g.rotate((P.bow||0)*f*(side?1:0));
+  const arm=(sx,hx,hy,col)=>{const ax=sx*(TW/2-2*s),ay=-TH+7*s;const mx=(ax+hx)/2+sx*4*s,my=(ay+hy)/2+3*s;g.strokeStyle='rgba(30,20,10,0.35)';g.lineWidth=9.5*s;g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(mx,my,hx,hy);g.stroke();g.strokeStyle=col;g.lineWidth=7.5*s;g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(mx,my,hx,hy);g.stroke();if(TEE){const u=0.5,q1x=ax+(mx-ax)*u,q1y=ay+(my-ay)*u,q2x=mx+(hx-mx)*u,q2y=my+(hy-my)*u,ex=q1x+(q2x-q1x)*u,ey=q1y+(q2y-q1y)*u;g.strokeStyle=sleeve;g.lineWidth=9*s;g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(q1x,q1y,ex,ey);g.stroke();}g.fillStyle=sk;g.beginPath();g.arc(hx,hy,4.2*s,0,7);g.fill();};
+  const TEE=lk.tee&&!jk,sleeve=body;const ac=TEE?sk:body;let H=P.hands;const A=P.arms||'down';
+  if(!H){if(A==='up')H=[[-TW*0.7,-TH-HR*1.9],[TW*0.7,-TH-HR*1.9]];else if(A==='fwd')H=side?[[f*16*s,-TH*0.45],[f*18*s,-TH*0.5]]:[[-7*s,-TH*0.42],[7*s,-TH*0.42]];else if(A==='cross')H=[[TW*0.25,-TH*0.55],[-TW*0.25,-TH*0.6]];else if(A==='wave'){const a=Math.sin((P.ph||0)*8)*0.5;H=[[-TW*0.6,-2*s],[TW*0.6+Math.sin(a)*8*s,-TH-HR*1.5]];}else if(A==='none')H=null;else H=side?[[f*3*s,-3*s],[f*5*s,-4*s]]:[[-TW*0.62,-3*s],[TW*0.62,-3*s]];}
+  // うしろ側の腕（横向きのとき）
+  if(H&&side)arm(-1,H[0][0],H[0][1],sh2(ac,0.82));
+  if(H&&dir==='up')for(const k of [0,1])arm(k?1:-1,H[k][0],H[k][1],ac);
+  // 胴
+  a2.rr(g,-TW/2,-TH,TW,TH+4*s,8*s,body);g.fillStyle=sh2(body,0.82);g.fillRect(-TW/2,-2*s,TW,6*s);
+  if(dir==='down'){if(jk){g.fillStyle=shirt;g.beginPath();g.moveTo(-5*s,-TH);g.lineTo(5*s,-TH);g.lineTo(0,-TH+15*s);g.fill();}
+    if(lk.tie){g.fillStyle=lk.tie;g.beginPath();g.moveTo(-2*s,-TH+2*s);g.lineTo(2*s,-TH+2*s);g.lineTo(3*s,-TH+15*s);g.lineTo(0,-TH+19*s);g.lineTo(-3*s,-TH+15*s);g.fill();}
+    else if(!jk){g.fillStyle=sh2(sk,0.9);g.beginPath();g.moveTo(-6*s,-TH);g.lineTo(6*s,-TH);g.lineTo(0,-TH+5*s);g.fill();}}
+  if(dir==='down'&&lk.skull&&!jk)a2Skull(g,0,-TH*0.52,6.5*s);
+  if(side&&jk&&lk.tie){g.fillStyle=lk.tie;g.fillRect(f*(TW/2-4*s),-TH+3*s,2.5*s*f,12*s);}
+  // 頭
+  const hx=side?f*2*s:0,hy=-TH-HR*0.78;NR.headA(g,hx,hy,HR,lk,sk,lk.hair||'#2a2220',dir,HR/12);
+  if(P.sweat){g.fillStyle='#8ad0ff';const sx=hx+(side?-f:1)*HR*0.95,sy=hy-HR*0.5+((P.ph||0)*20%6);g.beginPath();g.moveTo(sx,sy-5*s);g.quadraticCurveTo(sx+4*s,sy+2*s,sx,sy+4*s);g.quadraticCurveTo(sx-4*s,sy+2*s,sx,sy-5*s);g.fill();}
+  // 手前の腕
+  if(H&&dir==='down')for(const k of [0,1])arm(k?1:-1,H[k][0],H[k][1],ac);
+  if(H&&side)arm(1,H[1][0],H[1][1],ac);
+  if(P.hold)P.hold(g,H,s,f);
+  g.restore();}
+function a2Skull(g,x,y,r){g.save();g.fillStyle='#f4f0e4';g.beginPath();g.arc(x,y-r*0.15,r,0,7);g.fill();g.fillRect(x-r*0.6,y+r*0.4,r*1.2,r*0.55);g.fillStyle='#1a1a1a';g.beginPath();g.ellipse(x-r*0.38,y-r*0.1,r*0.26,r*0.3,0,0,7);g.ellipse(x+r*0.38,y-r*0.1,r*0.26,r*0.3,0,0,7);g.fill();g.beginPath();g.moveTo(x,y+r*0.2);g.lineTo(x-r*0.12,y+r*0.42);g.lineTo(x+r*0.12,y+r*0.42);g.fill();g.fillRect(x-r*0.32,y+r*0.62,r*0.08,r*0.3);g.fillRect(x-r*0.04,y+r*0.62,r*0.08,r*0.3);g.fillRect(x+r*0.24,y+r*0.62,r*0.08,r*0.3);g.restore();}
+function sh2(c,k){return NR.shade(c,k);}
+// 吹き出し（文字）
+function a2Bub(g,s,x,y,sz,a){if(a<=0)return;g.save();g.globalAlpha=Math.min(1,a);g.font=sz+"px 'Mochiy Pop One',sans-serif";const w=g.measureText(s).width+sz*1.2,h=sz*1.8;a2.rr(g,x-w/2,y-h/2,w,h,h/2,'#fffdf6');g.strokeStyle='#2a2220';g.lineWidth=1.6;g.stroke();
+  g.fillStyle='#fffdf6';g.beginPath();g.moveTo(x-5,y+h/2-1);g.lineTo(x+5,y+h/2-1);g.lineTo(x-2,y+h/2+8);g.closePath();g.fill();g.stroke();g.fillStyle='#fffdf6';g.fillRect(x-4.5,y+h/2-2.5,9,3);
+  a2.tx(g,s,x,y+0.5,sz,'#2a2220');g.restore();}
+function a2Banner(g,s,t,col){const k=a2.eo(t/0.4);if(k<=0)return;g.fillStyle='rgba(20,16,12,0.8)';g.fillRect(0,220-30*k,360,30);g.globalAlpha=k;a2.tx(g,s,180,220-15*k,14,col||'#ffd970');g.globalAlpha=1;}
+function a2Spark(g,t,cx,cy,n,rx,ry){for(let i=0;i<n;i++){const a=i*2.4+t*0.8,r=0.4+((i*37)%60)/100;const x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;const s=2.5+Math.abs(Math.sin(t*6+i))*4;g.fillStyle=['#fff3a0','#ffd0e0','#a0e8ff'][i%3];g.beginPath();g.moveTo(x,y-s);g.lineTo(x+s*0.3,y-s*0.3);g.lineTo(x+s,y);g.lineTo(x+s*0.3,y+s*0.3);g.lineTo(x,y+s);g.lineTo(x-s*0.3,y+s*0.3);g.lineTo(x-s,y);g.lineTo(x-s*0.3,y-s*0.3);g.closePath();g.fill();}}
+function a2Confetti(g,t,t0){if(t<t0)return;const u=t-t0;for(let i=0;i<60;i++){const x=((i*53)%360)+Math.sin(u*3+i)*8,y=-10+u*(70+(i*17)%60)-((i*29)%80);if(y<-10||y>230)continue;g.save();g.translate(x,y);g.rotate(u*4+i);g.fillStyle=['#e8382a','#ffd040','#3a8ad0','#3ab06a','#e070b0'][i%5];g.fillRect(-3,-1.5,6,3);g.restore();}}
+// 客（ランダムな見た目）
+function a2Crowd(n,seed){const SH=['#d9534a','#3a7ad0','#e0a020','#3ab06a','#8a5ac0','#f08a4a','#4ab0c0','#c05a8a','#5a6a7a','#f4f2ec'];const HC=['#2a2220','#3a2a1e','#5a3a22','#2a2a3a'];const ST=['short','spiky','bob','twin','pony','nanasan','short','long','afro'];
+  return [...Array(n)].map((_,i)=>{const h=k=>{const x=Math.sin((i+1)*127.1*k+seed*7.7)*43758.5;return x-Math.floor(x);};const st=ST[Math.floor(h(1)*ST.length)];const fem=['bob','twin','pony','long'].includes(st);
+    return {shirt:SH[Math.floor(h(2)*SH.length)],hair:HC[Math.floor(h(3)*HC.length)],st,fem,ribbon:fem&&h(4)<0.5,eye:h(5)<0.5?'big':'',glasses:h(6)<0.2,pants:h(7)<0.5?'#3a3e48':'#4a5a8a',sc:0.82+h(8)*0.22};});}
+// 本棚の壁
+function a2Shelves(g,x0,x1,y0,y1,seed){g.fillStyle='#8a5a32';g.fillRect(x0,y0,x1-x0,y1-y0);const rows=4,rh=(y1-y0)/rows;const BC=['#c83a3a','#2a5aa8','#e0a020','#3a8a4a','#e8e0cc','#8a3aa8','#f07a3a','#2a2a30'];let q=seed||3;const R=()=>{q=(q*16807)%2147483647;return q/2147483647;};
+  for(let r=0;r<rows;r++){const y=y0+r*rh;g.fillStyle='#5a3a20';g.fillRect(x0,y+rh-4,x1-x0,4);let x=x0+3;while(x<x1-4){const w=4+R()*5,h=rh*(0.55+R()*0.35);g.fillStyle=BC[(R()*BC.length)|0];g.fillRect(x,y+rh-4-h,w-0.6,h);x+=w;}}}
+
+// ========== サイン会 ==========
+function signAnim2(o){const m=S.manga.find(x=>x.id===o.id)||{};const name=(m.name||'先生');const n=o.crowd||0;const AL=m.look||m.story!=null?NR.lookOf(m):{st:'short',shirt:'#8a5ac0'};
+  const nq=n<3?n:Math.min(14,Math.ceil(Math.log2(n+1)*1.6));const ppl=a2Crowd(nq,o.id||1);const big=n>=200,none=n<1,few=n>=1&&n<3;const {ease,eo,cl,rr,tx}=a2;
+  const WW=840,AX=640;const qx=i=>AX-100-i*46;const endX=nq?qx(nq-1):AX-120;
+  return {dur:5.6,draw:(g,t)=>{
+    // カメラの横位置（世界の中心x）
+    const c0=AX-30,c1=Math.max(180,Math.min(c0,endX+150));let cx=c0;
+    if(t>1.3&&t<3.1)cx=c0+(c1-c0)*ease((t-1.3)/1.4);else if(t>=3.1)cx=c1+(c0-c1)*ease((t-3.1)/0.7);
+    g.save();g.translate(180-cx,0);
+    // 本屋の中
+    g.fillStyle='#efe6cf';g.fillRect(0,0,WW,220);a2Shelves(g,0,WW,40,128,7);g.fillStyle='rgba(239,230,207,0.45)';g.fillRect(0,40,WW,88);g.fillStyle='#d8ccae';g.fillRect(0,128,WW,12);g.fillStyle='#d8ccae';g.fillRect(0,140,WW,80);g.strokeStyle='#c8bb98';g.lineWidth=1;for(let x=0;x<WW;x+=40){g.beginPath();g.moveTo(x,140);g.lineTo(x-30,220);g.stroke();}
+    // 横断幕
+    g.save();g.translate(AX-30,20);rr(g,-110,-12,220,26,4,'#3e7d4f');tx(g,name+'先生 サイン会',0,1,13,'#fffdf6');g.restore();
+    // 机と先生（左を向いて座る）
+    const happy=t>3.6&&!none;const signing=t>3.8&&!none;
+    a2Person(g,AX-8,170,1.25,AL,'down',{sit:1,arms:'fwd',hands:signing?[[-10+Math.sin(t*14)*4,-4],[16,-2]]:[[-14,-2],[14,-2]],mouth:none&&t>3.6?'frown':happy?'open':'flat',brow:none&&t>3.6?'worry':undefined,sweat:(t<1.3)||(none&&t>2),ph:t,blush:happy});
+    rr(g,AX-56,152,92,14,3,'#8a5a2e');g.fillStyle='#6a4022';g.fillRect(AX-52,166,6,46);g.fillRect(AX+26,166,6,46);g.fillStyle='#fffdf6';g.fillRect(AX-50,154,80,3);
+    for(let k=0;k<3;k++){rr(g,AX-50+k*13,140,11,12,1,['#c83a3a','#2a5aa8','#e0a020'][k]);}
+    // 列
+    ppl.forEach((p,i)=>{const x=qx(i);const arrive=0.15+i*0.07;const u=cl((t-arrive)/0.6,0,1);const xx=x-(1-eo(u))*260;const w=u<1?t*12:null;
+      const front=i===0&&signing;a2Person(g,xx,210,1.1*p.sc,p,'right',{walk:w,arms:front?'fwd':'down',mouth:front||i%3===0?'open':undefined,blush:front});
+      if(front&&t>4.2){g.fillStyle='#e05a7a';const hy=105-((t-4.2)*30%30);g.font="16px sans-serif";g.fillText('♥',xx+6,hy);}});
+    if(big){const x=qx(nq-1)-50;a2Person(g,x,210,1.1,{st:'short',shirt:'#3e7d4f',pants:'#3a3e48'},'right',{arms:'up',hands:[[-6,-62],[8,-64]]});rr(g,x-30,64,60,30,4,'#fffdf6');g.strokeStyle='#3e7d4f';g.lineWidth=2;g.stroke();tx(g,'最後尾は',x,73,9,'#c8302a');tx(g,'こちら',x,86,9,'#c8302a');}
+    g.restore();
+    if(none&&t>2.0){tx(g,'……シーン',96,112,20,'#8a8070','#fffdf6');}if(few&&t>2.0&&t<3.2){tx(g,'……ぽつり',96,112,18,'#8a8070','#fffdf6');}
+    if(t<1.3)a2Bub(g,'ドキドキ……',120,40,12,cl((t-0.2)*4,0,1)*cl((1.3-t)*5,0,1));
+    if(happy&&t>4)a2Spark(g,t,200,110,10,140,70);
+    if(t>4.6)a2Banner(g,none?'お客さんは……来なかった':few?'サイン会に '+n+'人……':'サイン会に '+n.toLocaleString()+'人！',t-4.6,none||few?'#c8c0b0':'#ffd970');
+  }};}
+
+// ========== 人気投票1位 ==========
+function top1Anim2(o){const m=S.manga.find(x=>x.id===o.id)||{};const title=o.title||m.title||'まんが';let others=[];try{others=serials().filter(x=>x.id!==m.id).map(x=>x.title);}catch(e){}
+  while(others.length<2)others.push(['ガッツ番長','星のゆくえ','すしの道','ドッジ魂'][others.length]);const {ease,eo,cl,rr,tx}=a2;
+  return {dur:5.4,draw:(g,t)=>{
+    // カメラ：最後に1位へズーム
+    const ZM=0.16,z=t>3.0?1+ZM*ease((t-3.0)/0.6):1,zk=(z-1)/ZM,fx=180,fy=110+48*zk;g.save();g.translate(180,110);g.scale(z,z);g.translate(-fx,-fy);
+    // 雑誌のページ
+    g.fillStyle='#3a2a1e';g.fillRect(0,0,360,220);rr(g,14,6,332,214,4,'#fbf6e6');g.fillStyle='#e8ddc0';g.fillRect(178,6,4,214);
+    rr(g,24,14,312,34,4,'#d02a2a');tx(g,'読者人気投票 結果発表！！',180,32,17,'#fff','#8a1010');
+    // 3位・2位
+    const row=(y,rk,tt,col,u,bk)=>{if(u<=0)return;const xx=(1-eo(u))*-300;g.save();g.translate(xx,0);rr(g,40,y,280,30,6,bk);rr(g,44,y+3,52,24,5,col);tx(g,rk,70,y+15.5,13,'#fff');tx(g,'「'+tt+'」',208,y+15.5,14,'#2a2220',null,'center');g.restore();};
+    row(58,'3位',others[1],'#b0784a',(t-0.3)/0.5,'#f0e8d4');row(94,'2位',others[0],'#8a96a4',(t-0.8)/0.5,'#f0e8d4');
+    // 1位：幕がかかっている → ドドド → めくれる
+    const Y=132;const rev=t>2.6;const sh=t>1.5&&!rev?Math.sin(t*60)*1.5:0;
+    g.save();g.translate(sh,0);rr(g,32,Y,296,52,8,rev?'#fff0b0':'#2a2220');
+    if(!rev){tx(g,'1位は……？',180,Y+26,18,'#ffd970');}
+    else{const k=eo((t-2.6)/0.35);g.save();g.translate(180,Y+26);g.scale(0.6+0.4*k,0.6+0.4*k);rr(g,-146,-24,62,48,6,'#e0a020');tx(g,'1位',-115,0,18,'#fff','#8a5a10');
+      const fs=Math.min(22,190/Math.max(3,title.length+2));tx(g,'「'+title+'」',34,0,fs,'#c8302a','#fff');
+      // 王冠
+      g.save();g.translate(-115,-34);g.fillStyle='#ffd040';g.beginPath();g.moveTo(-14,8);g.lineTo(-14,-4);g.lineTo(-7,3);g.lineTo(0,-8);g.lineTo(7,3);g.lineTo(14,-4);g.lineTo(14,8);g.closePath();g.fill();g.strokeStyle='#a87a10';g.lineWidth=1.5;g.stroke();g.restore();g.restore();}
+    g.restore();
+    if(rev){g.save();g.globalAlpha=Math.max(0,1-(t-2.6)*3);g.fillStyle='#fff';g.fillRect(0,0,360,220);g.restore();}
+    g.restore();
+    if(t>1.5&&!rev){g.save();g.translate(296,196);g.rotate(-0.1);tx(g,'ドドドド……',0,0,14+Math.sin(t*40),'#2a2220','#fff');g.restore();}
+    if(rev){a2Confetti(g,t,2.6);a2Spark(g,t,180,150,10,160,50);}
+    if(t>4.2)a2Banner(g,'人気投票 1位！「'+title+'」',t-4.2);
+  }};}
+
+// ========== 大口の取引 ==========
+function dealAnim2(o){const eg0=(typeof team==='function'&&(team('eigyo')||{}).lead)||byRole('eigyo')[0]||PRES;const EL=NR.lookOf(eg0);const BL=NR.lookOf({id:7777,name:'取次の担当',age:56});Object.assign(BL,{jacket:'#4a4a50',tie:'#7a2e2e',glasses:1});
+  const {ease,eo,cl,rr,tx}=a2;const Z0=2.4,Z1=3.7;
+  const sofa=(g,x,f,col)=>{rr(g,x-f*14-34,128,68,12,6,sh2(col,0.85));const bx=f>0?x-46:x+30;rr(g,bx,92,16,60,7,col);rr(g,x-40,138,80,22,7,col);g.fillStyle=sh2(col,0.7);g.fillRect(x-38,156,76,6);g.fillStyle='#3a2414';g.fillRect(x-36,160,6,8);g.fillRect(x+30,160,6,8);};
+  const wide=(g,t)=>{// 取次の応接室（木の壁・絵・シャンデリア・じゅうたん）
+    g.fillStyle='#6b4428';g.fillRect(0,0,360,170);g.fillStyle='#7a5232';for(let x=0;x<360;x+=45){rr(g,x+4,14,37,62,2,'#7e5636');rr(g,x+4,86,37,64,2,'#7e5636');}g.fillStyle='#4a2c18';g.fillRect(0,150,360,8);g.fillStyle='#c9a24a';g.fillRect(0,10,360,2);g.fillRect(0,148,360,2);
+    // 絵
+    rr(g,128,22,104,64,3,'#c9a24a');rr(g,134,28,92,52,2,'#7aa0c0');g.fillStyle='#4a7a4a';g.beginPath();g.moveTo(134,80);g.lineTo(160,50);g.lineTo(184,70);g.lineTo(204,46);g.lineTo(226,80);g.fill();g.fillStyle='#fffdf6';g.beginPath();g.moveTo(197,54);g.lineTo(204,46);g.lineTo(211,55);g.fill();
+    // シャンデリア
+    g.strokeStyle='#c9a24a';g.lineWidth=1.5;g.beginPath();g.moveTo(180,0);g.lineTo(180,8);g.stroke();for(let i=-2;i<=2;i++){g.fillStyle='#ffe9a0';g.beginPath();g.arc(180+i*9,10+Math.abs(i)*2,2.6,0,7);g.fill();}
+    // 植木
+    rr(g,330,124,22,30,3,'#8a5a32');for(let i=0;i<7;i++){g.fillStyle=i%2?'#3a7a3a':'#4a8a4a';g.beginPath();g.ellipse(341+Math.cos(i)*10,104-i*4,9,15,Math.cos(i)*0.8,0,7);g.fill();}
+    // じゅうたん
+    g.fillStyle='#5a1e1e';g.fillRect(0,158,360,62);g.fillStyle='#7a2e2e';g.fillRect(20,166,320,48);g.strokeStyle='#c9a24a';g.lineWidth=2;g.strokeRect(26,170,308,40);
+    const bowU=t>1.2&&t<2.2?Math.sin(Math.min(1,(t-1.2)/0.25)*Math.PI/2):0;const nod=t>2.0&&t<2.4?Math.sin((t-2.0)*Math.PI/0.4)*0.15:0;const done=t>Z1;const shake=done&&t<Z1+1.4;
+    sofa(g,84,1,'#2e3a5a');sofa(g,276,-1,'#2e3a5a');
+    if(!done){a2Person(g,84,180,1.15,EL,'right',{sit:'chair',bow:bowU*0.5,arms:'down',hands:bowU>0?[[14,-4],[18,-4]]:[[16,-6],[20,-6]],sweat:t<1.2,ph:t,mouth:t>1.2&&t<2.2?'open':'flat'});
+      a2Person(g,276,180,1.15,BL,'left',{sit:'chair',bow:nod,arms:t<2.0?'cross':'down',hands:t<2.0?null:[[-16,-6],[-20,-6]],mouth:'flat',brow:t<2?'worry':undefined});}
+    // 低いテーブル
+    rr(g,130,150,100,10,3,'#3a2414');g.fillStyle='#2a1a0e';g.fillRect(138,160,6,18);g.fillRect(216,160,6,18);
+    g.fillStyle='#fffdf6';g.beginPath();g.moveTo(160,150);g.lineTo(196,150);g.lineTo(192,145);g.lineTo(164,145);g.closePath();g.fill();if(done){g.fillStyle='#d02a2a';g.beginPath();g.arc(188,147.5,1.8,0,7);g.fill();}
+    for(const x of [146,214]){rr(g,x-4,140,8,10,2,'#fffdf6');g.fillStyle='#8a5a2a';g.fillRect(x-3,141,6,2);}
+    if(done){// 立ち上がって握手
+      const sk=Math.sin(t*14)*2.5;a2Person(g,140,214,1.25,EL,'right',{arms:'down',hands:[[4,-6],[32,-22+sk]],mouth:'open',blush:1,bow:0.12});
+      a2Person(g,220,214,1.25,BL,'left',{arms:'down',hands:[[-32,-22+sk],[-4,-6]],mouth:'open',bow:0.12});}};
+  const close=(g,t)=>{const u=t-Z0;// 契約書のアップ
+    g.fillStyle='#7a5232';g.fillRect(0,0,360,220);g.fillStyle='#6b4a2a';for(let y=0;y<220;y+=22)g.fillRect(0,y,360,2);
+    g.save();g.translate(180,118);g.rotate(-0.05);g.fillStyle='rgba(0,0,0,0.25)';g.fillRect(-116,-86,240,184);rr(g,-120,-90,240,184,3,'#fffdf6');
+    tx(g,'取引契約書',0,-66,18,'#2a2220');g.fillStyle='#8a8478';for(let i=0;i<5;i++)g.fillRect(-96,-38+i*14,192-(i===4?60:0),2.2);
+    g.fillStyle='#2a2220';g.fillRect(14,58,82,1.5);tx(g,'印',104,50,9,'#8a8478');
+    const hit=u>0.62;if(hit){const k=eo((u-0.62)/0.12);g.save();g.translate(70,46);g.rotate(0.08);g.globalAlpha=0.9;g.strokeStyle='#d02a2a';g.lineWidth=3.4;g.beginPath();g.arc(0,0,18*k+4,0,7);g.stroke();tx(g,'承認',0,1,12*k+1,'#d02a2a');g.restore();}
+    // 手とはんこ
+    const hy=u<0.45?-150+u/0.45*40:u<0.62?-110+((u-0.45)/0.17)*160:u<0.9?50:50-(u-0.9)*280;
+    g.save();g.translate(70,hy);g.fillStyle='#4a4a50';g.fillRect(-16,-160,32,120);g.fillStyle='#f2c9a0';g.beginPath();g.ellipse(0,-40,17,15,0,0,7);g.fill();
+    g.fillStyle='#c8a060';rr(g,-9,-34,18,30,4,'#c8a060');g.fillStyle='#b8303a';g.fillRect(-9,-6,18,4);g.restore();
+    g.restore();
+    if(hit&&u<1.3){const v=u-0.62;g.save();g.translate(110,170);g.rotate(-0.12);g.scale(1+Math.max(0,0.25-v)*2.4,1+Math.max(0,0.25-v)*2.4);tx(g,'ポン！',0,0,34,'#e8382a','#fff');g.restore();
+      g.strokeStyle='#e8382a';g.lineWidth=3;for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.beginPath();g.moveTo(250+Math.cos(a)*34,164+Math.sin(a)*34);g.lineTo(250+Math.cos(a)*(48+v*40),164+Math.sin(a)*(48+v*40));g.stroke();}}};
+  return {dur:5.6,draw:(g,t)=>{
+    if(t>=Z0&&t<Z1)close(g,t);else wide(g,t);
+    if(t<1.2)a2Bub(g,'うーむ……',276,52,12,cl((t-0.1)*4,0,1));
+    if(t>1.25&&t<2.1)a2Bub(g,'お願いします！',90,52,12,1);
+    if(t>2.05&&t<Z0)a2Bub(g,'……よし。',276,52,12,1);
+    if(t>Z1){a2Spark(g,t,180,100,10,160,60);if(t<Z1+1.2)a2Bub(g,'ありがとうございます！',110,46,11,1);}
+    if(t>4.4)a2Banner(g,'大口の取引が決まった！',t-4.4,'#6ad1ff');
+  }};}
+
+// ========== 電話（社長がかける） ==========
+function phoneAnim2(o){const C=(typeof CALLEE!=='undefined'&&CALLEE[o.to])||['相手','相手',7300,45];const PL=NR.lookOf(PRES);PL.tie=PL.tie||'#b23a2e';const p={id:C[2],name:C[1],age:C[3]};const QL=NR.lookOf(p);QL.jacket=QL.jacket||'#5a5a62';QL.tie=QL.tie||'#2a4a7a';
+  const yr=S.y||1975,era=yr>=1994?'keitai':yr>=1985?'push':'dial';const {ease,eo,cl,rr,tx}=a2;
+  const phoneBody=(g,x,y,sc,lift)=>{g.save();g.translate(x,y);g.scale(sc,sc);
+    if(era==='keitai'){rr(g,-9,-30,18,44,4,'#3a3e44');rr(g,-6,-26,12,10,2,'#9fc7e0');for(let i=0;i<4;i++)for(let j=0;j<3;j++)rr(g,-6+j*4.4,-12+i*5.4,3.4,3.6,1,'#d8d4ca');g.fillStyle='#3a3e44';g.fillRect(4,-40,2.4,12);}
+    else{const col=era==='push'?'#e9dfc6':'#1e1c1e';rr(g,-26,-12,52,24,8,col);if(!lift){rr(g,-30,-24,60,12,6,col);}
+      if(era==='dial'){g.beginPath();g.arc(0,0,10,0,7);g.fillStyle='#3a3a3a';g.fill();g.beginPath();g.arc(0,0,3.5,0,7);g.fillStyle='#c9b07a';g.fill();}
+      else for(let i=0;i<4;i++)for(let j=0;j<3;j++)rr(g,-8+j*6,-9+i*4.6,5,3.6,1,'#8a8070');}
+    g.restore();};
+  return {dur:5.4,draw:(g,t)=>{
+    const C1=0.9,C2=2.5,C3=3.0;const RC=era==='push'?'#e9dfc6':'#1e1c1e';
+    const recv=(g,x,y,f)=>{g.save();g.translate(x,y);g.rotate(f*0.18);if(era==='keitai'){rr(g,-5,-14,10,26,3,'#3a3e44');rr(g,-3.5,-11,7,7,1,'#9fc7e0');}else{rr(g,-6,-20,12,40,5,RC);rr(g,-8,-24,16,9,4,RC);rr(g,-8,15,16,9,4,RC);}g.restore();};
+    const talker=(g,x,lk,f,mouth)=>{const s=1.5,FY=214,hip=FY-22*s,hy=hip-32*s-16*s*0.78;a2Person(g,x,FY,s,lk,'down',{sit:1,arms:'down',hands:f>0?[[-30,-6],[25,-66]]:[[-25,-66],[30,-6]],mouth});recv(g,x+f*25*s*0.95,hy+4,f);};
+    if(t<C1||t>=C2&&t<C3){// 社長（正面・机）
+      g.fillStyle='#ece6d3';g.fillRect(0,0,360,220);g.fillStyle='#e0d9c2';for(let x=0;x<360;x+=14)g.fillRect(x,0,2,220);
+      const lift=t>0.45;const s=1.35,hip=200-22*s,hy=hip-32*s-16*s*0.78;
+      a2Person(g,170,200,s,PL,'down',{sit:1,arms:'down',hands:lift?[[-30,-4],[25,-66]]:[[-30,-2],[30,-2]],mouth:t>=C2?'open':'flat'});
+      if(lift)recv(g,170+25*s*0.95,hy+4,1);
+      rr(g,0,168,360,12,2,'#6b3a22');g.fillStyle='#4a2416';g.fillRect(0,180,360,40);
+      phoneBody(g,262,160,1.2,lift);
+      if(t>=C2)a2Bub(g,'プルルル……',270,50,12,1);}
+    else if(t<C2){// 電話のアップ
+      g.fillStyle='#4a2416';g.fillRect(0,0,360,220);const u=t-C1;
+      if(era==='dial'){g.save();g.translate(180,116);g.scale(2.6,2.6);rr(g,-34,-30,68,58,12,'#1e1c1e');g.save();g.rotate(-Math.max(0,Math.sin(u*4))*2.2);g.beginPath();g.arc(0,0,22,0,7);g.fillStyle='#2e2e30';g.fill();
+          for(let i=0;i<10;i++){const a=-Math.PI*0.35-i*0.52;g.beginPath();g.arc(Math.cos(a)*15,Math.sin(a)*15,4,0,7);g.fillStyle='#e8e4da';g.fill();}g.restore();g.beginPath();g.arc(0,0,7,0,7);g.fillStyle='#c9b07a';g.fill();g.restore();
+        g.save();g.translate(80,40);g.rotate(-0.1);tx(g,'ジーコロ……',0,0,20,'#ffd970','#2a2220');g.restore();}
+      else if(era==='push'){g.save();g.translate(180,120);g.scale(2.2,2.2);rr(g,-40,-36,80,70,10,'#e9dfc6');const lit=Math.floor(u*5)%12;for(let i=0;i<4;i++)for(let j=0;j<3;j++){const on=i*3+j===lit;rr(g,-24+j*17,-28+i*15,14,11,3,on?'#ffd970':'#cfc6ae');a2.tx(g,['1','2','3','4','5','6','7','8','9','*','0','#'][i*3+j],-17+j*17,-22.5+i*15,7,'#5a5040');}g.restore();
+        const s=['ピッ','ポッ','パッ'][Math.floor(u*5)%3];g.save();g.translate(84,40);tx(g,s,0,0,22,'#ffd970','#2a2220');g.restore();}
+      else{g.save();g.translate(180,128);g.scale(2.3,2.3);rr(g,-22,-50,44,96,10,'#3a3e44');rr(g,-16,-42,32,24,3,'#9fd7c0');a2.tx(g,'03-'+String(1000+(C[2]%9000)),0,-30,5.5,'#2a3a30',null,'center',"monospace");for(let i=0;i<4;i++)for(let j=0;j<3;j++)rr(g,-15+j*11,-12+i*12,9,8,2,(i*3+j)===Math.floor(u*6)%12?'#ffd970':'#d8d4ca');g.restore();
+        g.save();g.translate(84,40);tx(g,'ピッ',0,0,22,'#ffd970','#2a2220');g.restore();}}
+    else{// 2分割：社長 ／ 相手
+      const k=eo((t-C3)/0.35);g.fillStyle='#ece6d3';g.fillRect(0,0,360,220);
+      g.save();g.beginPath();g.moveTo(0,0);g.lineTo(200,0);g.lineTo(160,220);g.lineTo(0,220);g.closePath();g.clip();g.fillStyle='#ece6d3';g.fillRect(0,0,200,220);
+      talker(g,88,PL,1,t>C3+0.3&&t<C3+0.9?'open':'smile');g.fillStyle='#6b3a22';g.fillRect(0,190,220,8);g.fillStyle='#4a2416';g.fillRect(0,198,220,22);g.restore();
+      g.save();g.translate((1-k)*200,0);g.beginPath();g.moveTo(200,0);g.lineTo(360,0);g.lineTo(360,220);g.lineTo(160,220);g.closePath();g.clip();g.fillStyle='#d4dce6';g.fillRect(160,0,200,220);g.fillStyle='#b8c4d2';for(let y=20;y<150;y+=34)g.fillRect(160,y,200,3);
+      talker(g,276,QL,-1,t>C3+0.9?'open':'flat');g.fillStyle='#8a8e94';g.fillRect(150,190,210,8);g.fillStyle='#6a6e74';g.fillRect(150,198,210,22);g.restore();
+      g.strokeStyle='#2a2220';g.lineWidth=4;g.beginPath();g.moveTo(200,0);g.lineTo(160,220);g.stroke();
+      if(t>C3+0.3)a2Bub(g,'もしもし。',96,36,12,1);if(t>C3+0.9)a2Bub(g,'はい、'+C[0]+'です！',268,36,11,1);
+      if(t>4.4)a2Banner(g,'☎ '+C[0]+'に電話',t-4.4,'#fffdf6');}
+  }};}
+
+// ========== コミックス発売 ==========
+function comicStore2(n,exp,title){const r=n/Math.max(1,exp);const cnt=r<0.8?1:r<1?3:r<1.2?6:11;const ppl=a2Crowd(cnt,Math.round(n)%97);const flop=r<0.8;const {ease,eo,cl,rr,tx}=a2;
+  return {dur:5.6,draw:(g,t)=>{
+    // 本屋の店先
+    g.fillStyle='#9fc7e0';g.fillRect(0,0,360,220);g.fillStyle='#e9dfc6';g.fillRect(20,20,320,140);
+    g.fillStyle='#b23a2e';g.fillRect(20,20,320,22);for(let x=20;x<340;x+=20){g.fillStyle=(x/20)%2?'#fffdf6':'#b23a2e';g.fillRect(x,42,20,8);}tx(g,'まんがの本屋',110,31,12,'#fffdf6');
+    // 中：平積み
+    const inside=()=>{a2Shelves(g,30,330,58,108,5);rr(g,96,118,168,22,3,'#8a5a32');const taken=cl((t-1.8)/2.4,0,1)*(flop?0.05:Math.min(1,r*0.8));const h=Math.max(2,26*(1-taken));
+      for(let i=0;i<4;i++){const x=104+i*40;rr(g,x,118-h,32,h,2,'#fffdf6');g.fillStyle=['#c83a3a','#2a5aa8','#e0a020','#3a8a4a'][i];g.fillRect(x+1,118-h,30,3);}
+      g.save();g.translate(180,96-Math.max(0,26*(1-taken)-10));rr(g,-50,-12,100,22,4,'#ffd040');tx(g,'新刊「'+title+'」',0,-1,Math.min(9,90/Math.max(4,title.length+3)),'#c8302a');g.restore();};
+    inside();
+    // シャッター
+    const up=ease((t-0.6)/0.9);if(up<1){const sh=140*(1-up);g.fillStyle='#a8adb0';g.fillRect(20,50,320,sh);g.fillStyle='#8a9094';for(let y=50;y<50+sh;y+=6)g.fillRect(20,y,320,1.5);
+      if(sh>40){rr(g,130,50+sh/2-16,100,32,4,'#fffdf6');tx(g,'本日発売！',180,50+sh/2,13,'#c8302a');}}
+    if(t>0.6&&t<1.5)tx(g,'ガラガラ……',290,68,13,'#2a2220','#fff');
+    // 歩道
+    g.fillStyle='#cfc8b8';g.fillRect(0,160,360,60);g.fillStyle='#bdb5a2';for(let x=0;x<360;x+=30)g.fillRect(x,160,1,60);
+    // お客さん
+    const book=(col)=>(g2,H,sc,f)=>{const hx=(H[0][0]+H[1][0])/2,hy=(H[0][1]+H[1][1])/2;g2.save();g2.translate(hx+f*2*sc,hy-6*sc);g2.fillStyle=col;g2.fillRect(-7*sc,-9*sc,14*sc,15*sc);g2.fillStyle='#fffdf6';g2.fillRect(f>0?-6*sc:-1*sc,-8*sc,7*sc,13*sc);g2.restore();};
+    const hs=k=>{const x=Math.sin(k*91.7+3.1)*43758.5;return x-Math.floor(x);};const L2=[];
+    ppl.forEach((p,i)=>{const t0=1.4+i*(r>=1.2?0.16:0.34);const u=t-t0;if(u<0)return;const dp=hs(i+1);const y=184+dp*30,sc=(0.78+dp*0.3)*p.sc,w=u*14;
+      if(flop){const x=-30+u*90;if(x>400)return;L2.push([y,()=>a2Person(g,x,y,sc,p,'right',{walk:w,mouth:'flat'})]);return;}
+      const fromL=hs(i+7)<0.6,tgt=104+hs(i+3)*150,sp=r>=1.2?230:130;const sx=fromL?-30:390,dist=Math.abs(tgt-sx),ta=dist/sp;
+      if(u<ta){const x=sx+(fromL?1:-1)*u*sp;L2.push([y,()=>{a2Person(g,x,y,sc,p,fromL?'right':'left',{walk:w});if(r>=1.2){g.fillStyle='rgba(200,190,170,0.6)';g.beginPath();g.ellipse(x+(fromL?-18:18),y-4,10,5,0,0,7);g.fill();}}]);return;}
+      if(u<ta+0.5){L2.push([y,()=>a2Person(g,tgt,y,sc,p,'up',{arms:'fwd'})]);return;}
+      // 買った！読みながら左右に散って帰る
+      const v=u-ta-0.5,goR=hs(i+11)<0.5,spd=40+hs(i+5)*40,x=tgt+(goR?1:-1)*v*spd,yy=y+v*(hs(i+13)-0.5)*16;if(x>420||x<-60)return;const bc=['#c83a3a','#2a5aa8','#e0a020','#3a8a4a'][i%4];
+      L2.push([yy,()=>{a2Person(g,x,yy,sc,p,goR?'right':'left',{walk:v*9,arms:'fwd',hold:book(bc),mouth:i%2?'open':'smile',blush:i%3===0});
+        if(v<0.6&&i<4)a2.tx(g,'買えた！',x,yy-104*sc,9,'#c8302a','#fff');}]);});
+    L2.sort((a,b)=>a[0]-b[0]).forEach(e=>e[1]());
+    if(flop&&t>2.4){tx(g,'……スタスタ',260,90,14,'#8a8070','#fff');}
+    // 売れた冊数
+    if(t>1.6){const k=ease((t-1.6)/2.6);g.save();rr(g,232,8,120,34,6,'rgba(20,16,12,0.78)');tx(g,Math.round(n*k).toLocaleString()+'冊',292,26,16,r>=1?'#ffd970':'#e0e0e0');g.restore();}
+    if(r>=1.2&&t>3)a2Spark(g,t,180,120,8,160,50);
+    if(t>4.5)a2Banner(g,r>=1.2?'書店に行列！':r>=1?'いい出だし！':r>=0.8?'もうひと息……':'……返本の山',t-4.5,r>=1?'#ffd970':'#c8c0b0');
+  }};}
+
+// ========== コミックス発売：本屋 → 読者が読んで感想（出来しだい） ==========
+// q：その巻の出来（0〜100）。先生の力量・担当の編集力・運で決まる
+function comicAnim2(n,exp,title,q){const A=comicStore2(n,exp,title);const T0=5.2;const {ease,eo,cl,rr,tx}=a2;q=q==null?60:q;
+  let sd=Math.round(n)%997+7;const R=()=>{sd=(sd*16807)%2147483647;return sd/2147483647;};
+  const ppl=a2Crowd(4,Math.round(n)%89+3);const XS=[52,112,248,308];
+  const RX=[['めっちゃ面白い……！','good'],['泣いた……','cry'],['次の巻まだ？','good'],['友達に貸そう！','good'],['面白い！','good'],['普通だなぁ','meh'],['うーん……','meh'],['なんだよ！このクソ漫画！','bad']];
+  let nBad=0;const pickR=v=>{if(v<12&&nBad<2){nBad++;return RX[7];}return v>=85?[RX[0],RX[1],RX[2],RX[3]][Math.floor(R()*4)]:v>=65?[RX[4],RX[2],RX[3]][Math.floor(R()*3)]:v>=45?[RX[4],RX[5]][Math.floor(R()*2)]:[RX[5],RX[6],['つまらん……','meh'],['途中で寝ちゃった','meh']][Math.floor(R()*4)];};
+  const rd=ppl.map((p,i)=>{const v=q+(R()*2-1)*22;return {p,r:pickR(v),t:1.4+i*1.05,x:XS[i],y:172,bc:['#c83a3a','#2a5aa8','#e0a020','#3a8a4a','#8a3aa8'][i]};});
+  const good=rd.filter(r=>r.r[1]==='good'||r.r[1]==='cry').length*5/4;
+  const scene=(g,T)=>{// 公園：空・木・ベンチ
+    const sk=g.createLinearGradient(0,0,0,130);sk.addColorStop(0,'#9fd0ee');sk.addColorStop(1,'#d8eef6');g.fillStyle=sk;g.fillRect(0,0,360,220);
+    g.fillStyle='#ffffff';for(const [x0,y,v] of [[60,30,6],[250,22,4],[320,44,8],[150,14,5]]){const x=((x0+T*v)%420)-30;g.beginPath();g.ellipse(x,y,22,8,0,0,7);g.ellipse(x+14,y-5,14,8,0,0,7);g.fill();}
+    for(const x of [-10,120,240,350]){g.fillStyle='#6b4a2a';g.fillRect(x-4,70,8,60);g.fillStyle=x%240?'#4a8a4a':'#3a7a3a';g.beginPath();g.arc(x,62,28,0,7);g.arc(x-16,74,20,0,7);g.arc(x+16,74,20,0,7);g.fill();}
+    g.fillStyle='#8ac06a';g.fillRect(0,124,360,96);g.fillStyle='#d8c8a0';g.beginPath();g.moveTo(0,200);g.lineTo(360,186);g.lineTo(360,220);g.lineTo(0,220);g.fill();
+    // ベンチ
+    for(const [x0,x1] of [[20,144],[216,340]]){g.fillStyle='#4a3a2a';g.fillRect(x0+6,160,4,22);g.fillRect(x1-10,160,4,22);rr(g,x0,128,x1-x0,6,2,'#a86a3a');rr(g,x0,138,x1-x0,6,2,'#a86a3a');rr(g,x0,156,x1-x0,8,2,'#b87a4a');}};
+  const book=(open,col)=>(g,H,s,f)=>{const hx=(H[0][0]+H[1][0])/2,hy=(H[0][1]+H[1][1])/2;g.save();g.translate(hx,hy-6*s);
+    if(open){g.fillStyle=col;g.fillRect(-15*s,-11*s,30*s,20*s);g.fillStyle='#fbf8ee';g.fillRect(-14*s,-10*s,13.5*s,18*s);g.fillStyle='#f0ead8';g.fillRect(0.5*s,-10*s,13.5*s,18*s);g.fillStyle='#8a8478';for(let k=0;k<4;k++){g.fillRect(-12*s,-7*s+k*4*s,9*s,1*s);g.fillRect(3*s,-7*s+k*4*s,9*s,1*s);}}
+    else{g.fillStyle=col;g.fillRect(-7*s,-10*s,14*s,19*s);g.fillStyle='#fffdf6';g.fillRect(-5*s,-7*s,10*s,6*s);}g.restore();};
+  return {dur:T0+rd[rd.length-1].t+2.6,draw:(g,t)=>{
+    if(t<T0){A.draw(g,t);if(t>T0-0.25){g.fillStyle='rgba(0,0,0,'+cl((t-T0+0.25)/0.25,0,1)+')';g.fillRect(0,0,360,220);}return;}
+    const T=t-T0;scene(g,T);
+    for(const r of rd){const done=T>r.t,k=r.r[1],u=T-r.t;
+      if(!done){a2Person(g,r.x,r.y,0.92*r.p.sc,r.p,'down',{sit:1,arms:'fwd',hands:[[-9,-26],[9,-26]],hold:book(1,r.bc),mouth:'flat'});
+        if(Math.floor(T*2+r.x)%5===0)tx(g,'ペラ',r.x+18,r.y-58,8,'#6a625a');continue;}
+      if(k==='bad'){a2Person(g,r.x,r.y,0.92*r.p.sc,r.p,'down',{sit:1,arms:u<0.35?'up':'down',brow:'angry',mouth:'open',hands:u<0.35?[[-22,-70],[22,-70]]:null});
+        if(u>0.3){const v=u-0.3,bx=r.x+v*140,by=r.y-80-v*120+v*v*160;g.save();g.translate(bx,by);g.rotate(v*14);g.fillStyle=r.bc;g.fillRect(-8,-10,16,20);g.restore();}
+        if(u>0.3&&u<1.2)tx(g,'ポイッ',r.x+30,r.y-110,10,'#c8302a','#fff');}
+      else if(k==='cry'){a2Person(g,r.x,r.y,0.92*r.p.sc,r.p,'down',{sit:1,arms:'fwd',hands:[[-7,-24],[7,-24]],hold:book(0,r.bc),eye:'smile',mouth:'frown',blush:1});
+        g.fillStyle='#8ad0ff';for(const dx of [-6,6]){const yy=r.y-56+((u*30)%10);g.beginPath();g.ellipse(r.x+dx,yy,1.8,3,0,0,7);g.fill();}}
+      else if(k==='good'){const jy=u<0.8?Math.abs(Math.sin(u*10))*5:0;a2Person(g,r.x,r.y-jy,0.92*r.p.sc,r.p,'down',{sit:1,arms:'up',mouth:'open',eye:'big',blush:1});g.save();g.translate(r.x+12,r.y-4);g.rotate(0.3);g.fillStyle=r.bc;g.fillRect(-7,-9,14,18);g.fillStyle='#fffdf6';g.fillRect(-5,-6,10,5);g.restore();}
+      else a2Person(g,r.x,r.y,0.92*r.p.sc,r.p,'down',{sit:1,arms:'fwd',hands:[[-7,-24],[7,-24]],hold:book(0,r.bc),mouth:'flat'});
+      const a=cl(u*5,0,1);const bub=r.r[0];const sz=bub.length>9?8.5:10;const bx=Math.max(50,Math.min(310,r.x)),by=r.y-88-(rd.indexOf(r)%2)*24;a2Bub(g,bub,bx,by,sz,a);}
+    if(T>rd[rd.length-1].t+1.2)a2Banner(g,good>=4?'読者、大満足！':good>=2?'読者の反応は上々':good>=1?'読者の反応は……いまいち':'読者の反応は……',T-rd[rd.length-1].t-1.2,good>=2?'#ffd970':'#c8c0b0');
+  }};}
+
+// ========== 土地を買った：空き地に「建設予定地」の札が立つ ==========
+function landAnim2(o){const {ease,eo,cl,rr,tx}=a2;const co=o.co||'名もなき出版社';const PL=NR.lookOf(PRES);PL.tie=PL.tie||'#b23a2e';const FL=NR.suitLook({id:8102,name:'社長',age:61},NR.lookOf({id:8102,name:'社長',age:61}));FL.jacket='#6a5a4a';
+  const yr=S.y||1975;
+  return {dur:6.2,draw:(g,t)=>{
+    // 空
+    const sk=g.createLinearGradient(0,0,0,150);sk.addColorStop(0,'#8ec8ea');sk.addColorStop(1,'#d4ecf6');g.fillStyle=sk;g.fillRect(0,0,360,220);
+    g.fillStyle='#fff';for(const [x0,y,v] of [[50,26,5],[220,16,3],[310,40,7]]){const x=((x0+t*v)%420)-30;g.beginPath();g.ellipse(x,y,20,7,0,0,7);g.ellipse(x+12,y-4,12,7,0,0,7);g.fill();}
+    // 遠くのビル
+    g.fillStyle='#b8c4cc';for(const [x,w,h] of [[0,50,70],[60,40,90],[250,46,80],[300,60,60]]){g.fillRect(x,150-h,w,h);}
+    // 両どなりの古いビル
+    const bld=(x,w,h,col)=>{g.fillStyle=col;g.fillRect(x,160-h,w,h);g.fillStyle='#9fc0d8';for(let yy=160-h+10;yy<150;yy+=22)for(let xx=x+8;xx<x+w-12;xx+=22)g.fillRect(xx,yy,12,12);g.fillStyle='rgba(0,0,0,0.12)';g.fillRect(x+w-6,160-h,6,h);};
+    bld(-10,96,120,'#c8b89a');bld(270,100,104,'#b4a890');
+    // 空き地（草・ロープの柵）
+    g.fillStyle='#b8a878';g.fillRect(86,140,184,30);g.fillStyle='#7aa04a';for(let i=0;i<30;i++){const x=90+((i*37)%176),y=146+((i*13)%20);g.beginPath();g.moveTo(x,y);g.lineTo(x-2,y-6-(i%3)*2);g.lineTo(x+2,y);g.fill();}
+    g.strokeStyle='#e8e0cc';g.lineWidth=1.2;g.beginPath();g.moveTo(88,150);g.quadraticCurveTo(178,158,268,150);g.stroke();g.fillStyle='#8a6a3a';for(const x of [88,178,268])g.fillRect(x-1.5,142,3,24);
+    // 歩道
+    g.fillStyle='#cfc8b8';g.fillRect(0,168,360,52);g.fillStyle='#bdb5a2';for(let x=0;x<360;x+=30)g.fillRect(x,168,1,52);g.fillStyle='#8a8478';g.fillRect(0,166,360,3);
+    // 「売地」の札：倒れる
+    const fall=cl((t-1.1)/0.5,0,1);if(fall<1){g.save();g.translate(150,160);g.rotate(-fall*1.5);g.fillStyle='#8a6a3a';g.fillRect(-1.5,-46,3,46);rr(g,-22,-62,44,26,2,'#fffdf6');g.strokeStyle='#c8302a';g.lineWidth=1.5;g.strokeRect(-22,-62,44,26);tx(g,'売地',0,-53,10,'#c8302a');tx(g,'神田不動産',0,-42,5.5,'#2a2220');g.restore();}
+    if(t>1.3&&t<2.0)tx(g,'パタン',120,112,12,'#2a2220','#fff');
+    // 「建設予定地」の札：上から落ちてきて、ドン
+    const dr=t<2.2?-1:eo((t-2.2)/0.25);if(dr>=0){const yy=-120+(160+120)*dr;g.save();g.translate(220,Math.min(160,yy));if(t>2.45&&t<2.8)g.translate(Math.sin(t*80)*1.5,0);
+      g.fillStyle='#6a4a2a';g.fillRect(-46,-60,5,60);g.fillRect(41,-60,5,60);rr(g,-56,-96,112,44,3,'#fffdf6');g.strokeStyle='#2a2220';g.lineWidth=2;g.strokeRect(-56,-96,112,44);
+      tx(g,co,0,-84,Math.min(11,100/Math.max(4,co.length)),'#2a2220');tx(g,'自社ビル建設予定地',0,-66,9.5,'#c8302a');g.restore();}
+    if(t>2.4&&t<3.2){const u=t-2.4;g.fillStyle='rgba(200,180,140,'+(0.7-u)+')';for(let i=0;i<6;i++){g.beginPath();g.arc(220+(i-2.5)*16*(1+u*2),162-u*10,6+u*10,0,7);g.fill();}g.save();g.translate(310,70);g.rotate(0.12);tx(g,'ドン！',0,0,22,'#c8302a','#fff');g.restore();}
+    // 社長と不動産屋：握手
+    const shake=t>3.0;const sk2=Math.sin(t*14)*2;
+    a2Person(g,shake?72:40,216,1.0,PL,'right',{arms:'down',hands:shake?[[4,-6],[30,-24+sk2]]:null,mouth:shake?'open':'smile',blush:shake});
+    a2Person(g,shake?122:330,216,1.0,FL,'left',{arms:'down',hands:shake?[[-30,-24+sk2],[-4,-6]]:null,mouth:'open',bow:shake?0.12:0});
+    if(t<1.0)a2Bub(g,'ここが、うちの土地か……',96,92,11,cl(t*4,0,1));
+    if(t>3.2&&t<4.6)a2Bub(g,'いい買い物をされましたな！',84,92,9.5,1);
+    if(t>3.4)a2Spark(g,t,220,90,8,140,50);
+    if(t>4.6)a2Banner(g,'土地を買った！'+(yr?'（'+yr+'年）':''),t-4.6);
+  }};}
+
+// ========== 自社ビルの建設：窓から外へ → 町の上を飛ぶ → 早送りで建つ → 完成 → 新しいビルの窓へ ==========
+function a2Mix(a,b,k){const h=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));const A=h(a),B=h(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,'0')).join('');}
+function buildAnim2(o){const {ease,eo,cl,rr,tx}=a2;const X=NR.opx;const co=o.co||'名もなき出版社';const BC=document.createElement('canvas');BC.width=720;BC.height=440;const bg=BC.getContext('2d');
+  const FH=330,BY1=1010,ZF=330;const L3=(a,b,k)=>[0,1,2].map(i=>a[i]+(b[i]-a[i])*k);
+  const DAY=['#b8dcf2','#9fd0ee','#cfe6f4'],DUSK=['#e88a50','#f4b680','#fbd8b0'],NIGHT=['#0e1430','#1a2448','#2a3458'];
+  const T1=1.6,T2=4.6,T3=5.9,T4=6.5,T5=13.2,T6=15.6,END=17.4;
+  return {dur:END,draw:(g,t)=>{
+    if(t<T1){// いつもの部屋 → 窓へ寄る
+      const S0=o.snap;g.fillStyle='#1a1410';g.fillRect(0,0,360,220);if(S0){const iw=S0.img.width,ih=S0.img.height;const u=ease(t/1.4);const fx=S0.fx*iw,fy=S0.fy*ih;const w=iw+(iw*0.12-iw)*u,h=w*220/360;const cx=iw/2+(fx-iw/2)*u,cy=ih*0.4+(fy-ih*0.4)*u;g.drawImage(S0.img,cx-w/2,cy-h/2,w,h,0,0,360,220);}
+      if(t<1.0){g.globalAlpha=cl(t*4,0,1)*cl((1.0-t)*4,0,1);tx(g,'いよいよ……',180,30,16,'#fff','#2a2220');g.globalAlpha=1;}
+      if(t>1.3){g.fillStyle='rgba(255,255,255,'+cl((t-1.3)/0.3,0,1)+')';g.fillRect(0,0,360,220);}return;}
+    // 3D
+    let C,T,p=0,sky=DAY,lit=false;
+    const C0=[355,BY1+60,ZF+173],Ta=[355,2600,ZF+60],C1=[3300,4200,1700],Tb=[3300,450,700],C2=[3300,2500,620],Tc=[3300,600,330];
+    if(t<T2){const u=ease((t-T1)/(T2-T1));C=L3(C0,C1,u);C[2]=C0[2]+(C1[2]-C0[2])*Math.sin(u*Math.PI/2);T=L3(Ta,Tb,ease(Math.min(1,(t-T1)/(T2-T1)*1.4)));}
+    else if(t<T3){const u=ease((t-T2)/(T3-T2));C=L3(C1,C2,u);T=L3(Tb,Tc,u);}
+    else if(t<T4){C=C2;T=Tc;p=t<T3+0.3?0:0.03;}
+    else if(t<T5){const u=(t-T4)/(T5-T4);p=0.03+0.97*u;const a=Math.PI/2+0.55-1.1*u;const R=3000;C=[3300+Math.cos(a)*R,450+Math.sin(a)*R,1400+300*Math.sin(u*Math.PI)];T=[3300,450,800+1200*u];
+      const ph=u*6*Math.PI;const day=(Math.cos(ph)+1)/2;const dk=Math.max(0,1-day*1.6);sky=[0,1,2].map(i=>a2Mix(a2Mix(DAY[i],DUSK[i],cl((1-day)*2,0,1)),NIGHT[i],cl((1-day)*2-1,0,1)));lit=day<0.35&&p>0.55;}
+    else if(t<T6){p=1;const u=ease((t-T5)/1.0);C=L3([3300+Math.cos(Math.PI/2-0.55)*3000,450+Math.sin(Math.PI/2-0.55)*3000,1400],[3300,5200,1500],u);T=[3300,450,1450];}
+    else{p=1;const u=ease((t-T6)/(END-T6-0.3));C=L3([3300,5200,1500],[3150,1080,3*FH+180],u);T=L3([3300,450,1450],[3150,0,3*FH+170],u);}
+    X.drawB(bg,720,440,{C,T},p,{t,sky,lit});g.drawImage(BC,0,0,360,220);
+    // 札・看板の文字
+    if(t>=T2&&t<T4+0.2){const q=X.proj([3300,1152,350]);if(q){const s=Math.min(18,340*561/q[2]/2*0.22);tx(g,co,q[0]/2,q[1]/2-s*0.7,s*0.8,'#2a2220');tx(g,'自社ビル建設予定地',q[0]/2,q[1]/2+s*0.5,s*0.7,'#c8302a');}}
+    if(p>=0.95){const q=X.proj([3300,939,8*FH+170]);if(q){const s=Math.min(30,260*561/q[2]/2*0.5);tx(g,co,q[0]/2,q[1]/2,s,'#c8302a');}}
+    // 文字
+    if(t>T3&&t<T4+0.6){const k=eo((t-T3)/0.25);g.save();g.translate(180,60);g.scale(0.6+0.4*k,0.6+0.4*k);tx(g,'着工！',0,0,30,'#ffd040','#c8302a');g.restore();}
+    if(t>=T4&&t<T5){const mo=Math.min(12,Math.floor((t-T4)/(T5-T4)*12)+1);rr(g,8,8,96,24,5,'rgba(20,16,12,0.75)');tx(g,mo+'か月後……',56,20.5,12,'#fff');}
+    if(t>=T5&&t<T6+0.6){a2Confetti(g,t,T5);const k=eo((t-T5)/0.35);g.save();g.translate(180,196);g.scale(0.6+0.4*k,0.6+0.4*k);tx(g,'自社ビル、完成！',0,0,26,'#ffd040','#c8302a');g.restore();}
+    if(t>END-0.5){g.fillStyle='rgba(255,255,255,'+cl((t-END+0.5)/0.4,0,1)+')';g.fillRect(0,0,360,220);}
+  }};}
+function buildSnap(){try{const v=S.view;S.view='henshu';setCvN(NR.heightL('henshu'));layout();NR.henshu([]);const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;c.getContext('2d').drawImage(cv,0,0);const f=NR.toL(330,975,150);S.view=v;return {img:c,fx:f[0]/OW,fy:f[1]/CVH};}catch(e){return null;}}
+// 全画面で流す（タップでとばす）
+function a2Overlay(A,next){if(S.animOff){next&&next();return;}const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="color:#cfc6ae;font-size:15px">タップでとばす</div>';document.body.appendChild(ov);
+  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const t0=performance.now();let done=false;const fin=()=>{if(done)return;done=true;ov.remove();next&&next();};
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();fin();});
+  const step=()=>{if(done)return;const t=(performance.now()-t0)/1000;g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,Math.min(t,A.dur));g2.restore();if(t>A.dur+0.6){fin();return;}requestAnimationFrame(step);};requestAnimationFrame(step);}
+
+// ========== 引っ越し：社員が段ボールを運ぶ（新しいビル） ==========
+function moveAnim2(o){const {ease,eo,cl,rr,tx}=a2;const ppl=(o.ppl||[]).slice(0,5);const PL=o.pres;
+  return {dur:6.0,draw:(g,t)=>{
+    // 新しいフロア：大きな窓・明るい床
+    g.fillStyle='#eef0ec';g.fillRect(0,0,360,220);const sk=g.createLinearGradient(0,10,0,100);sk.addColorStop(0,'#9fd0ee');sk.addColorStop(1,'#d8eef8');g.fillStyle=sk;g.fillRect(10,12,340,88);
+    g.fillStyle='#b8c4d0';for(const [x,w,h] of [[14,40,50],[60,30,70],[100,50,40],[170,36,64],[220,60,46],[290,40,72]])g.fillRect(x,100-h,w,h);
+    g.fillStyle='#8a9aa8';for(let x=10;x<=350;x+=85)g.fillRect(x-2,12,4,88);g.fillRect(10,10,340,4);g.fillRect(10,98,340,4);
+    g.fillStyle='#d8c8a8';g.fillRect(0,102,360,118);g.fillStyle='rgba(0,0,0,0.05)';for(let y=110;y<220;y+=18)g.fillRect(0,y,360,1);
+    // 新品の机（ビニールつき）と、積まれた段ボール
+    for(const x of [60,150,240]){rr(g,x,128,70,14,3,'#a8b0b8');g.fillStyle='rgba(255,255,255,0.35)';g.fillRect(x+2,128,66,6);g.fillStyle='#7a828a';g.fillRect(x+6,142,5,18);g.fillRect(x+59,142,5,18);}
+    const box=(x,y,s)=>{rr(g,x-12*s,y-18*s,24*s,18*s,1.5,'#c49a5e');g.fillStyle='#a87a40';g.fillRect(x-12*s,y-11*s,24*s,2*s);g.fillStyle='#e8d8b0';g.fillRect(x-4*s,y-18*s,8*s,18*s);};
+    for(const [x,y,n] of [[320,172,3],[296,176,2],[30,170,2]])for(let k=0;k<n;k++)box(x,y-k*17,1);
+    // 社員：段ボールを持って行き来する
+    ppl.forEach((p,i)=>{const sp=46+i*9,dir=i%2?-1:1;const span=420;let x=((t*sp+i*90)%span)-30;if(dir<0)x=360-x;const y=192+(i%3)*8;
+      const hold=(g2,H,s,f)=>{const hx=(H[0][0]+H[1][0])/2,hy=(H[0][1]+H[1][1])/2;g2.save();g2.translate(hx,hy-8*s);rr(g2,-13*s,-12*s,26*s,20*s,1.5,'#c49a5e');g2.fillStyle='#e8d8b0';g2.fillRect(-4*s,-12*s,8*s,20*s);g2.restore();};
+      a2Person(g,x,y,0.95,p,dir>0?'right':'left',{walk:t*9+i,arms:'fwd',hold,sweat:i===1,ph:t});
+      if(i===1&&t%3<1.2)a2Bub(g,'重っ！',Math.max(30,Math.min(330,x)),y-118,10,1);});
+    // 社長：まん中で見ている
+    a2Person(g,180,206,1.15,PL,'down',{arms:'cross',mouth:t>3.6?'flat':'smile'});
+    if(t>3.6){a2Bub(g,'……よし。',180,74,11,cl((t-3.6)*4,0,1));}
+    if(t<1.4){g.globalAlpha=cl(t*3,0,1)*cl((1.4-t)*3,0,1);tx(g,'引っ越しの日',180,40,18,'#fff','#2a2220');g.globalAlpha=1;}
+  }};}
+// ========== 「○○と○○、ちょっと……」（廊下のすみで、ひそひそ） ==========
+function whisperAnim2(o){const {ease,eo,cl,rr,tx}=a2;const PL=o.pres,A=o.a,B=o.b;
+  return {dur:8.2,draw:(g,t)=>{
+    g.fillStyle='#e6e2d6';g.fillRect(0,0,360,220);g.fillStyle='#d4cec0';for(let x=0;x<360;x+=60)g.fillRect(x,0,2,150);g.fillStyle='#bfb6a2';g.fillRect(0,150,360,70);g.fillStyle='#a89c84';g.fillRect(0,148,360,3);
+    // 非常口と観葉植物、窓
+    rr(g,24,24,70,60,3,'#9fc8e0');g.fillStyle='#fff';g.fillRect(58,24,2,60);rr(g,300,20,44,18,2,'#3a9a5a');tx(g,'非常口',322,29.5,8,'#fff');
+    rr(g,318,118,22,30,3,'#8a5a32');for(let i=0;i<6;i++){g.fillStyle=i%2?'#3a7a3a':'#4a8a4a';g.beginPath();g.ellipse(329+Math.cos(i*1.7)*8,100-i*4,7,12,Math.cos(i)*0.8,0,7);g.fill();}
+    const near=t>2.0;const ax=near?132:lerp(-30,132,cl((t-0.9)/1.1,0,1)),bx=near?188:lerp(-60,188,cl((t-1.1)/1.1,0,1));
+    const sup=t>5.0;const ws=t>2.6&&t<5.0;
+    a2Person(g,262,210,1.2,PL,'left',{bow:ws?0.25:0,arms:'down',hands:ws?[[-14,-60],[-6,-20]]:null,mouth:t<0.9||ws?'open':'flat',brow:ws?'angry':undefined});
+    a2Person(g,ax,214,1.15,A,'right',{walk:t<2?t*9:null,bow:ws?0.18:0,eye:sup?'big':undefined,mouth:sup?'open':'flat',sweat:sup,ph:t});
+    a2Person(g,bx,210,1.15,B,'right',{walk:t<2?t*9+1:null,bow:ws?0.18:0,eye:sup?'big':undefined,mouth:sup?'open':'flat',sweat:sup,ph:t+1});
+    if(t<1.8)a2Bub(g,A.sei+'くん、'+B.sei+'くん。……ちょっと。',230,40,11,cl(t*5,0,1));
+    if(ws){tx(g,'（ひそひそ……）',220,56,13,'#6a625a','#fff');}
+    if(sup&&t<6.6){const k=eo((t-5.0)/0.2);g.save();g.translate(160,58);g.scale(0.5+0.5*k,0.5+0.5*k);tx(g,'えっ……！？',0,0,26,'#c8302a','#fff');g.restore();}
+    if(t>6.4)a2Bub(g,'まだ、誰にも言うなよ。',262,40,11,cl((t-6.4)*5,0,1));
+  }};}
+function lerp(a,b,k){return a+(b-a)*k;}
+
+// ========== 翌朝：ロビーの掲示板で発表 ==========
+// o.ppl: [{lk, line, good}]（反応する社員）、o.hon/o.fuku: 名前
+function boardAnim2(o){const {ease,eo,cl,rr,tx}=a2;const P=o.ppl.slice(0,6);
+  return {dur:3.2+P.length*1.25+1.6,draw:(g,t)=>{
+    // ロビー：朝の光、床はみがかれた石
+    g.fillStyle='#e8e2d4';g.fillRect(0,0,360,220);const sun=g.createLinearGradient(0,0,360,0);sun.addColorStop(0,'rgba(255,240,200,0.5)');sun.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=sun;g.fillRect(0,0,360,150);
+    g.fillStyle='#cfc6b2';g.fillRect(0,150,360,70);g.fillStyle='rgba(255,255,255,0.25)';for(let x=0;x<360;x+=40)g.fillRect(x,150,1,70);
+    // 掲示板
+    rr(g,90,22,180,100,4,'#6b4a2a');rr(g,96,28,168,88,2,'#c8a87a');
+    const paper=(x,y,w,h,title,lines,k)=>{if(k<=0)return;g.save();g.globalAlpha=Math.min(1,k);g.translate(x,y-(1-eo(k))*20);rr(g,0,0,w,h,1,'#fffdf6');g.fillStyle='#d02a2a';g.beginPath();g.arc(w/2,4,2.5,0,7);g.fill();tx(g,title,w/2,13,7.5,'#2a2220');g.fillStyle='#8a8478';lines.forEach((s,i)=>tx(g,s,w/2,25+i*9,5.6,'#4a4440'));g.restore();};
+    paper(102,34,74,76,'新役員のお知らせ',['本部長','　'+o.hon,'副社長','　'+o.fuku,'','以上'],(t-0.3)/0.4);
+    paper(184,34,74,76,'人事異動のお知らせ',['三誌同時発売に','ともない、','下記のとおり','配属を命ず','（別紙）',''],(t-0.7)/0.4);
+    if(t<1.6){g.globalAlpha=cl(t*3,0,1)*cl((1.6-t)*3,0,1);tx(g,'翌朝……',40,16,12,'#6a625a');g.globalAlpha=1;}
+    // 社員が集まってくる
+    P.forEach((p,i)=>{const a=1.0+i*0.25;const u=cl((t-a)/1.0,0,1);const tx0=60+i*48,x=-30+(tx0+30)*ease(u),y=206+(i%2)*6;
+      const r0=3.2+i*1.25,said=t>r0;a2Person(g,x,y,1.0,p.lk,u<1?'right':'up',{walk:u<1?t*9:null,mouth:said?'open':'flat',eye:said&&p.good?'big':undefined,sweat:said&&!p.good,blush:said&&p.good,arms:said&&p.good===2?'up':'down'});
+      if(said&&t-r0<2.6)a2Bub(g,p.line,Math.max(56,Math.min(304,x)),y-112-(i%3)*22,9,cl((t-r0)*5,0,1)*cl((2.6-(t-r0))*4,0,1));});
+  }};}
+
+// ========== 連載会議（じっくり・せりふで進む） ==========
+// D: {snap, chief, pres, vices:[{lk,name,team}], guest:{lk,role,label}|null, cut:[{title,team,pop}], cands:[{title,name,team,q,genre}], add:[title], votes:[{who,picks}], firsts:[{title,art,tan}]}
+function meetScript(D){const B=[];const q=s=>'「'+s+'」';const P=a=>a[Math.floor(Math.random()*a.length)];
+  const vk=tm=>D.vices.findIndex(v=>v.team===tm);const vkey=tm=>{const i=vk(tm);return i<0?null:'v'+i;};
+  const say=(who,text,o={})=>B.push(Object.assign({who,text},o));
+  // 1. 寄る
+  B.push({who:'narr',text:'半年に一度の、連載会議。',cam:'snap',fixed:3.2});
+  say('chief','では、連載会議を始めます。',{cam:'wide'});
+  // 2. 打ち切り（ふだんは反対なし。たまに副編が「待ってください！」）
+  if(D.cut.length){say('chief','今回、打ち切りは……'+D.cut.map(c=>q(c.title)).join('と')+'だ。',{cam:'wide',cards:'cut',dim:1,tag:'打ち切り'});
+    let objV=null;const SM=D.summon;
+    D.cut.forEach((c,ci)=>{const v=vkey(c.team);const obj=v&&!objV&&(D.forceObj?ci===0:ci===D.objIdx);
+      if(obj){objV=v;B.push({who:v,text:'待ってください！！',objection:v,fixed:2.6,tag:'打ち切り'});
+        say(v,P([q(c.title)+'は、ここからなんです！次の展開で、必ず盛り返します！',q(c.title)+'は、先生がいちばんノッているところなんです。もう少しだけ時間をください！',q(c.title)+'の読者は、まだ離れていません！']),{cam:v,dim:1,tag:'打ち切り'});
+        if(D.guest)say('guest',{keibu:'数字は正直です。原稿料に見合っていませんな。打ち切りでも仕方ないでしょう。',eibu:'書店でも動いていません。正直、売り場では厳しいです。',senbu:'宣伝も打ちましたが、反応が薄いですね……。'}[D.guest.role]||'厳しいですね。',{cam:'guest',dim:1,tag:'打ち切り'});
+        if(SM&&SM.idx===ci){// 担当を呼べ！
+          say('chief','……担当を呼べ！',{cam:'chief',dim:1,tag:'打ち切り',shout:1});
+          B.push({who:'narr',text:'（ガチャ……）',summon:'enter',fixed:2.2,tag:'打ち切り'});
+          say('tan','し、失礼します……！',{summon:'in',cam:'tan',tag:'打ち切り'});
+          say('chief',P([q(c.title)+'の魅力を、ひと言で言ってみろ。',q(c.title)+'は、ここから何が変わる？']),{summon:'in',cam:'chief',tag:'打ち切り'});
+          say('tan',SM.win?P(['次の章で、主人公が初めて負けます。そこからが本番なんです！','先生は、もう最終回までのネームを持っています。ここからが一番おもしろいんです！']):P(['え、えっと……キャラクターが……いいんです！','そ、その……熱さです！たぶん……！']),{summon:'in',cam:'tan',tag:'打ち切り'});
+          say('chief','この先生、あと半年で化けるのか？',{summon:'in',cam:'chief',tag:'打ち切り'});
+          say('tan',SM.win?'化けます。わたしが、化けさせます。':'ば、化けます！……きっと！',{summon:'in',cam:'tan',tag:'打ち切り'});
+          say('chief','……もういい、帰れ。',{summon:'in',cam:'chief',tag:'打ち切り'});
+          B.push({who:'narr',text:'（バタン）',summon:'exit',fixed:1.8,tag:'打ち切り'});
+          if(SM.win){say('chief','……ふん。いい目をしてるな。'+q(c.title)+'は、あと半年だけ様子を見る。',{cam:'chief',tag:'打ち切り',saved:1});if(D.guest)say('guest','……編集長がそうおっしゃるなら。',{cam:'guest',tag:'打ち切り',saved:1});}
+          else{say('chief','……まだ甘いな。やはり打ち切りだ。',{cam:'chief',dim:1,tag:'打ち切り'});if(D.guest)say('guest','担当の熱意は買いますがね。',{cam:'guest',dim:1,tag:'打ち切り'});}}}});
+    if(!objV&&D.guest)say('guest',P(['異論はありません。','妥当な判断でしょう。','数字を見れば、仕方ないですね。']),{cam:'guest',dim:1,tag:'打ち切り'});
+    const fin=D.cut.filter((c,ci)=>!(SM&&SM.win&&SM.idx===ci));
+    if(fin.length)say('chief',(objV&&!(SM&&SM.win)?'……気持ちはわかる。だが、決めた。':'……では、決まりだ。')+fin.map(c=>q(c.title)).join('、')+'は打ち切る。',{cam:'wide',dim:1,tag:'打ち切り',stampCut:1});
+    if(objV&&!(SM&&SM.win))say(objV,'……わかりました。先生には、わたしから伝えます。',{cam:objV,dim:1,tag:'打ち切り'});
+    if(SM&&SM.win)say(objV,'ありがとうございます！',{cam:objV,tag:'打ち切り',saved:1});}
+  else{say('chief','今回、打ち切りはなしだ。全作、続ける。',{cam:'chief',tag:'打ち切り'});if(D.vices[0])say('v0','よしっ……！',{cam:'v0'});}
+  // 3. 新連載：ネームを1作ずつ読む
+  if(D.cands.length){say('chief','次は新連載だ。各班のネームを読もう。',{cam:'wide',tag:'新連載'});
+    D.cands.forEach((c,i)=>{const v=vkey(c.team)||'chief';
+      say(v,(v==='chief'?'':'うちの班からは、')+c.name+'先生の'+q(c.title)+'です。',{cam:v,tag:'新連載',name:i});
+      B.push({who:'narr',text:'（ペラ……ペラ……）',neme:i,fixed:2.6,tag:'新連載'});
+      const good=c.q>=2,mid=c.q===1;const others=['chief','guest','v0','v1'].filter(k=>k!==v&&(k==='chief'||(k==='guest'&&D.guest)||(k[0]==='v'&&D.vices[+k[1]])));
+      const a=others[i%others.length],b=others[(i+1)%others.length];
+      say(a,good?P(['さすが'+c.name+'先生だ。引きが強い。','これは化けるぞ。','読ませるな……。']):mid?P(['悪くない。もうひと押しだな。','絵はいいが、話がまだ弱い。','光るものはある。']):P(['これは、まだだな。','うーん……もう少し時間がほしい。','今回は厳しいな。']),{cam:a,tag:'新連載',onTable:i});
+      if(b&&b!==a)say(b,good?P(['わたしも推します。','読者アンケート、取れますよ。']):mid?P(['次のネームしだいですね。','化けるかどうか……。']):P(['同感です。','ネームから練り直しですね。']),{cam:b,tag:'新連載',onTable:i});});
+    // 4. それぞれの推し
+    say('chief','では、それぞれ推す作品を言ってくれ。',{cam:'wide',tag:'新連載',onTable:99});
+    const QQ={};D.cands.forEach(c=>QQ[c.title]=c.q);
+    for(const v of D.votes){if(v.who==='chief')continue;say(v.who,v.picks.length?'わたしは'+v.picks.map(q).join('と')+'です。':'今回は、推せる作品がありません。',{cam:v.who,tag:'推し',onTable:99,vote:v.picks});
+      const bad=v.picks.find(t=>QQ[t]===0);if(bad){const o=['chief','v0','v1','guest'].find(k=>k!==v.who&&(k==='chief'?D.chief:k==='guest'?D.guest:D.vices[+k[1]]));if(o)say(o,P(['……'+q(bad)+'ですか？','え、'+q(bad)+'を推すんですか？','……本気か？']),{cam:o,tag:'推し',onTable:99});}}
+    say('chief',D.add.length?'……よし。新連載は'+D.add.map(q).join('と')+'でいく！':'……今回は、新連載はなしだ。',{cam:'wide',tag:'新連載',onTable:99,stampAdd:1});}
+  else say('chief','今回は、新連載にあげられるネームがないな……。',{cam:'chief',tag:'新連載'});
+  // 5. 社長の承認
+  say('chief','社長。ご承認を。',{cam:'chief',tag:'採決',onTable:99});
+  B.push({who:'narr',text:'…………',cam:'pres',fixed:1.8,tag:'採決',tense:1,onTable:99});
+  say('pres','……うむ。承認する。',{cam:'pres',tag:'採決',approve:1,onTable:99,fixed:3.2});
+  // 6. 初連載の先生は、担当と抱き合う
+  for(const f of D.firsts.slice(0,2)){say('tan','先生！'+q(f.title)+'、連載が決まりました！',{scene:'hug',f,hug:0});say('art','ほ、ほんとですか！？',{scene:'hug',f,hug:0});B.push({who:'art',text:'やったーーー！！',scene:'hug',f,hug:1,fixed:2.6});}
+  B.push({who:'narr',text:'',end:1,fixed:2.4});
+  for(const b of B)if(b.who==='chief'&&(b.stampCut||b.stampAdd||b.shout||/始めます|次は新連載|それぞれ推す|ご承認|今回、打ち切りは/.test(b.text)))b.stand=1;
+  return B;}
+
+function meetAnim3(D){const {ease,eo,cl,rr,tx}=a2;const B=meetScript(D);
+  const NAME={chief:(D.chiefSei||'')+'編集長',pres:(D.presSei||'')+'社長',guest:D.guest?(D.guest.sei||'')+D.guest.label:'部長',v0:D.vices[0]?D.vices[0].sei+'副編':'',v1:D.vices[1]?D.vices[1].sei+'副編':'',narr:'',tan:D.summon?D.summon.sei+'（担当）':'担当',art:'先生'};
+  const POS={tan:[262,150,1.45],chief:[118,128,2.0],chiefUp:[118,116,2.0],pres:[180,126,1.65],guest:[242,134,1.6],v0:[64,150,1.5],v1:[296,150,1.5],wide:[180,126,1],table:[180,150,1.3]};
+  const clampC=([x,y,z])=>[Math.max(180/z-60,Math.min(420-180/z,x)),Math.max(110/z,Math.min(236-110/z,y)),z];
+  const dur=b=>b.fixed||Math.max(1.8,0.8+[...b.text].length/14+1.1);
+  const st={i:0,t0:0,typed:0,cam:[180,126,1],from:[180,126,1],ct:0};
+  const card=(g,x,y,w,h,title,col,bk)=>{g.save();g.translate(x,y);g.fillStyle='rgba(0,0,0,0.25)';g.fillRect(-w/2+2,-h/2+3,w,h);rr(g,-w/2,-h/2,w,h,4,bk||'#fffdf6');rr(g,-w/2,-h/2,w,8,4,col);g.fillStyle=col;g.fillRect(-w/2,-h/2+4,w,4);const fs=Math.min(9,(w-6)/Math.max(3,title.length+1));tx(g,'「'+title+'」',0,3,fs,'#2a2220');g.restore();};
+  const stamp=(g,x,y,s,txt,col,k)=>{if(k<=0)return;g.save();g.translate(x,y);g.rotate(-0.18);const sc=1+(1-eo(k))*1.6;g.scale(sc*s,sc*s);g.globalAlpha=Math.min(1,k*3)*0.92;g.strokeStyle=col;g.lineWidth=3;rr(g,-26,-12,52,24,4);g.stroke();tx(g,txt,0,1,14,col);g.restore();};
+  const room=g=>{room0(g);g.save();g.translate(-360,0);g.scale(1,1);g.beginPath();g.rect(300,0,60,260);g.clip();room0(g);g.restore();g.save();g.translate(360,0);g.beginPath();g.rect(0,0,60,260);g.clip();room0(g);g.restore();};
+  const room0=g=>{// 運営部の応接室：ガラスのしきりの向こうに運営部
+    // ガラスの向こう（ぼかした運営部）
+    const gl=g.createLinearGradient(0,0,0,96);gl.addColorStop(0,'#e8eef0');gl.addColorStop(1,'#cdd8de');g.fillStyle=gl;g.fillRect(0,0,360,96);
+    g.fillStyle='#f6f8f0';for(let x=30;x<360;x+=90)g.fillRect(x,6,50,3);
+    g.fillStyle='rgba(150,160,170,0.55)';for(const [x,y] of [[20,58],[110,64],[200,58],[290,64]]){g.fillRect(x,y,56,12);g.fillRect(x+4,y+12,4,14);g.fillRect(x+48,y+12,4,14);}
+    g.fillStyle='rgba(90,100,120,0.45)';for(const [x,y] of [[44,40],[140,46],[236,40],[318,46]]){g.beginPath();g.arc(x,y,7,0,7);g.fill();g.fillRect(x-8,y+7,16,16);}
+    g.fillStyle='rgba(255,255,255,0.28)';for(let x=-40;x<360;x+=90){g.beginPath();g.moveTo(x,0);g.lineTo(x+22,0);g.lineTo(x+70,96);g.lineTo(x+48,96);g.fill();}
+    // しきりの枠と腰板
+    g.fillStyle='#7a4e2a';for(let x=0;x<=360;x+=90)g.fillRect(x-3,0,6,96);g.fillRect(0,0,360,5);g.fillRect(0,92,360,5);
+    const wd=g.createLinearGradient(0,96,0,124);wd.addColorStop(0,'#8a5a32');wd.addColorStop(1,'#6b4224');g.fillStyle=wd;g.fillRect(0,96,360,28);g.fillStyle='rgba(0,0,0,0.18)';for(let x=0;x<360;x+=45)g.fillRect(x,98,1.5,26);g.fillStyle='#c9a24a';g.fillRect(0,96,360,1.5);
+    // じゅうたん
+    g.fillStyle='#24384f';g.fillRect(0,124,360,140);const cp=g.createLinearGradient(0,124,0,240);cp.addColorStop(0,'#2e4a6a');cp.addColorStop(1,'#3a5a7e');g.fillStyle=cp;g.beginPath();g.moveTo(40,130);g.lineTo(320,130);g.lineTo(356,240);g.lineTo(4,240);g.closePath();g.fill();
+    g.strokeStyle='#c9a24a';g.lineWidth=1.6;g.beginPath();g.moveTo(48,135);g.lineTo(312,135);g.lineTo(344,236);g.lineTo(16,236);g.closePath();g.stroke();
+    // 植木と電気スタンド
+    rr(g,330,104,22,26,3,'#8a5a32');for(let i=0;i<7;i++){g.fillStyle=i%2?'#3a7a3a':'#4a8a4a';g.beginPath();g.ellipse(341+Math.cos(i*1.7)*9,86-i*5,8,14,Math.cos(i)*0.8,0,7);g.fill();}
+    g.fillStyle='#3a3a3a';g.fillRect(19,60,2.5,66);rr(g,8,48,24,16,3,'#f0e6c8');g.fillStyle='rgba(255,240,190,0.18)';g.beginPath();g.moveTo(10,64);g.lineTo(30,64);g.lineTo(44,124);g.lineTo(-4,124);g.fill();
+    // 奥のソファ
+    rr(g,84,100,192,40,10,'#3a3f4a');g.fillStyle='rgba(255,255,255,0.08)';g.fillRect(90,103,180,3);for(let k=0;k<3;k++)rr(g,92+k*60,118,56,26,7,'#444a56');rr(g,74,112,20,40,8,'#343844');rr(g,266,112,20,40,8,'#343844');};
+  const table=g=>{// ローテーブル（ガラスの天板・湯のみ・灰皿・書類）
+    g.fillStyle='rgba(0,0,0,0.28)';g.beginPath();g.ellipse(180,184,96,9,0,0,7);g.fill();
+    g.fillStyle='#4a2a16';g.fillRect(98,160,7,22);g.fillRect(255,160,7,22);g.fillRect(104,170,152,4);
+    rr(g,90,148,180,14,4,'#6b3a22');rr(g,92,146,176,6,3,'#8a5032');g.fillStyle='rgba(200,230,255,0.35)';g.fillRect(96,146.5,168,2);
+    for(const x of [116,244]){rr(g,x-5,136,10,11,2,'#f4f0e4');g.fillStyle='#6a8a5a';g.fillRect(x-4,137,8,2);}
+    g.fillStyle='#b8bcc0';g.beginPath();g.ellipse(212,145,8,3,0,0,7);g.fill();g.fillStyle='#8a8e92';g.beginPath();g.ellipse(212,144.5,5,1.8,0,0,7);g.fill();};
+  // 名札（座っているところ）
+  const plate=(g,x,y,txt)=>{if(!txt)return;g.save();g.font="7.5px 'Mochiy Pop One',sans-serif";const w=g.measureText(txt).width+10;rr(g,x-w/2,y,w,12,2.5,'#fbf6e6');g.strokeStyle='#8a6a3a';g.lineWidth=1;g.stroke();g.fillStyle='rgba(0,0,0,0.15)';g.fillRect(x-w/2+1,y+12,w-2,1.5);tx(g,txt,x,y+6.5,7.5,'#2a2220');g.restore();};
+  const people=(g,b,T,talk)=>{const sp=k=>b.who===k&&talk;const sw=!!b.tense||b.dim;const ok=b.approve&&T>1.6;
+    if(D.chief)a2Person(g,118,b.stand?150:168,0.8,D.chief,'down',{sit:b.stand?0:1,arms:b.stand?(b.shout?'fwd':'down'):undefined,mouth:sp('chief')||ok?'open':'flat',ph:T,sweat:sw&&b.who!=='chief'});
+    if(D.guest)a2Person(g,242,168,0.8,D.guest.lk,'down',{sit:1,mouth:sp('guest')||ok?'open':'flat',ph:T,sweat:sw});
+    a2Person(g,180,170,1.0,D.pres,'down',{sit:1,mouth:sp('pres')?'open':'flat',brow:b.tense?'angry':undefined,arms:ok?'up':'cross',hands:ok?[[-28,-4],[24,-76]]:null});
+    table(g);
+    if(D.vices[0])a2Person(g,46,206,1.2,D.vices[0].lk,'right',{sit:'chair',mouth:sp('v0')||ok?'open':'flat',ph:T,sweat:sw&&b.who!=='v0',bow:b.dim&&D.cut.some(c=>c.team===D.vices[0].team)&&!sp('v0')?0.15:0});
+    plate(g,118,164,D.chief?NAME.chief:'');plate(g,180,164,NAME.pres);plate(g,242,164,D.guest?NAME.guest:'');
+    if(D.vices[1])a2Person(g,314,206,1.2,D.vices[1].lk,'left',{sit:'chair',mouth:sp('v1')||ok?'open':'flat',ph:T+1,sweat:sw&&b.who!=='v1',bow:b.dim&&D.cut.some(c=>c.team===D.vices[1].team)&&!sp('v1')?0.15:0});
+    if(D.vices[0])plate(g,52,96,NAME.v0);if(D.vices[1])plate(g,308,96,NAME.v1);
+    if(b.summon&&D.summon){const L0=D.summon.lk;let x=262,dir='up',w=null,bw=0;
+      if(b.summon==='enter'){const k=cl((T-0.5)/1.4,0,1);x=390-128*ease(k);dir=k<1?'left':'up';w=k<1?T*9:null;bw=k>=1?0.2:0;}
+      if(b.summon==='exit'){const k=cl((T-0.5)/1.1,0,1);x=262+140*ease(k);dir=k>0?'right':'up';w=k>0?T*9:null;bw=k<=0?0.25:0;}
+      a2Person(g,x,222,0.98,L0,dir,{walk:w,sweat:1,ph:T,bow:bw,mouth:sp('tan')?'open':'flat'});}};
+  const cardsOn=(g,b,T)=>{if(b.cards==='cut'||(b.tag==='打ち切り'&&D.cut.length)){D.cut.slice(0,3).forEach((c,i)=>{const k=b.cards==='cut'?eo((T-0.4-i*0.25)/0.35):1;const x=180+(i-(Math.min(3,D.cut.length)-1)/2)*64,y=146-(1-k)*80;card(g,x,y,58,32,c.title,'#8a8478');const sv=D.summon&&D.summon.win&&D.summon.idx===i;if(sv&&(b.saved||b.stampCut))stamp(g,x,y+2,0.62,'続行','#2a7a3a',b.saved?(T-0.6)/0.25:1);else if(b.stampCut)stamp(g,x,y+2,0.62,'打ち切り','#d02a2a',(T-1.2-i*0.2)/0.25);});}
+    if(b.onTable!=null){const n=Math.min(b.onTable===99?99:b.onTable+1,D.cands.length,5);const sel=new Set(D.add);for(let i=0;i<n;i++){const c=D.cands[i];const x=180+(i-(n-1)/2)*Math.min(52,200/n),y=152;card(g,x,y,48,26,c.title,'#e0a020');
+        if(b.vote&&b.vote.includes(c.title)){g.save();g.globalAlpha=0.5+0.5*Math.abs(Math.sin(T*6));g.strokeStyle='#ffd040';g.lineWidth=2.5;rr(g,x-26,y-15,52,30,5);g.stroke();g.restore();}
+        if((b.stampAdd||b.approve||b.tag==='採決')&&sel.has(c.title))stamp(g,x,y+1,0.5,'連載','#d02a2a',b.stampAdd?(T-1.4-i*0.15)/0.25:1);}}};
+  const neme=(g,b,T)=>{const c=D.cands[b.neme];g.fillStyle='rgba(20,16,12,0.8)';g.fillRect(0,0,360,220);const fl=Math.floor(T/0.8);
+    for(const side of [-1,1]){g.save();g.translate(180+side*66,112);rr(g,-62,-90,124,180,3,'#fbf8ee');g.strokeStyle='#2a2220';g.lineWidth=1.2;
+      const PN=[[[-54,-82,108,48]],[[-54,-30,52,58],[2,-30,52,58]],[[-54,32,108,50]]];let k=0;for(const row of PN)for(const [x,y,w,h] of row){g.strokeRect(x,y,w,h);const sd=(fl*7+k+(side>0?3:0))%5;g.save();g.beginPath();g.rect(x,y,w,h);g.clip();g.strokeStyle='#6a625a';g.lineWidth=1;
+          g.beginPath();g.arc(x+w*(0.3+sd*0.1),y+h*0.45,Math.min(w,h)*0.18,0,7);g.stroke();g.beginPath();g.moveTo(x+w*(0.3+sd*0.1),y+h*0.62);g.lineTo(x+w*(0.3+sd*0.1),y+h*0.95);g.stroke();
+          if(sd%2){g.beginPath();g.ellipse(x+w*0.75,y+h*0.25,w*0.18,h*0.14,0,0,7);g.stroke();}if(sd===3){for(let j=0;j<6;j++){g.beginPath();g.moveTo(x+w*0.5,y+h*0.5);g.lineTo(x+w*(0.5+Math.cos(j)*0.6),y+h*(0.5+Math.sin(j)*0.6));g.stroke();}}g.restore();k++;}
+      g.restore();}
+    g.fillStyle='#e8e0cc';g.fillRect(178,22,4,180);rr(g,98,4,164,18,4,'#e0a020');tx(g,'ネーム「'+c.title+'」'+c.name,180,13.5,Math.min(10,150/Math.max(6,c.title.length+c.name.length+6)),'#2a2220');
+    if(T%0.8<0.25){g.save();g.globalAlpha=1-(T%0.8)/0.25;g.fillStyle='#fbf8ee';const w=124*(1-(T%0.8)/0.25);g.fillRect(246+(124-w)/2-62,22,w,180);g.restore();}};
+  const hug=(g,b,T)=>{const f=b.f;g.fillStyle='#e9dfc6';g.fillRect(0,0,360,220);g.fillStyle='#d8ccae';g.fillRect(0,0,360,24);for(let x=10;x<360;x+=60){rr(g,x,40,40,56,3,'#b9d4e4');}g.fillStyle='#c9b28a';g.fillRect(0,150,360,70);
+    const h=b.hug;const j=h?Math.abs(Math.sin(T*7))*10:0;const dx=h?16:52;
+    rr(g,24,120,90,40,4,'#8a5a32');g.fillStyle='#fffdf6';for(let i=0;i<4;i++)g.fillRect(34+i*6,112-i*3,40,8);
+    a2Person(g,180-dx,214,1.75,f.tan,'right',{jump:j,arms:h?'up':'down',hands:h?[[22,-54],[44,-58]]:null,mouth:'open',blush:h});
+    a2Person(g,180+dx,214,1.75,f.art,'left',{jump:j,arms:h?'up':'down',hands:h?[[-44,-58],[-22,-54]]:null,mouth:'open',blush:1,eye:h?'smile':undefined});
+    if(h){a2Spark(g,T,180,100,14,150,80);a2Confetti(g,T,0);tx(g,'初連載！',180,34,24,'#ffd040','#c8302a');}};
+  // 「待ってください！」：副編のアップ＋稲妻
+  const objection=(g,b,T)=>{const v=D.vices[+b.objection[1]];if(!v)return;const lk=Object.assign({},v.lk,{brow:'angry',mouth:'open',eye:'big'});
+    const sk=T<0.7?(Math.sin(T*97)*4+Math.cos(T*61)*3)*(1-T/0.7):0;g.save();g.translate(sk,sk*0.6);
+    g.fillStyle='#000';g.fillRect(-10,-10,380,240);
+    // 大きな稲妻1本：右上から左下へ斜めに走る。上が細く、下が太い。人の後ろを通る
+    const fl=T<0.18||(T>0.5&&T<0.6)||(T>1.3&&T<1.36);const grow=eo(T/0.16);
+    if(fl){g.fillStyle='rgba(120,140,255,0.16)';g.fillRect(-10,-10,380,240);}
+    {const P0=[350,-20],P1=[10,240];const dx=P1[0]-P0[0],dy=P1[1]-P0[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
+      const Z=[0,0.18,0.3,0.5,0.62,0.82,1];const off=[0,34,-26,40,-30,28,0];const N=Z.length;const up=Z.map(z=>Math.min(z,grow));
+      const L2=[],R2=[];for(let k=0;k<N;k++){const z=up[k];const w=3+z*30+z*z*22;const cx=P0[0]+dx*z+nx*off[k]*Math.min(1,z*4),cy=P0[1]+dy*z+ny*off[k]*Math.min(1,z*4);L2.push([cx+nx*w,cy+ny*w]);R2.push([cx-nx*w,cy-ny*w]);}
+      const path=()=>{g.beginPath();L2.forEach((q,k)=>k?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));for(let k=N-1;k>=0;k--)g.lineTo(R2[k][0],R2[k][1]);g.closePath();};
+      g.save();g.globalAlpha=fl?1:0.7;g.shadowColor=fl?'#ffffff':'#fff3a0';g.shadowBlur=fl?34:14;path();g.fillStyle=fl?'#fffbe6':'#ffe040';g.fill();g.shadowBlur=0;
+      // 芯（白い細い線）
+      g.strokeStyle='rgba(255,255,255,0.9)';g.lineWidth=2;g.beginPath();for(let k=0;k<N;k++){const z=up[k];const cx=P0[0]+dx*z+nx*off[k]*Math.min(1,z*4),cy=P0[1]+dy*z+ny*off[k]*Math.min(1,z*4);k?g.lineTo(cx,cy):g.moveTo(cx,cy);}g.stroke();g.restore();}
+    // 顔（ぐっと寄る）
+    const k=eo(T/0.22),r=30+30*k;const HY=104;a2.rr(g,180-r*1.15,HY+r*0.7,r*2.3,r*2.2,r*0.5,v.lk.jacket||v.lk.shirt||'#3a3e48');
+    if(v.lk.tie){g.fillStyle=v.lk.tie;g.beginPath();g.moveTo(180-r*0.1,HY+r*0.75);g.lineTo(180+r*0.1,HY+r*0.75);g.lineTo(180+r*0.14,HY+r*1.6);g.lineTo(180-r*0.14,HY+r*1.6);g.fill();}
+    NR.headA(g,180,HY,r,lk,lk.skin||'#f2c9a0',lk.hair||'#2a2220','down',r/12);
+    // 汗と気合い
+    g.fillStyle='#8ad0ff';for(const [dx,dy] of [[-1.05,-0.2],[1.08,-0.35]]){const x=180+dx*r,y=HY+dy*r+((T*30)%6);g.beginPath();g.moveTo(x,y-7);g.quadraticCurveTo(x+5,y+3,x,y+6);g.quadraticCurveTo(x-5,y+3,x,y-7);g.fill();}
+    g.restore();
+    if(T<0.12){g.fillStyle='rgba(255,255,255,'+(1-T/0.12)+')';g.fillRect(0,0,360,220);}
+    // 文字
+    const s2=T<0.3?1.6-eo(T/0.3)*0.6:1+Math.sin(T*10)*0.02;g.save();g.translate(180,192);g.rotate(-0.05);g.scale(s2,s2);tx(g,'待ってください！！',0,0,30,'#ffe040','#c8302a');g.restore();};
+  // せりふの箱
+  const box=(g,b,shown)=>{if(!b.text)return;const nm=NAME[b.who];g.fillStyle='rgba(20,16,12,0.86)';rr(g,6,164,348,50,8,'rgba(20,16,12,0.86)');g.strokeStyle='#c9a24a';g.lineWidth=1.5;g.stroke();
+    if(nm){rr(g,14,156,Math.max(48,nm.length*10+14),16,4,'#c9a24a');tx(g,nm,14+Math.max(48,nm.length*10+14)/2,164.5,9.5,'#2a2220');}
+    g.save();g.font="12px 'Mochiy Pop One',sans-serif";g.textBaseline='top';g.fillStyle='#fffdf6';const s=[...b.text].slice(0,shown).join('');let line='',y=176;for(const ch of s){if(g.measureText(line+ch).width>326){g.fillText(line,16,y);line='';y+=16;}line+=ch;}g.fillText(line,16,y);g.restore();};
+  const draw=(g,now)=>{const b=B[st.i];if(!b)return true;const T=now-st.t0;const n=[...b.text].length;st.typed=Math.min(n,Math.floor(T*16));
+    // カメラ
+    const want=b.cam==='snap'?null:(b.who==='chief'&&b.stand?POS.chiefUp:b.who&&POS[b.who]&&!b.summon?POS[b.who]:b.who==='tan'?POS.tan:(POS[b.cam]||POS.wide));if(want&&(st.to!==want)){st.from=st.cam.slice();st.to=want;st.ct=now;}if(want){const k=ease((now-st.ct)/0.6);st.cam=clampC([0,1,2].map(i=>st.from[i]+(want[i]-st.from[i])*k));}
+    if(b.cam==='snap'){const S0=D.snap;g.fillStyle='#1a1410';g.fillRect(0,0,360,220);if(S0){const iw=S0.img.width,ih=S0.img.height;const u=ease(T/2.6);const fx=S0.fx*iw,fy=S0.fy*ih;const w=iw+(iw*0.36-iw)*u,h=w*220/360;const cx=iw/2+(fx-iw/2)*u,cy=ih/2+(fy-ih/2)*u;g.drawImage(S0.img,cx-w/2,cy-h/2,w,h,0,0,360,220);}
+      if(T>2.7){g.fillStyle='rgba(255,255,255,'+cl((T-2.7)/0.4,0,1)+')';g.fillRect(0,0,360,220);}st.cam=[180,126,1];st.from=st.cam.slice();st.to=POS.wide;st.ct=now;box(g,b,st.typed);return false;}
+    if(b.scene==='hug'){hug(g,b,T);box(g,b,st.typed);return false;}
+    if(b.objection){objection(g,b,T);return false;}
+    if(b.end){g.save();const [cx,cy,z]=st.cam;g.translate(180,110);g.scale(z,z);g.translate(-cx,-cy);room(g);people(g,{who:'',approve:1},5);cardsOn(g,{onTable:99,approve:1},5);g.restore();a2Spark(g,T,180,100,10,170,80);a2Banner(g,'新連載 '+D.add.length+'本 ／ 打ち切り '+D.cut.length+'本',T);return false;}
+    const shake=b.approve&&T>1.6&&T<1.9?Math.sin(T*90)*2.5:0;
+    g.save();const [cx,cy,z]=st.cam;g.translate(180+shake,110);g.scale(z,z);g.translate(-cx,-cy);room(g);people(g,b,T,st.typed<n);cardsOn(g,b,T);if(b.dim||b.tense){g.fillStyle='rgba(20,20,50,0.22)';g.fillRect(0,0,360,220);}g.restore();
+    if(b.neme!=null)neme(g,b,T);
+    if(b.tag){const col={打ち切り:'#d02a2a',新連載:'#e0a020',推し:'#3a8a4a',採決:'#2a4a8a'}[b.tag]||'#555';rr(g,8,8,70,20,4,col);tx(g,b.tag,43,18.5,11,'#fff');}
+    if(b.stampCut&&T>1.2&&T<2)tx(g,'ドン！',300,60,20,'#d02a2a','#fff');
+    if(b.shout&&T<1.4){g.save();g.translate(180,64);g.rotate(-0.06);const k=eo(T/0.2);g.scale(0.6+0.4*k,0.6+0.4*k);tx(g,'担当を呼べ！',0,0,26,'#fff','#c8302a');g.restore();}
+    if(b.summon==='enter'&&T<1.2)tx(g,'ガチャ',320,70,18,'#2a2220','#fff');if(b.summon==='exit'&&T>1.2)tx(g,'バタン',320,70,18,'#2a2220','#fff');
+    if(b.approve&&T>1.6){stamp(g,272,64,1.7,'承認','#e8382a',(T-1.6)/0.3);a2Spark(g,T,180,100,12,170,80);}
+    box(g,b,st.typed);return false;};
+  return {B,st,dur,draw,
+    next(now){const b=B[st.i];if(!b)return true;const n=[...b.text].length;if(st.typed<n&&!b.fixed){st.t0=now-n/16-0.01;return false;}st.i++;st.t0=now;return st.i>=B.length;},
+    auto(now){const b=B[st.i];if(!b)return true;if(now-st.t0>dur(b)){st.i++;st.t0=now;}return st.i>=B.length;}};}
+// 本物の運営部の部屋の絵を取っておく（応接室の位置つき）
+function meetSnap(){try{const v=S.view;S.view='unei';setCvN(NR.heightL('unei'));layout();NR.unei([]);const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;c.getContext('2d').drawImage(cv,0,0);
+  const f=NR.toL(512,176,70);S.view=v;return {img:c,fx:f[0]/OW,fy:f[1]/CVH};}catch(e){return null;}}
+function meetData(){const H=S.half||{};const RL=x=>x?NR.roughLook(x,NR.lookOf(x)):null,SL=x=>x?NR.suitLook(x,NR.lookOf(x)):null;const M=id=>S.manga.find(x=>x.id===id);const ttl=m=>m?(m.title||m.name+'先生の新作'):'';const c=chief();
+  const tmOf=m=>((staffById(m.tantou)||{}).team||0);const qOf=m=>{const r=mRank(m);return 'SA'.includes(r[0])?2:'BC'.includes(r[0])?1:0;};
+  const vs=[0,1].map(tm=>byRole('vice').find(x=>x.team===tm)).filter(Boolean).map(v=>({lk:RL(v),name:v.name,sei:v.sei||String(v.name).split(' ')[0],team:v.team||0}));
+  const gs=H.guest?byRole(H.guest)[0]:null;
+  const candIds=[...new Set([...(H.pass||[]),...(H.add||[])])].filter(id=>M(id)).slice(0,5);
+  const cands=candIds.map(id=>{const m=M(id);return {id,title:ttl(m),name:m.name,team:tmOf(m),q:qOf(m),sc:mLevel(m)};});
+  const addT=(H.add||[]).map(M).filter(Boolean).map(ttl);
+  // それぞれの推し
+  const votes=[];const pick2=(arr)=>arr.slice(0,Math.max(1,Math.min(2,addT.length||1))).map(c=>c.title);
+  const HV=H.votes||{};const tl=ids=>(ids||[]).map(M).filter(Boolean).map(ttl);
+  if(cands.length){vs.forEach((v,i)=>{let p=tl(HV['t'+v.team]);if(!p.length){const own=[...cands].sort((a,b)=>((b.team===v.team)*30+b.sc)-((a.team===v.team)*30+a.sc));p=pick2(own);}votes.push({who:'v'+i,picks:p});});
+    if(gs){let p=tl(HV.guest);if(!p.length&&H.guestPick)p=tl([H.guestPick]);votes.push({who:'guest',picks:p});}
+    if(c)votes.push({who:'chief',picks:tl(HV.chief||H.chiefAdd||H.add).slice(0,2)});}
+  const firsts=(H.add||[]).map(M).filter(m=>m&&!m.debuted).map(m=>({title:ttl(m),art:NR.lookOf(m),tan:staffById(m.tantou)?RL(staffById(m.tantou)):NR.lookOf(PRES)}));
+  const cutM=(H.cut||[]).map(M).filter(Boolean);let objIdx=-1,summon=null;
+  {const vt=new Set(vs.map(v=>v.team));const ok=cutM.map((m,i)=>vt.has(tmOf(m))?i:-1).filter(i=>i>=0);
+    if(ok.length&&Math.random()<0.3){objIdx=ok[0];const m=cutM[objIdx];const t=staffById(m.tantou);
+      if(t&&Math.random()<0.35){// 担当の審美 vs 一番強い相手（編集長・呼んだ部長）
+        const bg=x=>x?(x.hidden?45:(x.bigan||40)):0;const opp=Math.max(bg(c),bg(gs));const win=bg(t)+(Math.random()*20-10)>opp;
+        summon={idx:objIdx,win,lk:RL(t),sei:t.sei||String(t.name).split(' ')[0]};
+        if(win){H.cut=H.cut.filter(id=>id!==m.id);if(H.chiefCut)H.chiefCut=H.chiefCut.filter(id=>id!==m.id);
+          const free=S.mag.cap-(serials().length-H.cut.length)-S.manga.filter(x=>x.status==='queue').length;while(H.add.length>Math.max(0,free)){H.add.pop();}}}}}
+  return {cut:cutM.map(m=>({title:ttl(m),team:tmOf(m)})),objIdx,summon,cands,add:(H.add||[]).map(M).filter(Boolean).map(ttl),votes,firsts,
+    chief:c?RL(c):null,chiefSei:c?(c.sei||String(c.name).split(' ')[0]):'',presSei:S.pres&&S.pres.name?String(S.pres.name).split(' ')[0]:'',vices:vs,guest:gs?{lk:SL(gs),role:H.guest,label:(GUEST[H.guest]||['部長'])[0],sei:gs.sei||String(gs.name).split(' ')[0]}:null,pres:NR.lookOf(PRES),snap:meetSnap()};}
+// 全画面で流す：タップで次のせりふ、「とばす」で最後まで
+function meetPlay(next){if(S.animOff){next();return;}let D;try{D=meetData();}catch(e){next();return;}const A=meetAnim3(D);const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span style="color:#cfc6ae;font-size:15px">タップで次へ</span><button class="btn" style="font-size:16px">とばす ▶▶</button></div>';document.body.appendChild(ov);
+  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const t0=performance.now();let done=false;const fin=()=>{if(done)return;done=true;ov.remove();next();};
+  ov.querySelector('button').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();fin();});
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();if(A.next((performance.now()-t0)/1000))fin();});
+  const step=()=>{if(done)return;const now=(performance.now()-t0)/1000;if(A.auto(now)){fin();return;}g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,now);g2.restore();requestAnimationFrame(step);};requestAnimationFrame(step);}
+
+const a2Go=A=>a2Run(A.draw,A.dur);
+// その巻の出来：先生の力量（話・アイデア・画・構成）＋担当の編集力＋運
+function comicQ(c){if(c&&c.q!=null)return c.q;const m=c&&c.mid!=null?S.manga.find(x=>x.id===c.mid):null;if(!m)return 50+R()*20;const t=staffById(m.tantou);const art=(m.story+m.idea+m.ga+(m.kousei||m.story))/4;const ed=t?(t.hidden?45:t.henshu):40;return clamp(art*0.7+ed*0.3+(R()*2-1)*12,0,100);}
+// 班の名前：副編集長の苗字（いなければ左右のシマ）
+function hanName(tm){const v=byRole('vice').find(x=>(x.team||0)===tm);return v?(v.sei||String(v.name).split(' ')[0])+'班':(tm?'右':'左')+'のシマ';}
 function animBox(){return S.animOff?'':'<canvas id="popanim" width="200" height="84" style="width:100%;image-rendering:pixelated;border-radius:6px;background:#cdb68c"></canvas>';}
 function animBtn(){return '<button class="btn" data-act="animoff">'+(S.animOff?'アニメをつける':'アニメをオフ')+'</button>';}
 function whoRow(o,nm,sub,id){return '<div class="who"><canvas id="'+id+'" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+esc(nm)+'</div>'+(sub?'<div class="s">'+sub+'</div>':'')+'</div></div>';}
@@ -777,8 +1483,8 @@ function p3Pop(o,el){const m=S.manga.find(x=>x.id===o.id);const faces=[];const d
   if(o.news==='seiyu'){const cv={id:o.vid,name:o.cast.name,fem:o.cast.fem,age:24};
     el.innerHTML=box('#6ad1ff','🎙 声優さんが見学に',whoRow(cv,o.cast.name+'さん','アニメ「'+(m?esc(m.title):'')+'」主役の声','pf0')+'<div class="quote">「原作、全部読みました！'+(m?esc(m.title):'')+'の主人公、せいいっぱい演じます！今日は編集部を見せていただけてうれしいです！」</div><div class="s">社員たちがそわそわしている……。社員のやる気が少し上がった。</div><button class="btn pri" data-act="popok">ようこそ！</button>');
     if(!o.applied){o.applied=1;for(const x of S.staff)x.jonetsu=clamp((x.jonetsu??60)+2,0,100);}faces.push(['pf0',cv]);o._sp=null;done();return true;}
-  if(o.news==='onair'){const t=tantouOf(m);el.innerHTML=box('#ffd970','📺 放送開始！',animBox()+whoRow(t,'担当・'+t.name,'アニメ「'+(m?esc(m.title):'')+'」','pf0')+'<div class="quote">「社長、始まりましたよ！今夜からテレビで「'+(m?esc(m.title):'')+'」です！」</div><div class="s">放送中はコミックスと雑誌がぐっと売れる。評判は放送が終わるまでわからない。</div><div class="row"><button class="btn pri" data-act="popok">見るぞ！</button>'+animBtn()+'</div>');
-    faces.push(['pf0',t,{mouth:'open'}]);o._sp=t.id;done();if(!S.animOff)p3Anim('tv',o);return true;}
+  if(o.news==='onair'){const t=tantouOf(m);el.innerHTML=box('#ffd970','📺 放送開始！',animBox2()+whoRow(t,'担当・'+t.name,'アニメ「'+(m?esc(m.title):'')+'」','pf0')+'<div class="quote">「社長、始まりましたよ！今夜からテレビで「'+(m?esc(m.title):'')+'」です！」</div><div class="s">放送中はコミックスと雑誌がぐっと売れる。評判は放送が終わるまでわからない。</div><div class="row"><button class="btn pri" data-act="popok">見るぞ！</button>'+animBtn()+'</div>');
+    faces.push(['pf0',t,{mouth:'open'}]);o._sp=t.id;done();if(!S.animOff)a2Go(tvAnim2(o));return true;}
   if(o.news==='anres'){const t=tantouOf(m);const r=o.r;const q=[ 'アニメ、評判悪かったです……原作ファンから手紙で怒られました。','アニメ、あまり話題になりませんでした……。','アニメ、そこそこ見てもらえました。','アニメ、好評でした！コミックスの注文が止まりません！','アニメ、大好評です！もう「'+(m?m.title:'')+'」を知らない子はいません！'][r];
     el.innerHTML=box(r>=3?'#ffd970':'var(--accent)','📺 アニメ'+(o.season>1?'2期':'')+'の放送が終わりました','<div style="text-align:center;font-size:30px;font-family:var(--f-dot);color:'+ANRC[r]+'">'+ANR[r]+'</div>'+whoRow(t,'担当・'+t.name,'「'+(m?esc(m.title):'')+'」','pf0')+'<div class="quote">「'+esc(q)+'」</div>'+(o.orig?'<div class="s">原作の連載が続いていたので、最終回はアニメオリジナルの結末になった。</div>':'')+'<div class="s">'+(r>=3&&o.season<2?'この評判なら、2期の話が来るかもしれない。':'')+(o.ph?'<b style="color:#e05a3a">そして「'+(m?esc(m.title):'')+'」は社会現象になった！</b>':'')+(r>=2?'放送が終わってもコミックスが前より売れる。':'')+'</div><button class="btn pri" data-act="popok">'+(r>=2?'よし！':'次がんばろう')+'</button>');
     faces.push(['pf0',t,{mouth:r>=2?'open':'frown'}]);o._sp=t.id;done();return true;}
@@ -788,14 +1494,14 @@ function p3Pop(o,el){const m=S.manga.find(x=>x.id===o.id);const faces=[];const d
     faces.push(['pf0',m,{mouth:'open'}]);o._sp=null;done();return true;}
   if(o.news==='sign'){if(!m){S.popups.shift();showPop0();return true;}const sd=(team('senden')||{}).lead||tantouOf(m);const n=o.crowd;
     const q=n<3?'……お客さん、'+n+'人でした。先生、「まあ、こういう日もあるよね」って笑ってましたけど……。':n<30?'来てくれたのは'+n+'人。少ないけど、みんな本当にうれしそうでした！':n<200?n+'人も来てくれました！先生、手が疲れたって言いながらニコニコでした！':'行列が店の外まで続きました！'+n.toLocaleString()+'人！整理券が足りません！';
-    el.innerHTML=box('#3e7d4f','✒ サイン会',animBox()+'<div class="s" style="text-align:center">'+esc(m.name)+'先生（「'+esc(m.title)+'」）・来場 '+n.toLocaleString()+'人</div>'+whoRow(sd,(sd.title||ROLES[sd.role]||'担当')+'・'+sd.name,'','pf0')+'<div class="quote">「'+esc(q)+'」</div><div class="row"><button class="btn pri" data-act="popok">'+(n>=30?'大成功！':'おつかれさま')+'</button>'+animBtn()+'</div>');
-    faces.push(['pf0',sd,{mouth:n>=30?'open':'frown'}]);o._sp=sd.id;done();if(!S.animOff)p3Anim('sign',o);return true;}
+    el.innerHTML=box('#3e7d4f','✒ サイン会',animBox2()+'<div class="s" style="text-align:center">'+esc(m.name)+'先生（「'+esc(m.title)+'」）・来場 '+n.toLocaleString()+'人</div>'+whoRow(sd,(sd.title||ROLES[sd.role]||'担当')+'・'+sd.name,'','pf0')+'<div class="quote">「'+esc(q)+'」</div><div class="row"><button class="btn pri" data-act="popok">'+(n>=30?'大成功！':'おつかれさま')+'</button>'+animBtn()+'</div>');
+    faces.push(['pf0',sd,{mouth:n>=30?'open':'frown'}]);o._sp=sd.id;done();if(!S.animOff)a2Go(signAnim2(o));return true;}
   if(o.news==='top1'){if(!m){S.popups.shift();showPop0();return true;}const t=tantouOf(m);
-    el.innerHTML=box('#ffd970','🏆 人気投票1位！',animBox()+whoRow(t,'担当・'+t.name,'「'+esc(m.title)+'」','pf0')+'<div class="quote">「社長！「'+esc(m.title)+'」が初めて人気投票で1位です！読者はがきがこの作品の話でいっぱいです！」</div><div class="row"><button class="btn pri" data-act="popok">やったー！</button>'+animBtn()+'</div>');
-    faces.push(['pf0',t,{mouth:'open'}]);o._sp=t.id;done();if(!S.animOff)p3Anim('read',o);return true;}
+    el.innerHTML=box('#ffd970','🏆 人気投票1位！',animBox2()+whoRow(t,'担当・'+t.name,'「'+esc(m.title)+'」','pf0')+'<div class="quote">「社長！「'+esc(m.title)+'」が初めて人気投票で1位です！読者はがきがこの作品の話でいっぱいです！」</div><div class="row"><button class="btn pri" data-act="popok">やったー！</button>'+animBtn()+'</div>');
+    faces.push(['pf0',t,{mouth:'open'}]);o._sp=t.id;done();if(!S.animOff)a2Go(top1Anim2(o));return true;}
   if(o.news==='deal'){const eg=(team('eigyo')||{}).lead||byRole('eigyo')[0]||PRES;
-    el.innerHTML=box('#6ad1ff','🤝 大口の取引が決まった！',animBox()+whoRow(eg,eg===PRES?'社長':(eg.title||ROLES[eg.role]||'営業')+'・'+eg.name,'','pf0')+'<div class="quote">「'+esc(o.t)+'」</div><div class="row"><button class="btn pri" data-act="popok">よくやった！</button>'+animBtn()+'</div>');
-    faces.push(['pf0',eg,{mouth:'open',tie:eg===PRES}]);o._sp=eg.id;done();if(!S.animOff)p3Anim('deal',o);return true;}
+    el.innerHTML=box('#6ad1ff','🤝 大口の取引が決まった！',animBox2()+whoRow(eg,eg===PRES?'社長':(eg.title||ROLES[eg.role]||'営業')+'・'+eg.name,'','pf0')+'<div class="quote">「'+esc(o.t)+'」</div><div class="row"><button class="btn pri" data-act="popok">よくやった！</button>'+animBtn()+'</div>');
+    faces.push(['pf0',eg,{mouth:'open',tie:eg===PRES}]);o._sp=eg.id;done();if(!S.animOff)a2Go(dealAnim2(o));return true;}
   return false;}
 function fanCard(){const fs=S.fanStat;const hg=S.hagaki||[];if(!fs&&!hg.length)return '';
   let h='<div class="card"><div class="who">読者</div>';
@@ -817,8 +1523,9 @@ function sheetPhone(){
       +'<div class="row"><button class="btn pri" data-act="call" data-arg="bank:borrow"'+(L+la>la*3?' disabled':'')+'>'+yen(la)+' 借りる</button><button class="btn" data-act="call" data-arg="bank:repay"'+(!L||S.money<L?' disabled':'')+'>全部返す</button></div></div>';}
   else if(tab==='fudo'){const lf=landF(),lp=landF(S.y-1+(S.m-1)/12);
     h+='<div class="card"><div class="who">いまの建物</div><div class="t">神田のマンション（編集部・運営部）</div><div class="line"><span>土地の値段</span><b>1970年の '+lf.toFixed(1)+'倍 '+(lf>lp+0.05?'<span style="color:var(--red)">↑</span>':lf<lp-0.05?'<span style="color:var(--green)">↓</span>':'→')+'</b></div><div class="row"><button class="btn" data-act="call" data-arg="fudo:soba">相場を聞く</button></div></div>';
-    h+='<div class="card"><div class="who">これから（準備中）</div><div class="line"><span><b>自社ビル</b><br><span class="s">2冊目・3冊目の雑誌を出せる。土地の値段で値段が変わる。</span></span><span class="s">準備中</span></div></div>';}
+    {const lp2=landPrice();h+='<div class="card"><div class="who">自社ビル</div>'+(S.land?'<div class="line"><span><b>建設予定地</b><br><span class="s">'+S.land.y+'年'+S.land.m+'月に買った（'+yen(S.land.price)+'）</span></span><b style="color:var(--green)">購入ずみ</b></div>'+(S.hq?'<div class="line"><span><b>自社ビル</b><br><span class="s">'+S.hq.y+'年'+S.hq.m+'月に完成</span></span><b style="color:var(--green)">完成</b></div>':'<div class="s">次は、建設会社（丸山工務店）に自社ビルを頼もう。</div>')+'':'<div class="line"><span><b>自社ビル用の土地を買う</b><br><span class="s">2冊目・3冊目の雑誌を出せるようになる。値段は土地の相場で変わる。</span></span><button class="btn" data-act="call" data-arg="fudo:land"'+(S.money<lp2?' disabled':'')+'>'+yen(lp2)+'</button></div>')+'</div>';}}
   else if(tab==='kenchiku'){
+    if(S.land&&!S.hq){const hp=hqPrice();h+='<div class="card"><div class="who">自社ビル</div><div class="line"><span><b>自社ビルを建てる</b><br><span class="s">'+S.land.y+'年に買った土地に建てる。</span></span><button class="btn" data-act="call" data-arg="kenchiku:hq"'+(S.money<hp?' disabled':'')+'>'+yen(hp)+'</button></div></div>';}
     h+='<div class="card"><div class="who">設備</div><div class="s">一度入れると、ずっと効果が続く。</div>'+FAC.map(([k,nm,cost,ef])=>'<div class="line"><span><b>'+nm+'</b><br><span class="s">'+ef+'</span></span>'+(hasF(k)?'<b style="color:var(--green)">導入ずみ</b>':'<button class="btn" data-act="call" data-arg="kenchiku:'+k+'"'+(S.money<cost*1e4*eraF()?' disabled':'')+'>'+yen(cost*1e4*eraF())+'</button>')+'</div>').join('')+'</div>';}
   else {
     h+='<div class="card"><div class="who">社長室の内装</div><div class="s">運営部の見た目が変わる。仕事の効果はないけど、社長の気分が上がる。</div>'+DECOR.map(([k,nm,cost,ef])=>'<div class="line"><span><b>'+nm+'</b><br><span class="s">'+ef+'</span></span>'+(hasD(k)?'<button class="btn" data-act="decoroff" data-arg="'+k+'">'+(S.decorOff&&S.decorOff[k]?'しまってある（出す）':'飾ってある（しまう）')+'</button>':'<button class="btn" data-act="call" data-arg="naisou:'+k+'"'+(S.money<cost*1e4*eraF()?' disabled':'')+'>'+yen(cost*1e4*eraF())+'</button>')+'</div>').join('')+'</div>';}
@@ -827,13 +1534,234 @@ function doCall(arg){const [to,what]=arg.split(':');const C=CALLEE[to];let me=''
   if(to==='bank'){const la=loanUnit();
     if(what==='borrow'){if((S.loan||0)+la>la*3)return toast('これ以上は借りられません');S.loan=(S.loan||0)+la;S.money+=la;me='もしもし、'+coName()+'の社長です。運転資金を'+yen(la)+'、お借りしたいのですが。';you=calleeGreet()+'……はい、'+yen(la)+'ですね。ご用意いたします。利息は月0.5%です。';res=yen(la)+'を借りた。借金は合計'+yen(S.loan)+'。';say('社長','銀行から'+yen(la)+'借りた。');}
     else{const L=S.loan||0;if(!L||S.money<L)return;S.money-=L;S.loan=0;me='もしもし、'+coName()+'の社長です。お借りしていた分、全部お返しします。';you='これはご丁寧に！'+yen(L)+'、たしかに。またいつでもご相談ください。';res='借金を全部返した。';say('社長','銀行の借金を全部返した。');}}
+  else if(to==='fudo'&&what==='land'){if(S.land)return;const price=landPrice();if(S.money<price)return toast('お金が足りません');S.money-=price;S.feeAcc=(S.feeAcc||0)+price;S.land={y:S.y,m:S.m,price};me='もしもし、'+coName()+'の社長です。自社ビルを建てたい。土地を探してもらえますか。';you=calleeGreet()+'……神田駅の近くに、いい空き地がありますよ！'+yen(price)+'です。';res='自社ビル用の土地を買った（'+yen(price)+'）。次は、建設会社に頼もう。';say('社長','自社ビル用の土地を買った。'+yen(price)+'。');
+    (S.popups=S.popups||[]).unshift({news:'call',to,me,you,res,land:1});save();drawSheet();render();showPop();return;}
   else if(to==='fudo'){const lf=landF();me='もしもし、'+coName()+'の社長です。最近の神田の土地の相場はどうです？';you=calleeGreet()+'……'+(lf>=4?'いやあ、とんでもない値段になってますよ！買うなら覚悟がいります。':lf>=2?'じわじわ上がってますねえ。欲しい物件があるなら早めがいいですよ。':'まだ落ち着いてますよ。いい物件が出たらお知らせします。');res='土地の値段は1970年の'+lf.toFixed(1)+'倍。';}
+  else if(to==='kenchiku'&&what==='hq'){if(!S.land||S.hq)return;const cost=hqPrice();if(S.money<cost)return toast('お金が足りません');S.money-=cost;S.feeAcc=(S.feeAcc||0)+cost;S.hq={y:S.y,m:S.m,cost};
+    me='もしもし、'+coName()+'の社長です。買った土地に、自社ビルを建ててほしい。';you=calleeGreet()+'……自社ビルですか！これは腕が鳴りますな。'+yen(cost)+'で、立派なのを建てますよ！';res='自社ビルの工事が始まる！（'+yen(cost)+'）';say('社長','自社ビルを建てた。'+yen(cost)+'。');
+    (S.popups=S.popups||[]).unshift({news:'call',to,me,you,res,after:'hq'});save();drawSheet();render();showPop();return;}
   else if(to==='kenchiku'){const f=FAC.find(x=>x[0]===what);if(!f||hasF(what))return;const cost=f[2]*1e4*eraF();if(S.money<cost)return toast('お金が足りません');S.money-=cost;S.feeAcc=(S.feeAcc||0)+cost;S.fac=S.fac||{};S.fac[what]=true;me='もしもし、'+coName()+'の社長です。うちに'+f[1]+'を入れたいんだけど、頼めるかな。';you=calleeGreet()+'……'+f[1]+'ですね、まかせてください！すぐ取りかかります。';res=f[1]+'を導入した。'+f[3]+'。';say('社長',f[1]+'を導入した。');}
   else if(to==='naisou'){const d=DECOR.find(x=>x[0]===what);if(!d||hasD(what))return;const cost=d[2]*1e4*eraF();if(S.money<cost)return toast('お金が足りません');S.money-=cost;S.feeAcc=(S.feeAcc||0)+cost;S.decor=S.decor||{};S.decor[what]=true;me='もしもし、'+coName()+'の社長です。社長室に'+d[1]+'を入れたいんだけど。';you=calleeGreet()+'……'+d[1]+'ですね。いいのをお持ちしますよ！';res=d[1]+'を入れた。運営部の部屋を見てみよう。';say('社長','社長室に'+d[1]+'を入れた。');drawOffice.k=null;}
   (S.popups=S.popups||[]).unshift({news:'call',to,me,you,res});save();drawSheet();render();showPop();}
 function callPop(o,el){const C=CALLEE[o.to];const p={id:C[2],name:C[1],age:C[3]};
-  el.innerHTML='<div class="box"><h3 id="pop-h">☎ '+esc(C[0])+'</h3>'+animBox()+'<div class="who"><canvas id="pf0" width="32" height="32"></canvas><div class="nm">社長</div></div><div class="quote">「'+esc(o.me)+'」</div><div class="who"><canvas id="pf1" width="32" height="32"></canvas><div class="nm">'+esc(C[0])+'・'+esc(C[1])+'</div></div><div class="quote">「'+esc(o.you)+'」</div><div class="s">'+esc(o.res)+'</div><div class="row"><button class="btn pri" data-act="popok">ガチャン</button>'+animBtn()+'</div></div>';
-  el.hidden=false;face32($('pf0'),PRES,{tie:true});face32($('pf1'),p,{tie:true});o._sp=null;if(!S.animOff)p3Anim('phone',o);}
+  el.innerHTML='<div class="box"><h3 id="pop-h">☎ '+esc(C[0])+'</h3>'+animBox2()+'<div class="who"><canvas id="pf0" width="32" height="32"></canvas><div class="nm">社長</div></div><div class="quote">「'+esc(o.me)+'」</div><div class="who"><canvas id="pf1" width="32" height="32"></canvas><div class="nm">'+esc(C[0])+'・'+esc(C[1])+'</div></div><div class="quote">「'+esc(o.you)+'」</div><div class="s">'+esc(o.res)+'</div><div class="row"><button class="btn pri" data-act="popok">ガチャン</button>'+animBtn()+'</div></div>';
+  el.hidden=false;face32($('pf0'),PRES,{tie:true});face32($('pf1'),p,{tie:true});o._sp=null;if(!S.animOff)a2Go(o.land?landAnim2({co:coName()}):phoneAnim2(o));}
+// ===== 引っ越しと、本部長・副社長えらび =====
+function execCands(){return S.staff.filter(x=>['chief','eibu','senbu','keibu'].includes(x.role)&&!x.hidden);}
+function moveStart(){const L=x=>['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x));
+  const ppl=S.staff.filter(x=>x.role!=='hidden').slice(0,8).sort(()=>Math.random()-0.5).slice(0,5).map(L);
+  S.moved=1;S.execPick={};save();a2Overlay(moveAnim2({ppl,pres:NR.lookOf(PRES)}),()=>execPop());}
+function execNote(x){const r=[];const top=['henshu','kikaku','bigan','eigyo','jimu'].sort((a,b)=>x[b]-x[a])[0];const NMx={henshu:'編集',kikaku:'企画',bigan:'審美',eigyo:'営業',jimu:'事務'};
+  if(x.founder||!x.joinY)r.push('会社を一緒に立ち上げた、創業メンバーだ。');else if(x.launchMem)r.push('創刊のころから支えてくれている。');
+  if((x.trust||50)>=70)r.push('社員からの信頼が厚い。');else if((x.trust||50)<=35)r.push('社員からは、少し煙たがられている。');
+  if((x.jonetsu||0)>=85)r.push('誰よりも熱い。');else if((x.jonetsu||0)<=45)r.push('最近、少し冷めているように見える。');
+  if((x.age||30)>=55)r.push('そろそろ定年が近い。');else if((x.age||30)<=32)r.push('この役職にしては、まだ若い。');
+  r.push(NMx[top]+'が得意。');return r.join('');}
+function execPop(){const el=$('pop');const st=S.execPick||(S.execPick={});const cs=execCands();
+  const yrs=x=>x.joinY?Math.max(0,S.y-x.joinY)+'年（'+x.joinY+'年入社'+(x.founder?'・創業メンバー':x.launchMem?'・創刊メンバー':'')+'）':Math.max(0,S.y-1970)+'年（創業メンバー）';
+  const nm=id=>{const x=staffById(id);return x?esc(x.name):'—';};
+  if(st.ask){const [role,id]=st.ask;const x=staffById(id);const RN=role==='hon'?'本部長':'副社長';
+    el.innerHTML='<div class="box"><h3 id="pop-h">最終確認</h3><div class="t" style="font-size:20px;text-align:center;margin:10px 0">'+RN+'は<br><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b><br>で決定でいいですか？</div><div class="row"><button class="btn pri" data-act="execyes">決定</button><button class="btn" data-act="execno">やめる</button></div></div>';el.hidden=false;return;}
+  el.innerHTML='<div class="box"><h3 id="pop-h">引っ越しの最中……</h3><div class="t">社長は、こっそり<b>本部長</b>と<b>副社長</b>を決めることにした。</div>'
+    +'<div class="s"><b>本部長</b>：1冊目の雑誌を引きつぐ。三誌同時発売の編成会議では、1冊目の人材と先生を守る側にまわる。</div>'
+    +'<div class="s"><b>副社長</b>：2冊目の雑誌を立ち上げる。編成会議では、社長より先に人材と先生を指名できる。強い人を選ぶほど、2冊目も強くなる……。</div>'
+    +'<div class="card" style="margin-top:8px"><div class="line"><span>本部長</span><b>'+(st.hon?nm(st.hon)+' ✓':'まだ')+'</b></div><div class="line"><span>副社長</span><b>'+(st.fuku?nm(st.fuku)+' ✓':'まだ')+'</b></div></div>'
+    +cs.map(x=>{const isH=st.hon===x.id,isF=st.fuku===x.id;return '<div class="card" style="margin-top:10px"><div class="line"><b style="font-size:18px">'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b><span class="s">'+(x.age||'?')+'歳</span></div>'
+      +'<div class="s">勤続 '+yrs(x)+'</div>'
+      +'<div class="s">編集 '+rank(x.henshu)+'・企画 '+rank(x.kikaku)+'・審美 '+rank(x.bigan)+'・営業 '+rank(x.eigyo)+'・事務 '+rank(x.jimu)+'</div>'
+      +'<div class="s">情熱 '+Math.round(x.jonetsu||0)+'・信頼 '+Math.round(x.trust||50)+'</div>'
+      +'<div class="t" style="margin-top:4px">「'+execNote(x)+'」</div>'
+      +'<div class="row" style="margin-top:6px">'+(isH?'<b style="color:var(--green)">本部長に決定</b>':isF?'<b style="color:var(--green)">副社長に決定</b>':(st.hon?'':'<button class="btn pri" data-act="execpick" data-arg="hon:'+x.id+'">本部長にする</button>')+(st.fuku?'':'<button class="btn pri" data-act="execpick" data-arg="fuku:'+x.id+'">副社長にする</button>'))+'</div></div>';}).join('')
+    +(cs.length<2?'<div class="card"><div class="s">部長がそろっていないので、副社長に選べる人がいない。本部長が、副社長の代理もつとめる。</div><button class="btn" data-act="execpick" data-arg="fuku:0">本部長に代理を頼む</button></div>':'')+'</div>';el.hidden=false;}
+function execPick(arg){const st=S.execPick||(S.execPick={});const [role,id]=String(arg).split(':');if(role==='fuku'&&+id===0){st.fuku=-1;save();if(st.hon)execDone();else execPop();return;}st.ask=[role,+id];save();execPop();}
+function execAnswer(yes){const st=S.execPick||{};if(yes&&st.ask){st[st.ask[0]]=st.ask[1];}st.ask=null;save();if(st.hon&&(st.fuku||execCands().length<2&&st.fuku===-1))execDone();else execPop();}
+function execDone(){const st=S.execPick;S.exec={hon:st.hon,fuku:st.fuku>0?st.fuku:st.hon,dairi:!(st.fuku>0),open:false};save();$('pop').hidden=true;const a=staffById(st.hon),b=st.fuku>0?staffById(st.fuku):null;
+  const L=x=>Object.assign(['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x)),{sei:x.sei||String(x.name).split(' ')[0]});
+  const fin=()=>{say('社長','本部長は'+a.name+(b?'、副社長は'+b.name:'')+'。……発表は、編成会議のあとだ。');save();const el=$('pop');el.innerHTML='<div class="box" style="border-color:#c8302a"><h3 id="pop-h" style="color:#e07a6e">㊙ 極秘</h3><div class="t">本部長・'+esc(a.name)+(b?'<br>副社長・'+esc(b.name):'')+'</div><div class="s">まだ社員には知らせていない。今夜、役員会議室で「三誌同時発売」の編成会議を開く。</div><div class="row"><button class="btn pri" data-act="execok">よし</button></div></div>';el.hidden=false;};
+  if(b)a2Overlay(whisperAnim2({pres:NR.lookOf(PRES),a:L(a),b:L(b)}),fin);else fin();}
+// ===== 極秘 編成会議（三誌同時発売）=====
+// 本部長＝1冊目を守る／副社長＝2冊目／社長＝3冊目（プレイヤー）。秘書が議事録
+function orgV(x){return Math.max(x.henshu,x.kikaku,x.bigan,x.eigyo,x.jimu)+(x.role==='vice'?8:0)+(x.role==='chief'?10:0);}
+function orgPool(){const O=S.org;const out=new Set([...O.st.prot,...O.st.fuku,...O.st.pres,...O.st.ref,S.exec.hon,S.exec.fuku]);return S.staff.filter(x=>!out.has(x.id)&&!x.hidden&&!['zatsumu','kenshu','mi'].includes(x.role));}
+function orgArtPool(){const O=S.org;const out=new Set([...O.ar.fuku,...O.ar.pres,...O.ar.ref]);return S.manga.filter(m=>!out.has(m.id)&&['stock','queue','market'].includes(m.status)&&(m.tantou!=null||m.status!=='market')&&m.status!=='serial');}
+function orgStart(){const pols=Object.keys(POLICY);S.org={phase:'genre',round:1,log:[],g:{hon:S.mag.policy},st:{prot:[],fuku:[],pres:[]  ,ref:[]},ar:{fuku:[],pres:[],ref:[]},cur:null};
+  const ov=document.createElement('div');ov.id='orgov';ov.style.cssText='position:fixed;inset:0;z-index:9000;background:#0e0c0a;display:flex;flex-direction:column;align-items:center;overflow:auto;padding:8px 0 20px';
+  ov.innerHTML='<div style="color:#e07a6e;font-size:18px;font-weight:700;letter-spacing:.2em;margin:4px 0">㊙ 極秘 編成会議</div><canvas id="orgcv" width="720" height="380" style="width:min(96vw,620px);aspect-ratio:72/38;border-radius:10px;background:#1a1410"></canvas><div id="orgui" style="width:min(96vw,620px);margin-top:8px"></div><div id="orglog" style="width:min(96vw,620px);margin-top:8px;background:#f4efe2;color:#2a2220;border-radius:6px;padding:8px 12px;font-size:14px;line-height:1.7;max-height:30vh;overflow:auto"></div>';
+  document.body.appendChild(ov);orgLoop();orgSay('pres','では、始めよう。三誌同時発売の編成会議だ。',()=>orgSay('hon','1冊目は、これまでどおり「'+S.mag.policy+'」でいく。',()=>{O().g.fuku=orgFukuGenre();orgSay('fuku','わたしは「'+O().g.fuku+'」をやらせてください。',()=>{orgLog('ジャンル：1冊目「'+O().g.hon+'」（本部長）・2冊目「'+O().g.fuku+'」（副社長）');orgUI();});}));}
+const O=()=>S.org;
+function orgFukuGenre(){const f=staffById(S.exec.fuku);const left=Object.keys(POLICY).filter(k=>k!==S.mag.policy);const pref=f&&f.eigyo>f.bigan?['青年誌','大人向け','少年誌']:['少女誌','SF・ファンタジー誌','児童誌'];return pref.find(k=>left.includes(k))||left[0];}
+function orgName(k){const id=k==='hon'?S.exec.hon:k==='fuku'?S.exec.fuku:null;if(k==='pres')return '社長';if(k==='sec')return '秘書';const x=staffById(id);return (k==='hon'?'本部長':'副社長'+(S.exec.dairi?'（代理）':''))+'・'+(x?(x.sei||x.name.split(' ')[0]):'');}
+function orgLog(s){O().log.push(s);const el=$('orglog');if(el){el.innerHTML='<b>議事録</b><br>'+O().log.map(esc).join('<br>');el.scrollTop=el.scrollHeight;}}
+let ORGB=null;
+function orgSay(who,text,next){ORGB={who,text,t0:performance.now()};setTimeout(()=>{if(next)next();},Math.max(1300,text.length*90+700));}
+function orgLoop(){const c=$('orgcv');if(!c){return;}const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);orgDraw(g,(performance.now())/1000);requestAnimationFrame(orgLoop);}
+function orgDraw(g,T){const {rr,tx}=a2;
+  // 夜の役員会議室
+  g.fillStyle='#3a2416';g.fillRect(0,0,360,190);g.fillStyle='#4a2e1c';for(let x=0;x<360;x+=40)g.fillRect(x+2,6,36,110);
+  const w=g.createLinearGradient(0,14,0,90);w.addColorStop(0,'#0e1430');w.addColorStop(1,'#2a3458');g.fillStyle=w;g.fillRect(110,14,140,80);
+  for(let i=0;i<40;i++){g.fillStyle=(i*7)%3?'#ffe9a0':'#9fc8e0';g.fillRect(112+((i*37)%134),40+((i*53)%50),2,2);}g.fillStyle='#8a5a2e';g.fillRect(178,14,4,80);g.fillRect(110,12,140,4);g.fillRect(110,92,140,4);
+  g.fillStyle='#5a1e1e';g.fillRect(0,116,360,74);
+  const who=ORGB&&performance.now()-ORGB.t0<Math.max(1300,ORGB.text.length*90+700)?ORGB.who:null;const sp=k=>who===k;
+  const L=id=>{const x=staffById(id);return x?(['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x))):{};};
+  const SL=(()=>{const s0=byRole('zatsumu')[0];return s0?NR.lookOf(s0):{fem:1,st:'bob',shirt:'#f4f2ec',cardigan:'#c87a8a'};})();
+  a2Person(g,180,150,0.95,NR.lookOf(PRES),'down',{sit:1,arms:'cross',mouth:sp('pres')?'open':'flat'});
+  rr(g,96,140,168,16,6,'#2a1a10');g.fillStyle='rgba(255,255,255,0.08)';g.fillRect(100,141,160,2);
+  a2Person(g,86,178,1.05,L(S.exec.hon),'right',{sit:'chair',mouth:sp('hon')?'open':'flat'});
+  a2Person(g,276,178,1.05,L(S.exec.fuku),'left',{sit:'chair',mouth:sp('fuku')?'open':'flat'});
+  a2Person(g,30,186,0.8,SL,'right',{sit:'chair',arms:sp('sec')&&ORGB.phone?'fwd':'fwd',hands:sp('sec')&&ORGB.text.includes('もしもし')?[[2,-60],[10,-20]]:[[10,-18+Math.sin(T*12)*1.5],[14,-18]],mouth:sp('sec')?'open':'flat'});
+  rr(g,40,160,30,6,2,'#6a4a2a');
+  if(who&&ORGB){const pos={pres:[180,30],hon:[96,70],fuku:[266,70],sec:[70,96]}[who];const n=Math.min(ORGB.text.length,Math.floor((performance.now()-ORGB.t0)/1000*18));a2Bub(g,ORGB.text.slice(0,n)||'…',pos[0],pos[1],9,1);
+    g.save();rr(g,4,4,Math.max(60,orgName(who).length*9+12),16,4,'#c9a24a');tx(g,orgName(who),4+Math.max(60,orgName(who).length*9+12)/2,12.5,8,'#2a2220');g.restore();}}
+// 画面の下：選ぶところ
+function orgUI(){const el=$('orgui');if(!el)return;const o=O();let h='';
+  if(o.cur==='name'){h='<div class="card"><div class="t">社長の新しい雑誌の名前は？</div><input type="text" id="orgname3" value="'+esc(o.namePend)+'" maxlength="14" style="font-size:18px;width:100%"><button class="btn pri" style="margin-top:8px" data-act="orgname3">この名前にする</button></div>';}
+  else if(o.phase==='genre'){const left=Object.keys(POLICY).filter(k=>k!==o.g.hon&&k!==o.g.fuku);h='<div class="card"><div class="t">社長の3冊目は、残ったジャンルから選ぶ。</div>'+left.map(k=>'<button class="btn" style="margin:4px" data-act="orggenre" data-arg="'+k+'">'+k+'<br><span class="s">'+POLICY[k].join('・')+'</span></button>').join('')+'</div>';}
+  else if(o.phase==='staff'&&o.cur==='pres'){const P2=orgPool().sort((a,b)=>orgV(b)-orgV(a));h='<div class="card"><div class="t">第'+o.round+'巡（全7巡）：社長の指名。ほしい人を1人。</div>'+P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgpick" data-arg="'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・企画 '+rank(x.kikaku)+'・審美 '+rank(x.bigan)+'・営業 '+rank(x.eigyo)+'・事務 '+rank(x.jimu)+'・信頼 '+Math.round(x.trust||50)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgpick" data-arg="0">この巡は見送る</button></div>';}
+  else if(o.cur==='role'){const x=staffById(o.pend);h='<div class="card"><div class="t"><b>'+esc(x.name)+'</b>（いまは'+esc(ROLES[x.role]||'')+'）を、3冊目の何にする？</div><div class="s">いまより上の役職で声をかけると、受けてもらいやすい。</div>'+ORG_ROLES.map(r=>{const full=['chief','eibu','senbu','keibu','zatsumu'].includes(r)&&o.st.pres.some(id=>(o.roles||{})[id]===r);return '<button class="btn" style="margin:4px" data-act="orgrole" data-arg="'+r+'"'+(full?' disabled':'')+'>'+(r==='later'?'あとで決める':ROLES[r])+(full?'（決まり）':'')+'</button>';}).join('')+'</div>';}
+  else if(o.phase==='art'&&o.cur==='pres'){const P2=orgArtPool().sort((a,b)=>mLevel(b)-mLevel(a));h='<div class="card"><div class="t">漫画家 第'+o.round+'巡（全9巡）：社長の指名。</div>'+P2.map(m=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgart" data-arg="'+m.id+'"><b>'+esc(m.name)+'</b>（'+esc(bestGenre(m))+'）　<span class="s">総合 '+mRank(m)+'・アイデア '+rank(m.idea)+'・話 '+rank(m.story)+'・画 '+rank(m.ga)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgart" data-arg="0">この巡は見送る</button></div>';}
+  else if(o.phase==='chiefpick'){const P2=o.st.pres.map(staffById).filter(x=>x&&['tantou','vice'].includes(x.role));h='<div class="card"><div class="t">最後に、3冊目の編集長を決める。社長が取った担当・副編集長の中から。</div>'+(P2.length?P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgchief" data-arg="'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・審美 '+rank(x.bigan)+'・情熱 '+Math.round(x.jonetsu||0)+'</span></button>').join(''):'<div class="s">担当も副編集長も取れなかった……。編集長は、あとで外から探すしかない。</div><button class="btn" data-act="orgchief" data-arg="0">しかたない</button>')+'</div>';}
+  else if(o.phase==='done'){h='<div class="card"><div class="t">編成会議、終了。発表は、あすの朝。</div><button class="btn pri" data-act="orgend">閉じる</button></div>';}
+  else h='<div class="card"><div class="s">……</div></div>';
+  el.innerHTML=h;}
+function orgRefuse(x,by,art,up){const tr=art?50:(x.trust||50);let p=0.16+(tr<40?0.1:0)-(by==='pres'&&tr>=70?0.08:0)-(up?0.1:0);if(art&&(x.fav||x.exclusive))p+=0.15;if(!art&&x.founder&&by!=='pres')p+=0.1;return Math.random()<p;}
+function orgSec(text,next){orgSay('sec',text,next);}
+// 人材：本部長がプロテクト → 副社長 → 社長
+function orgStaffRound(){const o=O();if(o.round>7){o.phase='art';o.round=1;orgLog('―― 人材の振り分け、終了');orgSay('pres','次は、先生の振り分けだ。',()=>orgArtRound());return;}
+  o.cur=null;orgUI();const pool=orgPool();if(!pool.length){o.round=99;return orgStaffRound();}
+  // 副社長が次に取りそうな人を読んで守る
+  const fuk=staffById(S.exec.fuku);const eye=x=>(R()*2-1)*(100-(fuk?fuk.bigan:40))/5;const guess=[...pool].sort((a,b)=>orgV(b)+eye(b)-orgV(a)-eye(a));
+  const prot=Math.random()<0.7?guess[0]:[...pool].sort((a,b)=>orgV(b)-orgV(a))[0];o.st.prot.push(prot.id);
+  orgSay('hon',prot.name+'は、渡せん。',()=>{orgLog('第'+o.round+'巡　本部長プロテクト：'+prot.name);
+    const p2=orgPool();if(!p2.length){o.round++;return orgStaffRound();}const s2=[...p2].sort((a,b)=>orgV(b)+eye(b)-orgV(a)-eye(a));const pick=Math.random()<0.3&&s2[1]?s2[1]:s2[0];
+    o.roles=o.roles||{};const fr=orgFukuRole(pick);const fup=(ORG_RANK[fr]||0)>(ORG_RANK[pick.role]||0);
+    orgSay('fuku',ROLES[pick.role]+'の'+pick.name+'、ウチの'+ROLES[fr]+'に。',()=>{{o.st.fuku.push(pick.id);o.roles[pick.id]=fr;orgLog('第'+o.round+'巡　副社長指名：'+ROLES[pick.role]+'の'+pick.name+' → '+ROLES[fr]);orgPresTurn();}});});}
+function orgFukuRole(x){const o=O();const R2=o.st.fuku.map(id=>o.roles[id]);const ed=['chief','vice','tantou'].includes(x.role);
+  if(ed){if(!R2.includes('chief'))return 'chief';if(R2.filter(r=>r==='vice').length<2)return 'vice';return 'tantou';}
+  const D={eibu:['eibu','eigyo'],eigyo:['eibu','eigyo'],senbu:['senbu','senden'],senden:['senbu','senden'],keibu:['keibu','keiri'],keiri:['keibu','keiri']}[x.role];if(D)return R2.includes(D[0])?D[1]:D[0];return x.role;}
+function orgPresTurn(){const o=O();if(!orgPool().length){o.round++;return orgStaffRound();}o.cur='pres';orgUI();}
+const ORG_ROLES=['chief','vice','tantou','eibu','eigyo','senbu','senden','keibu','keiri','zatsumu','later'];const ORG_RANK={tantou:1,vice:2,chief:3,eigyo:1,eibu:2,senden:1,senbu:2,keiri:1,keibu:2};
+function orgPick(id){const o=O();if(!id){o.cur=null;orgUI();orgLog('第'+o.round+'巡　社長：見送り');o.round++;return orgStaffRound();}o.pend=id;o.cur='role';orgUI();}
+function orgPickRole(role){const o=O();const id=o.pend;o.pend=null;o.cur=null;orgUI();const x=staffById(id);(o.roles=o.roles||{});const RN=role==='later'?'':'（'+ROLES[role]+'として）';const up=(ORG_RANK[role]||0)>(ORG_RANK[x.role]||0);
+  orgSay('pres',ROLES[x.role]+'の'+x.name+'、'+(role==='later'?'ウチに来てもらう。役職は、あとで決める。':'ウチの'+ROLES[role]+'に。'),()=>{{o.st.pres.push(x.id);o.roles[x.id]=role;orgSec('（カリカリ……）',()=>{orgLog('第'+o.round+'巡　社長指名：'+ROLES[x.role]+'の'+x.name+' → '+(role==='later'?'役職は未定':ROLES[role]));o.round++;orgStaffRound();});}});}
+// 漫画家：副社長 → 社長（連載中の先生は抜けない）
+function orgArtRound(){const o=O();if(o.round>9||!orgArtPool().length){orgLog('―― 先生の振り分け、終了');orgAIRoles();return;}
+  o.cur=null;orgUI();const pool=orgArtPool().sort((a,b)=>mLevel(b)-mLevel(a));const pick=Math.random()<0.25&&pool[1]?pool[1]:pool[0];
+  orgSay('fuku',pick.name+'先生を、ウチに。',()=>{{o.ar.fuku.push(pick.id);orgLog('漫画家 第'+o.round+'巡　副社長：'+pick.name+'先生');orgArtPres();}});}
+function orgArtPres(){const o=O();if(!orgArtPool().length){o.round=99;return orgArtRound();}o.cur='pres';orgUI();}
+function orgArt(id){const o=O();o.cur=null;orgUI();if(!id){orgLog('漫画家 第'+o.round+'巡　社長：見送り');o.round++;return orgArtRound();}const m=S.manga.find(x=>x.id===id);
+  orgSay('pres',m.name+'先生を、ウチに。',()=>{{o.ar.pres.push(m.id);orgSec('（カリカリ……）',()=>{orgLog('漫画家 第'+o.round+'巡　社長：'+m.name+'先生');o.round++;orgArtRound();});}});}
+function orgAIRoles(){const o=O();o.roles=o.roles||{};const Rr=x=>o.roles[x.id]||x.role;const lines=[];
+  const taken=new Set([...o.st.fuku,...o.st.pres,S.exec.hon,S.exec.fuku]);const m1=S.staff.filter(x=>!taken.has(x.id)&&!x.hidden&&x.role!=='zatsumu');
+  // 1冊目：本部長が空いた席を埋める（昇進）
+  if(!m1.some(x=>Rr(x)==='chief')){const c=[...m1.filter(x=>Rr(x)==='vice'),...m1.filter(x=>Rr(x)==='tantou')].sort((a,b)=>b.henshu-a.henshu)[0];if(c){o.roles[c.id]='chief';lines.push(['hon','1冊目の編集長は、'+c.name+'にする。','1冊目 編集長：'+c.name+'（昇進）']);}}
+  for(const [b,m] of [['eibu','eigyo'],['senbu','senden'],['keibu','keiri']]){if(!m1.some(x=>Rr(x)===b)){const c=m1.filter(x=>Rr(x)===m).sort((p,q)=>q.eigyo+q.jimu-p.eigyo-p.jimu)[0];if(c){o.roles[c.id]=b;lines.push(['hon',ROLES[b]+'は、'+c.name+'を上げる。','1冊目 '+ROLES[b]+'：'+c.name+'（昇進）']);}}}
+  // 2冊目：副社長が役職を決める
+  const run=i=>{if(i>=lines.length){const has=o.st.pres.some(id=>o.roles[id]==='chief');orgLog(has?'3冊目 編集長：'+staffById(o.st.pres.find(id=>o.roles[id]==='chief')).name:'3冊目 編集長：未定（あとで決める）');o.phase='done';orgSec('（カリカリ……）以上で、編成会議を終わります。',()=>{save();orgUI();});return;}
+    const [w,s,lg]=lines[i];orgSay(w,s,()=>{orgLog(lg);run(i+1);});};
+  orgSay('pres','それぞれ、自分の雑誌の役職を決めてくれ。',()=>run(0));}
+const MAGNAMES={'児童誌':['月刊 コロコロ天国','月刊 わんぱくランド','月刊 ぴかぴか'],'少年誌':['週刊 少年ライジン','月刊 少年ホムラ','月刊 少年カゼ'],'青年誌':['週刊 ヤングアッパー','月刊 青年ジャーナル','ビッグ劇場'],'少女誌':['月刊 りぼんの花','月刊 プチ・ローズ','月刊 なかよし星'],'SF・ファンタジー誌':['月刊 コスモス','月刊 ファンタジア','月刊 銀河通信'],'大人向け':['漫画 大人の時間','月刊 夜のまんが','漫画 ゴールド']};
+function orgMagName(pol,avoid){const L=MAGNAMES[pol]||['月刊 新まんが'];return L.find(n=>!avoid.includes(n))||L[0];}
+function orgGenre(k){const o=O();o.g.pres=k;o.names={1:S.mag.name};o.names[2]=orgMagName(o.g.fuku,[S.mag.name]);o.cur='name';o.namePend=orgMagName(k,[S.mag.name,o.names[2]]);orgUI();}
+function orgName3(){const o=O();const v=($('orgname3')||{}).value||o.namePend;o.names[3]=v.trim()||o.namePend;o.cur=null;const k=o.g.pres;o.phase='staff';orgUI();orgSay('pres','うちは「'+k+'」。誌名は「'+o.names[3]+'」だ。',()=>{orgLog('ジャンル：「'+o.names[3]+'」'+k+'（社長）／「'+o.names[2]+'」'+o.g.fuku+'（副社長）');orgSay('pres','次は、人の振り分けだ。全7巡。',()=>orgStaffRound());});}
+function orgChief(id){const o=O();o.chief=id||null;o.phase='done';const x=id?staffById(id):null;orgUI();
+  orgSay('pres',x?'3冊目の編集長は、'+x.name+'くんだ。':'編集長は……あとで探す。',()=>{orgLog(x?'3冊目の編集長：'+x.name:'3冊目の編集長：未定');orgSec('（カリカリ……）以上で、編成会議を終わります。',()=>{save();orgUI();});});}
+function orgEnd(){const ov=$('orgov');if(ov)ov.remove();S.org.closed=1;S.exec.open=true;save();render();
+  const O0=S.org;const L=x=>['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x));const P=a=>a[Math.floor(Math.random()*a.length)];const ppl=[];
+  for(const id of O0.st.pres.slice(0,2)){const x=staffById(id);if(x)ppl.push({lk:L(x),line:P(['やった！社長の雑誌だ！','社長に呼ばれた……！','腕が鳴るぜ！']),good:2});}
+  for(const id of O0.st.fuku.slice(0,2)){const x=staffById(id);if(x)ppl.push({lk:L(x),line:P(['副社長のところか……','マジかよ……','まあ、やるしかないか。']),good:0});}
+  for(const id of O0.st.prot.slice(0,1)){const x=staffById(id);if(x)ppl.push({lk:L(x),line:'1冊目に残留か。よかった……',good:1});}
+  const hx=staffById(S.exec.hon);if(hx)ppl.push({lk:L(hx),line:'……身が引き締まるな。',good:1});
+  for(let i=ppl.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ppl[i],ppl[j]]=[ppl[j],ppl[i]];}
+  const fx=staffById(S.exec.fuku);a2Overlay(boardAnim2({ppl,hon:hx?hx.name:'',fuku:S.exec.dairi?'（本部長が兼務）':(fx?fx.name:'')}),()=>{say('社長','新しい体制の発表をした。役職図は「本社」で見られる。');orgAfter();});}
+// 発表のあと：辞退の連絡（異動は中止）と、移ってきた人のおまけ
+function orgAfter(){const o=O();const magOf=id=>o.st.pres.includes(id)?3:o.st.fuku.includes(id)?2:1;const MN=k=>k+'冊目';const res=[];
+  // 社員の辞退：信頼が低い／連載中の先生を受け持っている（バラバラはいや）／上の役職なら受けやすい
+  for(const k of [2,3]){const L2=k===2?o.st.fuku:o.st.pres;for(const id of L2.slice()){const x=staffById(id);if(!x)continue;const up=(ORG_RANK[o.roles[id]]||0)>(ORG_RANK[x.role]||0);
+    const ser=x.role==='tantou'?serials().filter(m=>m.tantou===x.id):[];let p=0.12+((x.trust||50)<40?0.12:0)-(up?0.1:0)+(ser.length?0.25:0);
+    if(Math.random()<p){L2.splice(L2.indexOf(id),1);o.st.ref.push(id);res.push({t:x.name+'から連絡',s:ser.length?'「連載中の'+ser[0].name+'先生を置いていけません。'+MN(1)+'に残らせてください。」':'「……今回の異動は、辞退させてください。」',warn:1});}}}
+  // 先生の辞退：担当とのつながり（担当がいる雑誌に行きたい）／ジャンルが合わない
+  for(const k of [2,3]){const L2=k===2?o.ar.fuku:o.ar.pres;const pol=k===2?o.g.fuku:o.g.pres;for(const id of L2.slice()){const m=S.manga.find(x=>x.id===id);if(!m)continue;const tk=m.tantou!=null?magOf(m.tantou):null;const t=staffById(m.tantou);
+    const bond=(m.fav||m.exclusive||(m.months||0)>=12);if(t&&tk!==k&&bond&&Math.random()<0.6){L2.splice(L2.indexOf(id),1);if(tk===2)o.ar.fuku.push(id);else if(tk===3)o.ar.pres.push(id);else o.ar.ref.push(id);res.push({t:m.name+'先生から連絡',s:'「担当の'+t.name+'さんが'+MN(tk)+'なら、わたしもそちらに行きたいです。」',warn:tk!==3});continue;}
+    const gs=gsOf(m);if(POLICY[pol]&&!gs.some(g=>POLICY[pol].includes(g))&&Math.random()<0.5){L2.splice(L2.indexOf(id),1);o.ar.ref.push(id);res.push({t:m.name+'先生から連絡',s:'「'+pol+'は、ちょっと苦手で……。'+MN(1)+'に残らせてください。」',warn:1});continue;}
+    if(Math.random()<0.12){L2.splice(L2.indexOf(id),1);o.ar.ref.push(id);res.push({t:m.name+'先生から連絡',s:'「今回は、お断りさせてください。」',warn:1});}}}
+  // おまけ：担当が先生を連れてくる／営業が販路を確保してくる
+  o.bonus={stores:{2:0,3:0}};
+  for(const k of [2,3]){const L2=k===2?o.st.fuku:o.st.pres,AL=k===2?o.ar.fuku:o.ar.pres;for(const id of L2){const x=staffById(id);if(!x)continue;
+    if(x.role==='tantou'&&Math.random()<0.35){const m=S.manga.find(mm=>mm.tantou===x.id&&['stock','queue'].includes(mm.status)&&!o.ar.fuku.includes(mm.id)&&!o.ar.pres.includes(mm.id));if(m){AL.push(m.id);res.push({t:'担当・'+x.name,s:m.name+'先生を連れてきた！「先生も、いっしょに行きたいそうです！」',good:k===3});}}
+    if(['eigyo','eibu'].includes(x.role)&&Math.random()<0.4){const n=Math.round((800+Math.random()*1600)/100)*100;o.bonus.stores[k]+=n;res.push({t:'営業・'+x.name,s:'書店の販路を'+n.toLocaleString()+'店、確保してきた！',good:k===3});}}}
+  const n3=o.st.pres.length;res.push({t:'結果',s:'3冊目に来たのは、'+n3+'人と、先生'+o.ar.pres.length+'人。'});save();
+  const el=$('pop');let i=0;const show=()=>{if(i>=res.length){el.hidden=true;openSheet('honsha','soshiki');orgChartOpen(3);showPop();return;}const r0=res[i];
+    el.innerHTML='<div class="box"'+(r0.warn?' style="border-color:#e07a6e"':r0.good?' style="border-color:#8ae07a"':'')+'><h3 id="pop-h">'+esc(r0.t)+'</h3><div class="t" style="font-size:18px">'+esc(r0.s)+'</div><div class="row"><button class="btn pri" data-act="orgnext">'+(i<res.length-1?'次へ（あと'+(res.length-1-i)+'件）':'役職図を見る')+'</button></div></div>';el.hidden=false;};
+  orgAfter.next=()=>{i++;show();};show();}
+
+// ===== 役職図（雑誌ごとのタブ・トーナメント図のように線でつなぐ）=====
+function orgMembers(k){// k: 1,2,3 → その雑誌の社員
+  const O0=S.org&&S.org.closed?S.org:null;const all=S.staff.filter(x=>!x.hidden);
+  if(!O0)return {top:{t:'社長',n:presName()},ids:all.map(x=>x.id)};
+  const taken=new Set([...O0.st.fuku,...O0.st.pres,S.exec.hon,S.exec.fuku]);
+  if(k===1)return {top:{t:'本部長',n:(staffById(S.exec.hon)||{}).name||''},ids:all.filter(x=>!taken.has(x.id)&&x.role!=='zatsumu').map(x=>x.id),genre:O0.g.hon};
+  if(k===2)return {top:{t:S.exec.dairi?'副社長（本部長が兼務）':'副社長',n:(staffById(S.exec.fuku)||{}).name||''},ids:O0.st.fuku.slice(),genre:O0.g.fuku};
+  return {top:{t:'社長',n:presName()},ids:O0.st.pres.slice(),genre:O0.g.pres,chief:O0.chief};}
+function orgRole(x){return (S.org&&S.org.roles&&S.org.roles[x.id])||x.role;}
+function orgTree(k){const M=orgMembers(k);const X=M.ids.map(staffById).filter(Boolean);const R=x=>orgRole(x);
+  // 役職はすべて出す。いない席は「不在」
+  const box=(role,label)=>{const ps=X.filter(x=>R(x)===role).map(x=>x.name);return {t:label||ROLES[role],n:'',role,names:ps.length?ps:['（不在）'],empty:!ps.length,kids:[]};};
+  const root={t:M.top.t,n:M.top.n||'（不在）',role:'top',kids:[]};
+  const ed=box('chief');ed.kids.push(box('vice'),box('tantou'));root.kids.push(ed);
+  for(const [b,m] of [['eibu','eigyo'],['senbu','senden'],['keibu','keiri']]){const bn=box(b);bn.kids.push(box(m));root.kids.push(bn);}
+  root.kids.push(box('zatsumu','秘書'));
+  const und=X.filter(x=>R(x)==='later');if(und.length)root.kids.push({t:'役職は未定',n:'',role:'group',names:und.map(x=>x.name),kids:[]});
+  return root;}
+// 役職図：役職と、その役職にだれがいるか。1つの枠＝1つの役職（名前が並ぶ）。定員に足りない分は「空き」
+function orgCap(r){return S.moved?(CAP[r]||1):(capOf(r)||CAP[r]||1);}
+function orgChartSVG(k){const M=orgMembers(k);const X=M.ids.map(staffById).filter(Boolean);const R=x=>orgRole(x);
+  const COL={top:'#c9a24a',pres:'#c9a24a',chief:'#e07a6e',vice:'#f0a060',tantou:'#8ab0d8',eibu:'#6ad1ff',senbu:'#6ad1ff',keibu:'#6ad1ff',eigyo:'#9ad0e8',senden:'#9ad0e8',keiri:'#9ad0e8',zatsumu:'#c8a0d8'};
+  const VW=400,CW=92,CG=10,X0=(VW-(CW*4+CG*3))/2;let lines='',boxes='';
+  // 枠：役職名（いる人数／定員）、名前、空き
+  const box=(x,y,w,role,label,names,cap,big)=>{const c=COL[role]||'#aaa';const vac=Math.max(0,cap-names.length);const ml=Math.max(0,...names.map(s=>s.length));const fs=Math.min(names.length>6?10.5:names.length>3?12:big?15:13,(w-8)/Math.max(1,ml)*1.05);const lh=fs+4;
+    const rows=names.length+(vac?1:0)||1;const h=24+rows*lh+6;const empty=!names.length;
+    boxes+='<g><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="7" fill="#2b2a26" stroke="'+(empty?'#6a6458':c)+'" stroke-width="'+(big?3:2)+'"'+(empty?' stroke-dasharray="6 4"':'')+'/>'
+      +'<text x="'+(x+w/2)+'" y="'+(y+16)+'" text-anchor="middle" font-size="'+(big?12:11)+'" fill="'+c+'">'+esc(label)+(cap>1?' '+names.length+'/'+cap:'')+'</text>'
+      +names.map((s,i)=>'<text x="'+(x+w/2)+'" y="'+(y+24+lh*(i+0.8))+'" text-anchor="middle" font-size="'+fs+'" fill="#f4efe2"'+(big&&i===0?' font-weight="700"':'')+'>'+esc(s)+'</text>').join('')
+      +(vac?'<text x="'+(x+w/2)+'" y="'+(y+24+lh*(names.length+0.8))+'" text-anchor="middle" font-size="'+Math.min(fs,12)+'" fill="#8a8478">'+(cap===1?'（不在）':'空き '+vac)+'</text>':'')+'</g>';return h;};
+  const nm=r=>X.filter(x=>R(x)===r).map(x=>x.name);
+  // 上：幹部（社長、その雑誌の責任者をまん中に）
+  let y=0;const HW=150;
+  const hh=box(VW/2-HW/2,y,HW,'top',M.top.t,[M.top.n||'（不在）'],1,true);
+  const sec=nm('zatsumu');const sx=VW/2+HW/2+12;const sh=box(sx,y+4,Math.min(90,VW-sx-2),'zatsumu','秘書',sec,1,false);lines+='<path d="M'+(VW/2+HW/2)+' '+(y+18)+' H'+sx+'" />';
+  y+=Math.max(hh,sh+4)+16;const barY=y;y+=14;
+  // 4つの列：編集部・営業部・宣伝部・経理部
+  const COLS=[[['chief','編集長'],['vice','副編集長'],['tantou','担当']],[['eibu','営業部長'],['eigyo','営業']],[['senbu','宣伝部長'],['senden','宣伝']],[['keibu','経理部長'],['keiri','経理']]];
+  const xs=COLS.map((_,i)=>X0+i*(CW+CG));lines+='<path d="M'+VW/2+' '+(barY-16)+' V'+barY+'" /><path d="M'+(xs[0]+CW/2)+' '+barY+' H'+(xs[3]+CW/2)+'" />';
+  let maxY=y;COLS.forEach((col,i)=>{let yy=y;const x=xs[i];lines+='<path d="M'+(x+CW/2)+' '+barY+' V'+yy+'" />';
+    col.forEach(([r,label],j)=>{const h=box(x,yy,CW,r,label,nm(r),orgCap(r),j===0);if(j<col.length-1)lines+='<path d="M'+(x+CW/2)+' '+(yy+h)+' V'+(yy+h+10)+'" />';yy+=h+10;});maxY=Math.max(maxY,yy);});
+  const und=nm('later');if(und.length){box(X0,maxY+4,CW*4+CG*3,'top','役職は未定',[und.join('、')],1,false);maxY+=60;}
+  return '<svg viewBox="-2 -2 '+(VW+4)+' '+(maxY+6)+'" style="width:100%;max-width:640px;height:auto;display:block;margin:0 auto"><g stroke="#cfc6ae" stroke-width="2" fill="none">'+lines+'</g>'+boxes+'</svg>';}
+function orgArtList(k){const O0=S.org&&S.org.closed?S.org:null;let ids;if(!O0||k===1){const out=O0?new Set([...O0.ar.fuku,...O0.ar.pres]):new Set();ids=S.manga.filter(m=>['serial','stock','queue'].includes(m.status)&&!out.has(m.id)).map(m=>m.id);}else ids=k===2?O0.ar.fuku:O0.ar.pres;
+  const ms=ids.map(id=>S.manga.find(m=>m.id===id)).filter(Boolean);return ms.length?ms.map(m=>'<span class="chip" style="margin:3px;display:inline-block">'+esc(m.name)+'先生'+(m.status==='serial'?'（連載中）':'')+'</span>').join(''):'<span class="s">なし</span>';}
+function orgChartOpen(k){k=k||(S.org&&S.org.closed?3:1);let ov=$('orgchart');if(!ov){ov=document.createElement('div');ov.id='orgchart';ov.style.cssText='position:fixed;inset:0;z-index:8500;background:#14120f;display:flex;flex-direction:column';document.body.appendChild(ov);}
+  const O0=S.org&&S.org.closed;const tabsK=O0?[1,2,3]:[1];const TN=k2=>esc((S.org.names&&S.org.names[k2])||(k2===1?S.mag.name:k2+'冊目'));
+  ov.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid #3a342c"><b style="font-size:20px;color:#ffd970;flex:1">役職図</b><button class="btn" data-act="orgchartclose">閉じる</button></div>'
+    +'<div style="display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap">'+tabsK.map(k2=>'<button class="btn'+(k2===k?' sel':'')+'" data-act="orgcharttab" data-arg="'+k2+'">'+(O0?TN(k2):esc(S.mag.name))+'</button>').join('')+'</div>'
+    +'<div style="flex:1;overflow:auto;padding:8px 8px 20px">'+orgChartSVG(k)+'</div>';}
+
+function orgChartHTML(){return '<div class="card"><div class="t">会社の役職図。雑誌ごとに、だれがどこにいるかがわかる。</div><button class="btn pri" data-act="orgchart">役職図を開く</button></div>';}
+function orgChartHTML_old(){const nm=x=>x?esc((ROLES[x.role]||'')+'・'+x.name):'—';const box=(title,sub,body,col)=>'<div class="card" style="border-left:6px solid '+col+';margin-left:'+(title.startsWith('社長')?0:18)+'px"><div class="who" style="font-size:17px">'+title+'</div>'+(sub?'<div class="s">'+sub+'</div>':'')+(body||'')+'</div>';
+  const list=(ids,art)=>ids.length?'<div class="s" style="margin-top:4px">'+ids.map(id=>art?(S.manga.find(m=>m.id===id)||{}).name+'先生':esc((staffById(id)||{}).name||'')).filter(Boolean).join('、')+'</div>':'<div class="s">なし</div>';
+  let h='<div class="card"><div class="t">会社の役職図。三誌体制になると、だれがどの雑誌にいるかがわかる。</div></div>';
+  h+=box('社長・'+esc(presName()),coName(),'',"#c9a24a");
+  const O0=S.org&&S.org.closed?S.org:null;
+  if(!O0){h+=box('編集部','月刊誌「'+esc(S.mag.name)+'」（'+esc(S.mag.policy)+'）','<div class="s">'+['chief','vice'].flatMap(r=>byRole(r)).map(nm).join('<br>')+'</div><div class="s">担当 '+byRole('tantou').length+'人</div>','#e07a6e');
+    h+=box('運営部','','<div class="s">'+['eibu','senbu','keibu'].flatMap(r=>byRole(r)).map(nm).join('<br>')+'</div>','#6ad1ff');return h;}
+  const hon=staffById(S.exec.hon),fuku=staffById(S.exec.fuku);const taken=new Set([...O0.st.fuku,...O0.st.pres,S.exec.hon,S.exec.fuku]);
+  const rest=S.staff.filter(x=>!taken.has(x.id)&&!x.hidden&&x.role!=='zatsumu').map(x=>x.id);
+  h+=box('本部長・'+esc(hon?hon.name:''),'1冊目「'+esc(S.mag.name)+'」（'+esc(O0.g.hon)+'）','<div class="s"><b>人材</b>（守った人：'+O0.st.prot.map(id=>esc((staffById(id)||{}).name||'')).join('、')+'）</div>'+list(rest)+'<div class="s"><b>先生</b>：連載中の先生と、残った持ち駒</div>','#e07a6e');
+  h+=box((S.exec.dairi?'副社長（本部長が代理）・':'副社長・')+esc(fuku?fuku.name:''),'2冊目（'+esc(O0.g.fuku)+'）','<div class="s"><b>人材</b></div>'+list(O0.st.fuku)+'<div class="s"><b>先生</b></div>'+list(O0.ar.fuku,1),'#8ae07a');
+  const ch=O0.chief?staffById(O0.chief):null;
+  h+=box('社長（直轄）','3冊目（'+esc(O0.g.pres||'')+'）','<div class="s"><b>編集長</b>：'+(ch?esc(ch.name):'未定')+'</div><div class="s"><b>人材</b></div>'+list(O0.st.pres)+'<div class="s"><b>先生</b></div>'+list(O0.ar.pres,1),'#ffd970');
+  return h;}
+function landPrice(){return Math.round(1e8*landF()/1e6)*1e6;}
+function hqPrice(){return Math.round(2e8*eraF()/1e6)*1e6;}
 function drawDecorBack(){const on=k=>hasD(k)&&!(S.decorOff&&S.decorOff[k]);
   if(on('art')){QB(194,6,36,28,'#8a6a2a');Q(196,8,32,24,'#e8c76a');Q(198,10,28,20,'#9fc7e0');Q(198,22,28,8,'#4e9a62');Q(204,16,8,6,'#7d8fa8');Q(214,14,6,8,'#5e6f88');Q(220,11,4,4,'#fffdf6');}
   if(on('rug'))fRug(142,64,118,66,'#7a2a2a','#c9a24a');}
@@ -926,7 +1854,7 @@ function endTurn(){
     const fresh=c.left===3&&!c.shown;if(fresh&&c.printDue){const pc=c.printDue*cp*cpr;out+=pc;bk.cprint+=pc;c.printDue=0;}
     const want=Math.round(c.base*c.f*lab*(c.luck||1)*(c.am0==null?1:aMul(S.manga.find(x=>x.id===c.mid))));let n=Math.min(want,Math.max(0,c.print-c.sold));
     if(want>n&&(c.reprint||0)<10){const add=Math.max(Math.round(c.print*0.3/100)*100,Math.round((want-n)*2/100)*100);c.print+=add;const pc=add*cp*cpr;out+=pc;bk.cprint+=pc;c.reprint=(c.reprint||0)+1;n=want;(S.popups=S.popups||[]).push({news:'reprint',title:c.title,vol:c.vol,k:c.reprint,mid:c.mid});say('営業','「'+c.title+'」'+c.vol+'巻、重版決定！（'+c.reprint+'回目・'+busu(add)+'）');}
-    c.sold+=n;if(fresh){c.shown=1;newC.push({title:c.title,vol:c.vol,n,exp:Math.round(c.base*lab*(c.am0||1)),mid:c.mid});}S.cmon.list.push({title:c.title,vol:c.vol,n});{const k=cserKey(c);if(S.cser[k])S.cser[k].sold+=n;}
+    c.sold+=n;if(fresh){c.shown=1;newC.push({title:c.title,vol:c.vol,n,exp:Math.round(c.base*lab*(c.am0||1)),mid:c.mid,q:c.q});}S.cmon.list.push({title:c.title,vol:c.vol,n});{const k=cserKey(c);if(S.cser[k])S.cser[k].sold+=n;}
     inc+=n*cp*0.7;bk.comics+=n*cp*0.7;out+=n*cp*0.1;bk.royalty+=n*cp*0.1;c.left--;c.f*=(c.decay||0.6);
     if(c.left===0){const ret=c.print-c.sold;if(ret>c.print*0.4&&ret>2000)S.pendingEvents.push({dept:'営業',who:'倉庫',t:'「'+c.title+'」'+c.vol+'巻の返本が'+busu(ret)+'、倉庫に積み上がりました……（刷った'+busu(c.print)+'のうち売れたのは'+busu(c.sold)+'）',warn:true});}
   }
@@ -1122,11 +2050,15 @@ function publishComic(m){
   const vol=Math.floor(m.months/6);
   const t=staffById(m.tantou);
   const dsh=clamp(0.2+0.8*Math.min(1,distCalc().stores/18000),0.2,1);
-  const q=clamp(((score(m)+(m.pop||0))/2-25)/55,0,1);const decay=0.35+0.45*q;
-  const base=3000*Math.pow(Math.max(5,m.pop)/40,2)*(1+Math.min(m.fame,3000)/1200)*(0.6+S.mag.aware/150)*dsh*(0.97+0.25*clamp((m.fans||0)/((S.lastResult&&S.lastResult.sold||10000)*0.15+1),0,1));const am=aMul(m);
+  const q=clamp(((score(m)+(m.pop||0))/2-25)/55,0,1);
+  const cq=clamp((m.story+m.idea+m.ga+(m.kousei||m.story))/4*0.7+(t?(t.hidden?45:t.henshu):40)*0.3+(R()*2-1)*12,0,100);
+  const decay=clamp(0.35+0.45*q+(cq-50)/500,0.25,0.9);
+  const wom=(()=>{try{cserInit();const e=S.cser[String(m.id)+'|'+m.title];return e&&e.wom?e.wom:1;}catch(x){return 1;}})();
+  m.fame=(m.fame||0)+Math.max(0,Math.round((cq-45)/3));
+  const base=wom*3000*Math.pow(Math.max(5,m.pop)/40,2)*(1+Math.min(m.fame,3000)/1200)*(0.6+S.mag.aware/150)*dsh*(0.97+0.25*clamp((m.fans||0)/((S.lastResult&&S.lastResult.sold||10000)*0.15+1),0,1));const am=aMul(m);
   const eg=salesTeam();const err=clamp(0.55-(eg?eg.eigyo:20)/200,0.1,0.5);const est=base*am*(hasF('label')?1.3:1)*(1+decay+decay*decay);
   const print=Math.max(1000,Math.round(est*(1+(R()*2-1)*err)/100)*100);
-  S.comics.push({title:m.title,vol,base,f:1,left:3,reprint:0,sold:0,fresh:2,mid:m.id,luck:0.65+R()*0.75,decay,print,printDue:print,am0:am});cserInit();{const k=String(m.id)+'|'+m.title;const e=S.cser[k]||(S.cser[k]={title:m.title,name:m.name,vols:0,sold:0});e.vols=Math.max(e.vols,vol);e.name=m.name;}
+  S.comics.push({title:m.title,vol,base,f:1,left:3,reprint:0,sold:0,fresh:2,mid:m.id,luck:0.65+R()*0.75,decay,print,printDue:print,am0:am,q:Math.round(cq)});cserInit();{const k=String(m.id)+'|'+m.title;const e=S.cser[k]||(S.cser[k]={title:m.title,name:m.name,vols:0,sold:0});e.vols=Math.max(e.vols,vol);e.name=m.name;e.wom=clamp(1+(cq-50)/250,0.8,1.2);}
   S.pendingEvents.push({who:'営業',t:'「'+m.title+'」'+vol+'巻を出します。初版は'+(eg?eg.title+'・'+eg.name+'の判断で':'見込みで')+busu(print)+'。'+(t?'担当の'+t.name+'は「もっと刷りましょう！」と熱が入っています。':'')});
 }
 function cancelSerial(m,why){
@@ -1583,7 +2515,7 @@ function sheetStaff(){
       h+='<div class="sec">'+ROLES[r]+'（'+list.length+(['souko','kenshu','mi'].includes(r)?'':'/'+capOf(r))+'）'+(['eibu','eigyo','senbu','senden','keibu','keiri'].includes(r)?'　経営部門':'')+'</div>'+(KEY[r]?'<div class="s">大事な能力：'+KEY[r].map(k=>STATN[k]+'力').join('、').replace('審美力','審美眼')+'</div>':'');
       if(!list.length)h+='<div class="card"><div class="s">まだいません。採用しよう。</div></div>';
       for(const s of list){
-        const load=r==='tantou'?'　担当 '+loadOf(s)+'本・持ち駒 '+stockOf(s).length+'人・'+(s.team?'右':'左')+'のシマ':(r==='vice'?'　'+(s.team?'右':'左')+'のシマ':'');
+        const load=r==='tantou'?'　担当 '+loadOf(s)+'本・持ち駒 '+stockOf(s).length+'人・'+hanName(s.team||0):(r==='vice'?'　'+hanName(s.team||0):'');
         h+='<div class="card"><div class="line"><b>'+esc(s.name)+' <span style="font-family:var(--f-dot);color:var(--accent)">Lv.'+(s.lv||1)+'</span></b><span class="s">'+s.age+'歳・'+staffOrigin(s)+'・月給 '+yen(salary(s))+load+'</span></div>'+(r==='tantou'?tanList(s):'')+rks(s)+lvBlock(s)+(s.hidden||bestRole(s)===s.role||(s.role==='vice'&&bestRole(s)==='tantou')?'':'<div class="s">向いている役職：'+ROLES[bestRole(s)]+'</div>')+(expand===s.id?'<div class="row">'+Object.keys(ROLES).filter(x=>x!==s.role&&x!=='kenshu'&&x!=='mi'&&!(s.hidden&&x!=='souko')).map(x=>'<button class="btn" data-act="role" data-arg="'+s.id+':'+x+'"'+(byRole(x).length>=capOf(x)?' disabled':'')+'>'+ROLES[x]+'へ</button>').join('')+'<button class="btn danger" data-act="role" data-arg="'+s.id+':fire">解雇</button></div><label class="s" for="sn-'+s.id+'">名前を変える</label><div class="row"><input type="text" id="sn-'+s.id+'" value="'+esc(s.name)+'" maxlength="12" style="flex:1;min-width:0"><button class="btn pri" data-act="srename" data-arg="'+s.id+'">決定</button></div>':'<div class="row"><button class="btn" data-act="expand" data-arg="'+s.id+'">配置・解雇</button></div>')+'</div>';
       }
     }
@@ -1673,8 +2605,9 @@ function presName(){return S.pres&&S.pres.name?S.pres.name:'（名前未設定�
 function gradeRow(nm,v,note){return '<div class="line"><span>'+nm+(note?'<br><span class="s">'+note+'</span>':'')+'</span><b style="font-family:var(--f-dot);font-size:24px;color:'+(v>=70?'var(--accent)':v<45?'#e07a6e':'var(--fg)')+'">'+(v==null?'—':rank(v))+'</b></div>';}
 function sheetHonsha(){
   S.pres=S.pres||presDef();const P0=S.pres;
-  let h=head('本社')+tabs([['pres','社長'],['kanbu','幹部'],['kanban','看板'],['num','会社の数字'],['kairan','回覧']])+'<div class="sh-body">';
-  if(tab==='pres'){
+  let h=head('本社')+tabs([['pres','社長'],['kanbu','幹部'],['soshiki','役職図'],['kanban','看板'],['num','会社の数字'],['kairan','回覧']])+'<div class="sh-body">';
+  if(tab==='soshiki'){h+=orgChartHTML();}
+  else if(tab==='pres'){
     const years=S.y-1970;
     h+='<div class="card"><div class="row" style="align-items:center;gap:12px;flex-wrap:nowrap"><canvas class="fc" data-fid="pres" width="32" height="32"></canvas><div><div class="who">'+esc(coName())+' 社長</div><div class="t" style="font-size:20px"><b>'+esc(presName())+'</b></div><div class="s">創業'+(1970)+'年・'+(years?years+'年目':'1年目')+'・称号「'+esc(TITLES[S.titleIdx][1])+'」</div></div></div></div>';
     {const vv=window.visualViewport;const OL2={auto:'自動',port:'縦の並び',land:'横の並び'};h+='<div class="card"><div class="who">画面の並び</div><div class="row">'+['auto','port','land'].map(k=>'<button class="btn'+(ORIPREF===k?' sel':'')+'" data-act="oripref" data-arg="'+k+'">'+OL2[k]+'</button>').join('')+'</div><div class="s">うまく表示されないときは「縦の並び」か「横の並び」に固定してみてね。</div><div class="line" style="align-items:center;margin-top:8px"><span>縦画面で部屋を拡大<br><span class="s">指で左右にスライドして見回せる</span></span><button class="btn" data-act="zoompref">'+(ZOOMPREF==='off'?'いまはオフ（拡大する）':'いまはオン（拡大しない）')+'</button></div><div class="s" style="margin-top:6px">画面情報：内側 '+innerWidth+'×'+innerHeight+'・見える部分 '+(vv?Math.round(vv.width)+'×'+Math.round(vv.height):'-')+'・端末 '+screen.width+'×'+screen.height+'・倍率 '+devicePixelRatio+'</div></div>';}
@@ -1941,7 +2874,7 @@ function sheetData(){
     h+=tbl(['月','企画','予算','知名度'],rs.filter(x=>x.launched).map(x=>'<tr><td>'+ym(x)+'</td><td style="text-align:left">'+(x.senden?esc(x.media):'なし')+'</td><td>'+esc(x.budget||'')+'</td><td>'+(x.aw0!=null?Math.round(x.aw0)+'→'+Math.round(x.aw1):'')+'</td></tr>'));
   } else {
     h+='<div class="card"><div class="s">担当ごとの漫画家と持ち駒。</div></div>';
-    for(const t of byRole('tantou'))h+='<div class="card"><div class="line"><b>'+esc(t.name)+'</b><span class="s">'+(t.team?'右':'左')+'のシマ・編集 '+(t.hidden?'？':rank(t.henshu))+'</span></div>'+tanList(t)+'</div>';
+    for(const t of byRole('tantou'))h+='<div class="card"><div class="line"><b>'+esc(t.name)+'</b><span class="s">'+hanName(t.team||0)+'・編集 '+(t.hidden?'？':rank(t.henshu))+'</span></div>'+tanList(t)+'</div>';
     const no=S.manga.filter(m=>(m.status==='serial'||m.status==='stock'||m.status==='queue')&&!staffById(m.tantou));
     if(no.length)h+='<div class="card alert"><div class="who">担当なし</div><div class="t">'+no.map(m=>esc(m.name)).join('、')+'</div><div class="s">「漫画家」から担当を決めよう。</div></div>';
   }
@@ -1981,10 +2914,16 @@ function buildHalf(){
       mine.slice(0,3).forEach(x=>pass.push(x.m.id));mine.slice(3).forEach(x=>rej.push({id:x.m.id,by:sc?sc.id:null,vice:!!v,tm}));
     }
     const G0=S.halfGuest&&GUEST[S.halfGuest]&&byRole(S.halfGuest)[0]?S.halfGuest:null;let gp=null;
-    if(G0){const cand=S.manga.filter(m=>pass.includes(m.id));cand.sort((a,b)=>GUEST[G0][2](b)-GUEST[G0][2](a));gp=cand[0]?cand[0].id:null;}
-    const st=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(m.ready?8:0)+noise()*1.3+(m.id===gp?10:0)})).sort((a,b)=>b.v-a.v);
+    // 会議の参加者の推し：審美が高いほど本当にいい作品を選ぶ。低いと駄作を推すことも
+    const eyeOf=x=>x?(x.hidden?40:(x.bigan||40)):40;const blur=x=>(R()*2-1)*(100-eyeOf(x))/4*1.6;
+    const gs0=G0?byRole(G0)[0]:null;
+    if(G0){const cand=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:GUEST[G0][2](m)+blur(gs0)}));cand.sort((a,b)=>b.v-a.v);gp=cand[0]?cand[0].m.id:null;}
+    const st=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(m.ready?8:0)+noise()*1.6+(m.id===gp?10:0)})).sort((a,b)=>b.v-a.v);
     const add=st.slice(0,Math.max(0,free0)).map(x=>x.m.id);
-    S.half={cut,add,chiefCut:cut.slice(),chiefAdd:add.slice(),meddle:!c,pass,rej,guest:G0,guestPick:gp};
+    const nV=Math.max(1,Math.min(2,add.length||1));const votes={chief:add.slice(0,2)};
+    for(const tm of [0,1]){const v=byRole('vice').find(x=>x.team===tm);if(!v)continue;votes['t'+tm]=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(((staffById(m.tantou)||{}).team||0)===tm?12:0)+blur(v)})).sort((a,b)=>b.v-a.v).slice(0,nV).map(x=>x.m.id);}
+    if(G0)votes.guest=[gp,...S.manga.filter(m=>pass.includes(m.id)&&m.id!==gp).map(m=>({m,v:GUEST[G0][2](m)+blur(gs0)})).sort((a,b)=>b.v-a.v).map(x=>x.m.id)].filter(x=>x!=null).slice(0,nV);
+    S.half={cut,add,chiefCut:cut.slice(),chiefAdd:add.slice(),meddle:!c,pass,rej,guest:G0,guestPick:gp,votes};
 }
 function sheetHalf(){
   const list=serials().sort((a,b)=>avgH(a)-avgH(b));
@@ -2039,7 +2978,7 @@ function screenHTML(){
   for(const tm of [0,1]){const v=byRole('vice').find(x=>x.team===tm);const c=chief();
     const ps=H.pass.filter(id=>{const m=S.manga.find(x=>x.id===id);return m&&((staffById(m.tantou)||{}).team||0)===tm;});const rs=H.rej.filter(r=>r.tm===tm);
     if(!ps.length&&!rs.length)continue;
-    h+='<div class="card"><div class="who">'+(tm?'右':'左')+'のシマ・'+(v?'副編集長 '+esc(v.name):'編集長'+(c?' '+esc(c.name):'')+'（副編集長がいない）')+'</div><div class="s">会議にあげる：'+(ps.map(nm).join('、')||'なし')+'</div>'+(rs.length?'<div class="s" style="color:var(--red)">見送り：'+rs.map(r=>nm(r.id)).join('、')+'</div>':'')+'</div>';}
+    h+='<div class="card"><div class="who">'+hanName(tm)+'・'+(v?'副編集長 '+esc(v.name):'編集長'+(c?' '+esc(c.name):'')+'（副編集長がいない）')+'</div><div class="s">会議にあげる：'+(ps.map(nm).join('、')||'なし')+'</div>'+(rs.length?'<div class="s" style="color:var(--red)">見送り：'+rs.map(r=>nm(r.id)).join('、')+'</div>':'')+'</div>';}
   return h;
 }
 const avgH=m=>m.hist&&m.hist.length?m.hist.reduce((a,b)=>a+b,0)/m.hist.length:m.pop;
@@ -2192,10 +3131,10 @@ function showPop0(){
       o._sp=t.id;el.hidden=false;face32($('popface'),t,{mouth:'open',tie:['chief','vice'].includes(t.role)});return;}
     const L=o.list.slice().sort((a,b)=>Math.abs(b.n/b.exp-1)-Math.abs(a.n/a.exp-1));const hd=L[0];const r=hd.n/hd.exp;const t=tnOf(hd.mid);
     const q=r>=1.2?'見込みの'+r.toFixed(1)+'倍！書店に行列ができてます！':r>=1?'見込みどおり、いい出だしです！':r>=0.8?'うーん……ちょっと見込みに届きませんでした。':'……全然売れてません。返本の山が見えます……';
-    el.innerHTML='<div class="box"><h3 id="pop-h">コミックス発売！</h3>'+(S.animOff?'':'<canvas id="popanim" width="200" height="84" style="width:100%;image-rendering:pixelated;border-radius:6px;background:#cdb68c"></canvas>')+'<div class="t" style="text-align:center;font-size:22px;margin-block:6px"><b id="popcnt">0</b>冊売れた！</div>'
+    el.innerHTML='<div class="box"><h3 id="pop-h">コミックス発売！</h3>'+animBox2()+'<div class="t" style="text-align:center;font-size:22px;margin-block:6px"><b id="popcnt">0</b>冊売れた！</div>'
       +(()=>{const LS=o.list.slice().sort((a,b)=>b.n-a.n),sh=LS.slice(0,5),rest=LS.slice(5);return sh.map(c=>{const rr=c.n/c.exp;return '<div class="line"><span>「'+esc(c.title)+'」'+c.vol+'巻<br><span class="s">見込み '+c.exp.toLocaleString()+'冊</span></span><b style="color:'+(rr>=1?'var(--green)':'#e07a6e')+'">'+c.n.toLocaleString()+'冊 '+(rr>=1?'↑':'↓')+'</b></div>';}).join('')+(rest.length?'<div class="s" style="text-align:center">ほか'+rest.length+'作　計'+rest.reduce((a,c)=>a+c.n,0).toLocaleString()+'冊</div>':'');})()
       +'<div class="who" style="margin-top:8px"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">担当・'+esc(t.name)+'</div><div class="s">「'+esc(hd.title)+'」'+hd.vol+'巻</div></div></div><div class="quote">「'+q+'」</div><div class="row"><button class="btn pri" data-act="popok">'+(r>=1?'よし！':'次がんばろう')+'</button><button class="btn" data-act="animoff">'+(S.animOff?'アニメをつける':'アニメをオフ')+'</button></div></div>';
-    o._sp=t.id;el.hidden=false;face32($('popface'),t,{mouth:r>=1?'open':'frown',tie:['chief','vice'].includes(t.role)});{const tot=o.list.reduce((a,c)=>a+c.n,0);if(S.animOff)$('popcnt').textContent=tot.toLocaleString();else comicAnim(tot,o.list.reduce((a,c)=>a+c.exp,0));}return;}}
+    o._sp=t.id;el.hidden=false;face32($('popface'),t,{mouth:r>=1?'open':'frown',tie:['chief','vice'].includes(t.role)});{const tot=o.list.reduce((a,c)=>a+c.n,0);$('popcnt').textContent=tot.toLocaleString();if(!S.animOff)a2Go(comicAnim2(tot,o.list.reduce((a,c)=>a+c.exp,0),hd.title,comicQ(hd)));}return;}}
   {const q0=(S.popups||[]);if(q0[0]&&(q0[0].news==='anime'||q0[0].news==='phenom')){const el=$('pop');const m=S.manga.find(x=>x.id===q0[0].id);const an=q0[0].news==='anime';
     el.innerHTML='<div class="box" style="border-color:#ffd970"><h3 id="pop-h" style="color:#ffd970">'+(an?'📺 アニメ化決定！':'🔥 社会現象！')+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(m?esc(m.name):'')+'</div><div class="s">「'+(m?esc(m.title):'')+'」</div></div></div><div class="quote">「'+(an?'社長！テレビ局から、「'+(m?esc(m.title):'')+'」をアニメにしたいって電話が！':'社長、街じゅうの子どもが「'+(m?esc(m.title):'')+'」の話をしています！')+'」</div><div class="s">'+(an?'1年間ずっと人気投票3位以内をキープした。コミックスが2倍売れるようになり、雑誌の知名度も上がる。':'2年間トップ3をキープ。コミックスがさらに売れ、雑誌の部数も一段上がる。')+'</div><button class="btn pri" data-act="popok">やったー！</button></div>';
     el.hidden=false;if(m)face32($('popface'),m);return;}}
@@ -2320,7 +3259,7 @@ function act(b){
     case 'kbudget':S.budget=arg;S.kChange=null;S.dec.budget=true;(S.popups||[]).shift();save();render();showPop();break;
     case 'kprint':S.printPlan=+arg;showPop();break;
     case 'kprintd':S.printPlan=Math.max(1000,Math.round(S.printPlan*(1+ +arg)/100)*100);showPop();break;
-    case 'popok':{const o0=(S.popups||[])[0];if(o0&&o0.contest)for(const h of o0.hands||[]){const m=S.manga.find(x=>x.id===h.id);if(m&&m.status==='pending'&&m.contest){m.status='gone';}}(S.popups||[]).shift();save();showPop();break;}
+    case 'popok':{const o0=(S.popups||[])[0];if(o0&&o0.contest)for(const h of o0.hands||[]){const m=S.manga.find(x=>x.id===h.id);if(m&&m.status==='pending'&&m.contest){m.status='gone';}}const sh0=(S.popups||[]).shift();save();if(sh0&&sh0.after==='hq'){$('pop').hidden=true;a2Overlay(buildAnim2({co:coName(),snap:buildSnap()}),()=>moveStart());}else showPop();break;}
     case 'ccon':{const [id,c]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m&&m.status==='pending'){if(c==='n'){m.status='gone';}else{m.status='stock';m.exclusive=c==='e';m.revealK=S.y*12+S.m+2;say('社長',m.name+'さんと'+(c==='e'?'専属':'フリー')+'で契約した。担当に任せる。');}}save();showPop();break;}
     case 'open':openSheet(arg);break;
     case 'close':if(sheet==='half')return;closeSheet();break;
@@ -2370,7 +3309,7 @@ function actRest(a,arg,b){
     case 'launch':{const n=$('magname');if(n&&n.value.trim())S.mag.name=n.value.trim();launch();break;}
     case 'cut':{const id=+arg;const i=S.half.cut.indexOf(id);if(i>=0)S.half.cut.splice(i,1);else if(S.half.cut.length<5)S.half.cut.push(id);drawSheet();break;}
     case 'add':{const id=+arg;const i=S.half.add.indexOf(id);if(i>=0)S.half.add.splice(i,1);else S.half.add.push(id);drawSheet();break;}
-    case 'halfok':halfOk();break;
+    case 'halfok':meetPlay(halfOk);break;
     case 'meddle':S.half.meddle=true;drawSheet();break;
     case 'srename':{const st=staffById(+arg);const n=$('sn-'+arg);if(st&&n&&n.value.trim()){st.name=n.value.trim();save();toast('名前を変えました');}drawSheet();break;}
     case 'hiretab':S.hireTab=arg;expand=null;drawSheet();break;
@@ -2392,6 +3331,21 @@ function actRest(a,arg,b){
     case 'anok':{const o=(S.popups||[])[0];if(o&&o.news==='anoffer'){const m=S.manga.find(x=>x.id===o.id);if(m)anAccept(m,arg==='1');}(S.popups||[]).shift();save();showPop();break;}
     case 'stackpref':{STACKPREF=!STACKPREF;try{localStorage.setItem('henshu-stack',STACKPREF?'on':'off');}catch(e){}drawOffice.k=null;layout();render();drawSheet();break;}
     case 'call':doCall(arg);break;
+      case 'execpick':execPick(arg);break;
+      case 'execyes':execAnswer(true);break;
+      case 'execno':execAnswer(false);break;
+      case 'execok':$('pop').hidden=true;orgStart();break;
+      case 'orggenre':orgGenre(arg);break;
+      case 'orgpick':orgPick(+arg);break;
+      case 'orgart':orgArt(+arg);break;
+      case 'orgchief':orgChief(+arg);break;
+      case 'orgrole':orgPickRole(arg);break;
+      case 'orgnext':orgAfter.next();break;
+      case 'orgname3':orgName3();break;
+      case 'orgend':orgEnd();break;
+      case 'orgchart':orgChartOpen();break;
+      case 'orgcharttab':orgChartOpen(+arg);break;
+      case 'orgchartclose':{const ov=$('orgchart');if(ov)ov.remove();}break;
     case 'decoroff':{S.decorOff=S.decorOff||{};S.decorOff[arg]=!S.decorOff[arg];drawOffice.k=null;save();drawSheet();render();break;}
     case 'zoompref':{ZOOMPREF=ZOOMPREF==='off'?'on':'off';try{localStorage.setItem('henshu-zoom',ZOOMPREF);}catch(e){}layout.zk='';layout();render();drawSheet();break;}
     case 'oripref':{ORIPREF=arg;try{localStorage.setItem('henshu-orient',arg);}catch(e){}drawOffice.k=null;layout();render();drawSheet();break;}
@@ -3016,7 +3970,7 @@ function drawHenshu(bs){
   for(const R1 of TANREP){const tm=R1.s.team||0;const vx=[41,133][tm];const v=byRole('vice').find(x=>x.team===tm);const px=v&&hasDesk('v'+tm)?(tm?vx+26:vx-14):(tm?150:50),py=v&&hasDesk('v'+tm)?50:122;chibi(px,py,R1.s,false);OSPOT[R1.s.id]=[px+7,py-1];bs.push([px+7,py-1,(v?'副編、':'')+tanLine(R1.s,R1.why),'']);}
   TANREP.length=0;
   // 電話中の担当
-  {const on=byRole('tantou').filter(x=>presence(x)===1&&OSPOT[x.id]);const w=Math.floor(tick/180);if(on.length&&hash(w*7.7)<0.35){const x=on[Math.floor(hash(w*3.1)*on.length)];const L=['もしもし、先生ですか？','持ち込みのご予約ですね！','締め切りは来週ですよ！','ネーム、拝見しました！','はい、編集部です！'];bs.push([OSPOT[x.id][0],OSPOT[x.id][1],'☎ '+L[w%L.length],'']);}}
+  {const on=byRole('tantou').filter(x=>presence(x)===1&&OSPOT[x.id]&&ACTNOW[x.id]==='phone');const w=Math.floor(tick/180);if(on.length&&hash(w*7.7)<0.35){const x=on[Math.floor(hash(w*3.1)*on.length)];const L=['もしもし、先生ですか？','持ち込みのご予約ですね！','締め切りは来週ですよ！','ネーム、拝見しました！','はい、編集部です！'];bs.push([OSPOT[x.id][0],OSPOT[x.id][1],'☎ '+L[w%L.length],'']);}}
   // 席のない人はウロウロ
   {const nos=S.staff.filter(x=>(x.role==='mi'||(!capOf(x.role)&&DESKS_OF[x.role]))&&!REP.has(x.id)&&presence(x)===1);
    const show=nos.slice(0,5);show.forEach((x,i)=>{const sp=0.012+(x.id%7)*0.002;const ph=x.id*1.7;const ax=70+((x.id*37)%60),ay=126+((x.id*13)%22);const wx=ax+Math.sin(tick*sp+ph)*34,wy=ay+Math.sin(tick*sp*0.7+ph)*4;walker(wx-7,wy-17,x,Math.floor(tick/4)%2);OSPOT[x.id]=[wx,wy-18];});
@@ -3282,13 +4236,13 @@ function headA(ctx,X,Y,r,lk,skin,hair,dir,s){
   if(st==='pony'){ell(X-f*r*1.15,Y+r*0.2,r*0.32,r*0.82,hair);ell(X-f*r*0.92,Y-r*0.35,r*0.18,r*0.16,'#e8c76a');}
   if(st==='twin'){ell(X-f*r*0.95,Y+r*0.55,r*0.34,r*1.0,hair);ell(X-f*r*0.85,Y-r*0.3,r*0.18,r*0.16,lk.ribbon?'#d94a6a':'#e8c76a');}
   ell(X,Y,r*0.95,r*1.05,gS);
-  if(st!=='bald'&&st!=='afro'){ell(X-f*r*0.15,Y-r*0.25,r*0.92,r*0.82,hair);gloss(X-f*r*0.1,Y-r*0.5,r*0.6,r*0.4);}
+  if(st!=='bald'&&st!=='afro'){ell(X-f*r*0.55,Y-r*0.05,r*0.5,r*0.66,hair);ell(X-f*r*0.12,Y-r*0.36,r*0.96,r*0.72,hair);gloss(X-f*r*0.1,Y-r*0.55,r*0.6,r*0.4);}
   if(st==='afro')for(let i=0;i<4;i++)ell(X+f*r*(0.6-i*0.3),Y-r*0.45+(i%2)*r*0.06,r*0.24,r*0.22,hair);
   if(st==='nanasan'||(fem&&st!=='hime'))ell(X+f*r*0.5,Y-r*0.3,r*0.42,r*0.3,hair);
   if(st==='hime')poly([[X+f*r*0.95,Y-r*0.45],[X+f*r*0.2,Y-r*0.6],[X+f*r*0.2,Y-r*0.08],[X+f*r*0.95,Y-r*0.08]],hair);
   if(st==='regent'){ell(X+f*r*0.45,Y-r*0.88,r*0.85,r*0.48,hair);line(X-f*r*0.2,Y-r*1.1,X+f*r*1.0,Y-r*1.0,HH,Math.max(1,r*0.09));}
   if(st==='bald'){ell(X-f*r*0.35,Y-r*0.05,r*0.35,r*0.35,hair);}
-  ell(X-f*r*0.05,Y+r*0.12,r*0.18,r*0.28,SS);
+  if(st!=='bald'&&st!=='afro'&&st!=='spiky')ell(X-f*r*0.22,Y+r*0.02,r*0.3,r*0.36,hair);else if(st==='bald')ell(X-f*r*0.1,Y+r*0.14,r*0.13,r*0.19,SS);
   const ex=X+f*r*0.55,ey=Y+r*0.14;
   if(lk.eye==='smile'){ctx.strokeStyle=ec;ctx.lineWidth=Math.max(1,r*0.09);ctx.beginPath();ctx.arc(ex,ey+r*0.06,r*0.12,Math.PI*1.1,Math.PI*1.9);ctx.stroke();}
   else if(lk.eye==='narrow')line(ex-r*0.1,ey,ex+r*0.12,ey,ec,Math.max(1,r*0.09));
@@ -3383,6 +4337,22 @@ function draw(ctx,opt){
       [[12,58,'#ff8a3a'],[30,66,'#ffd970'],[44,54,'#d94a3a']].forEach(([x,z,c])=>{poly([[x,-0.2,z],[x+7,-0.2,z],[x+7,-0.2,z+4],[x,-0.2,z+4]],c);poly([[x-3,-0.2,z],[x,-0.2,z+2],[x-3,-0.2,z+4]],c);});return;}
     if(pr==='trophy'){const n=a1.n||1;box(0,70,0,30,0,120,'#6b4128',{fg:1,rg:1,tg:1});for(let r=0;r<2;r++)poly([[4,-0.1,10+r*55],[66,-0.1,10+r*55],[66,-0.1,58+r*55],[4,-0.1,58+r*55]],'#3a2a1a');
       for(let i=0;i<Math.min(6,n);i++){const x=10+(i%3)*20,z=12+(i<3?0:55);box(x,x+12,8,16,z,z+4,'#8a6a2a',{fg:1,rg:1,tg:1});box(x+5,x+7,10,14,z+4,z+12,'#e8c76a',{fg:1,rg:1});box(x+1,x+11,9,15,z+12,z+22,'#e8c76a',{fg:1,rg:1,tg:1});}return;}
+    if(pr==='bshelf'||pr==='shashoku'||pr==='rack'){const L=a1.len||240,dd=a1.d||38,sd=a1.side||'L';
+      const B=(a,b,y0,y1,z0,z1,col,o)=>{const x0=sd==='L'?a:-b,x1=sd==='L'?b:-a;box(x0,x1,y0,y1,z0,z1,col,o||{fg:1,rg:1,tg:1});};
+      let q=a1.seed||7;const R=()=>{q=(q*16807)%2147483647;return q/2147483647;};
+      if(pr==='bshelf'){const h=a1.h||200,c=a1.col||'#7a5232',nr=a1.rows||5;const BK=['#8a2e2e','#2a4a7a','#c8a040','#3a6a4a','#e8e0cc','#5a3a6a','#c86a2a','#2a2a30','#b84a6a'];
+        B(0,3,0,L,0,h,sh(c,0.6));B(0,dd,L-4,L,0,h,c);const st=(h-8)/nr;
+        for(let r=0;r<nr;r++){const z=4+r*st;B(0,dd,4,L-4,z-3,z,c);let y=L-6;while(y>6){const w=4+R()*5,bh=st*(0.6+R()*0.3);const col=BK[(R()*BK.length)|0];if(R()<0.05){y-=9;continue;}B(4,dd-3-R()*5,Math.max(5,y-w),y,z,z+bh,col);y-=w+0.5;}}
+        B(0,dd,4,L-4,h-4,h,c);B(0,dd,0,4,0,h,c);return;}
+      if(pr==='rack'){const h=a1.h||170,c='#8a9298',nr=3,st=h/nr;const BX=['#c49a5e','#b88a50','#d2aa70','#c8a068'];
+        for(const y of [L-4,0])for(const xx of [0,dd-4])B(xx,xx+4,y,y+4,0,h,sh(c,0.8));
+        for(let r=0;r<nr;r++){const z=6+r*st;B(0,dd,0,L,z-3,z,c);let y=L-8;while(y>8){const w=28+R()*14,bh=Math.min(st-8,22+R()*16);const col=BX[(R()*4)|0];if(R()<0.12){y-=20;continue;}
+          const y0=Math.max(6,y-w);B(4,dd-4,y0,y,z,z+bh,col);B(4,dd-4,(y0+y)/2-2,(y0+y)/2+2,z+bh,z+bh+0.6,'#d8c070');B(dd-4.6,dd-4,y0+4,y-4,z+bh*0.4,z+bh*0.75,'#f4f0e4',{fg:1,rg:1});y-=w+2;}}
+        B(0,dd,0,L,h-3,h,c);for(const xx of [0,dd-4])B(xx,xx+4,0,4,0,h,sh(c,0.9));return;}
+      // 写植機：机・文字盤・キーボード・本体
+      {const c='#cfd3cc',d2='#8e9a9c';B(0,dd,0,L,0,70,c);B(dd-1,dd,6,L*0.55,8,64,sh(c,0.92));B(0,dd,L*0.62,L,70,156,d2);B(dd-0.8,dd,L*0.66,L-6,108,140,'#2a3436',{fg:1});B(dd-0.9,dd,L*0.7,L*0.8,118,126,'#7ad0a0',{fg:1});
+        B(2,dd-2,4,L*0.58,70,74,'#6a7274');for(let i=0;i<7;i++)for(let j=0;j<10;j++){const y=8+j*(L*0.5/10),x=6+i*((dd-12)/7);B(x,x+2.6,y,y+L*0.5/10-1.2,74,75,(i+j)%5?'#efeee6':'#c8302a');}
+        B(dd-10,dd-2,L*0.64,L*0.98,156,160,sh(d2,0.8));return;}}
     if(pr==='lowcab'){const L=a1.len||300,h=a1.h||90,dd=a1.d||40,c=a1.col||'#e6e2d6',sd=a1.side||'B',n=Math.max(1,Math.round(L/(a1.unit||80)));
       const lw2=Math.max(1,s*0.5);
       if(sd==='B'){box(0,L,0,dd,0,h,c,{fg:1,rg:1,tg:1});for(let i=0;i<n;i++){const x0=i*L/n,x1=x0+L/n;poly([[x0+2,-0.2,4],[x1-2,-0.2,4],[x1-2,-0.2,h-3],[x0+2,-0.2,h-3]],sh(c,0.93));line([(x0+x1)/2,-0.3,4],[(x0+x1)/2,-0.3,h-3],sh(c,0.7),lw2);box((x0+x1)/2-6,(x0+x1)/2-3,-1,0,h*0.45,h*0.6,'#9aa0a0',{fg:1});box((x0+x1)/2+3,(x0+x1)/2+6,-1,0,h*0.45,h*0.6,'#9aa0a0',{fg:1});}}
@@ -3403,6 +4373,31 @@ function draw(ctx,opt){
     const hw=(side?9:19)*(side?G*1.15:G),hd=(side?19:9)*(side?G:G*1.15);// 胴の半分の幅・奥行き
     const SIT=!!opt.sit;const SL=SIT&&lk.slouch;const FUP=SIT&&lk.feetUp;const z0=0,zh=SIT?44:72*HT+bob,zt=SIT?(SL?90:98):(126+(G-1)*-4)*HT+bob-(YK?8:OLD?7:0);const lean=run?5:(SL?-15:(YK?7:OLD?6:GEN?-2:0));
     const parts=[];
+    const ACT=SIT&&!SL?(opt.act||''):'',AP=opt.aph||0,T2=Math.PI*2*AP,wv=Math.sin(T2),HD=opt.hd||dir;
+    const F=(f,l,z)=>side?[cx+mv[0]*f,cy+l,z]:[cx+l,cy+mv[1]*f,z];
+    const BX=(f0,f1,l0,l1,z0,z1,col)=>{const A=F(f0,l0,z0),B=F(f1,l1,z1);box(Math.min(A[0],B[0]),Math.max(A[0],B[0]),Math.min(A[1],B[1]),Math.max(A[1],B[1]),z0,z1,col,{fg:1,rg:1,tg:1});};
+    const QD=(a,b,c,d,col)=>poly([F(...a),F(...b),F(...c),F(...d)],col);
+    const NK=side?-1:1;// 手前の手
+    const actHand=k=>{const nk=k===NK;switch(ACT){
+      case'write':return nk?F(25+wv*2,k*4+Math.cos(T2)*3,80):F(21,k*10,79);
+      case'name':return nk?F(20,k*1+wv*3,93+Math.abs(wv)*2):F(10,k*12,87);
+      case'read':return F(10,k*17,88+(opt.mark?Math.abs(wv)*3:0));
+      case'phone':return nk?F(3,k*20,118):F(21,k*10,79);
+      case'chat':return nk?F(16,k*15,94+wv*8):null;
+      case'calc':return nk?F(26,k*3,79+Math.max(0,wv)*6):F(22,k*11,79);
+      case'wawa':{const up=Math.max(0,nk?wv:-wv);return F(16+up*8,k*(12+up*3),100+up*62);}}
+      return null;};
+    const actProp=post=>{if(!ACT)return;
+      if(!post){
+        if(ACT==='write'){QD([16,-14,77],[34,-14,77],[34,6,77],[16,6,77],'#fbf8ef');QD([19,-11,77.3],[31,-11,77.3],[31,-10,77.3],[19,-10,77.3],'#8a8478');QD([19,-7,77.3],[29,-7,77.3],[29,-6,77.3],[19,-6,77.3],'#8a8478');}
+        if(ACT==='name'){QD([9,-13,86],[9,9,86],[27,9,95],[27,-13,95],'#fbf8ef');for(let t=0;t<4;t++){const a=11+t*4;QD([a,-10,87+t*2],[a,6,87+t*2],[a+1.2,6,87.6+t*2],[a+1.2,-10,87.6+t*2],'#8a8478');}QD([19,-4,91.2],[19,1,91.2],[21,1,92.2],[21,-4,92.2],'#d03020');}
+        if(ACT==='read'){const cv=opt.bk||'#c83a3a';QD([7,-17,86],[7,17,86],[29,17,97],[29,-17,97],cv);QD([8,-15.5,86.8],[8.5,0,86],[28,0,95.6],[27.5,-15.5,96.3],'#f6f0e2');QD([8.5,0,86],[8,15.5,86.8],[27.5,15.5,96.3],[28,0,95.6],'#ece4d2');for(let t=0;t<3;t++){const a=11+t*5.5;QD([a,-13,87.6+t*2.8],[a,-3,87.3+t*2.8],[a+3.5,-3,89+t*2.8],[a+3.5,-13,89.3+t*2.8],'#5a5450');QD([a,3,87.3+t*2.8],[a,13,87.6+t*2.8],[a+3.5,13,89.3+t*2.8],[a+3.5,3,89+t*2.8],'#5a5450');}}
+        if(ACT==='calc'){if(opt.soro){BX(18,32,-16,12,76,78.5,'#b07a3a');QD([24,-15,78.6],[25,-15,78.6],[25,11,78.6],[24,11,78.6],'#4a2a12');for(let i=0;i<7;i++)for(const f of [20.5,27,29.5]){const P0=pj(...F(f,-13+i*4,79));ctx.fillStyle='#2a1a10';ctx.beginPath();ctx.ellipse(P0[0],P0[1],sAt(...F(f,0,79))*1.6,sAt(...F(f,0,79))*1.1,0,0,7);ctx.fill();}}
+          else{BX(18,32,-6,8,76,79,'#3a3e44');QD([27,-4,79.2],[31,-4,79.2],[31,6,79.2],[27,6,79.2],'#9ab88a');for(let i=0;i<3;i++)for(let j=0;j<3;j++)QD([19+i*2.6,-4+j*3.5,79.2],[20.6+i*2.6,-4+j*3.5,79.2],[20.6+i*2.6,-2+j*3.5,79.2],[19+i*2.6,-2+j*3.5,79.2],'#e8e4da');}}
+      }else{
+        if(ACT==='phone'){const l0=NK*19,l1=NK*24;BX(-1,7,Math.min(l0,l1),Math.max(l0,l1),110,127,'#1e1c1e');}
+        if(ACT==='write'||ACT==='name'){const h=actHand(NK);if(h){const col=ACT==='name'?'#d03020':'#2a2a30';line([h[0],h[1],h[2]],[h[0]+mv[0]*-3+(side?0:4),h[1]+mv[1]*-3+(side?-4:0),h[2]+10],col,Math.max(1.2,s*1.3));}}
+      }};
     if(opt.feetOnly){const pants=lk.pants||'#3a3e48';const f0=opt.footF||0;const rr=sAt(0,0,60);
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
       for(const k of [1,-1]){const o=side?[0,k*6]:[k*6,0];const P=(f,z)=>pj(cx+o[0]+mv[0]*f,cy+o[1]+mv[1]*f,z);
@@ -3424,6 +4419,8 @@ function draw(ctx,opt){
       arms.push({y:ay+mv[1]*sv*0.5,x:ax,d:()=>{let ex=ax+mv[0]*sv,ey=ay+mv[1]*sv,ez=zh+6;const c=jk||shirt;
         const ax2=ax+mv[0]*lean*0.5,ay2=ay+mv[1]*lean*0.5;
         const seg=(x0,y0,z0,x1,y1,z1,cc)=>{poly([[x0-4,y0-4,z0],[x0+4,y0-4,z0],[x1+4,y1-4,z1],[x1-4,y1-4,z1]],sh(cc,0.85));poly([[x0+4,y0-4,z0],[x0+4,y0+4,z0],[x1+4,y1+4,z1],[x1+4,y1-4,z1]],sh(cc,0.6));poly([[x0-4,y0-4,z0],[x0+4,y0-4,z0],[x0+4,y0+4,z0],[x0-4,y0+4,z0]],sh(cc,1.1));};
+        if(ACT){const H=actHand(k);if(H){const [hx,hy,hz]=H;const sz=zt-4;const elx=(ax2+hx)/2+(side?0:k*5),ely=(ay2+hy)/2+(side?k*5:0),elz=(sz+hz)/2-(hz>sz?-2:7);const tt=lk.tee&&!jk;
+          seg(ax2,ay2,sz,elx,ely,elz,tt?shirt:c);seg(elx,ely,elz,hx,hy,hz,tt?skin:c);box(hx-3.5,hx+3.5,hy-3.5,hy+3.5,hz-4,hz+3,skin,{fg:1,rg:1,tg:1});return;}}
         if(YK){const pc=lk.tee&&!jk?shirt:c;const elx=ax+(side?0:k*6)-mv[0]*2,ely=ay+(side?k*6:0)-mv[1]*2,elz=(zt+zh)/2+2;seg(ax2,ay2,zt-4,elx,ely,elz,pc);
           const px=ax+(side?0:-k*2)+mv[0]*2,py=ay+(side?-k*2:0)+mv[1]*2;seg(elx,ely,elz,px,py,zh+10,lk.tee&&!jk?skin:c);return;}
         if(SL){const elx=cx+mv[0]*(lean-1)+(side?0:k*21),ely=cy+mv[1]*(lean-1)+(side?k*21:0),elz=zt+12;seg(ax2,ay2,zt-4,elx,ely,elz,lk.tee&&!jk?shirt:c);ex=cx+mv[0]*(lean-9)+(side?0:k*6);ey=cy+mv[1]*(lean-9)+(side?k*6:0);ez=zt+20;seg(elx,ely,elz,ex,ey,ez,lk.tee&&!jk?skin:c);box(ex-3.5,ex+3.5,ey-3.5,ey+3.5,ez-6,ez+1,skin,{fg:1,rg:1,tg:1});return;}
@@ -3431,6 +4428,7 @@ function draw(ctx,opt){
         if(lk.tee&&!jk){const t=0.38,mx=ax2+(ex-ax2)*t,my=ay2+(ey-ay2)*t,mz=zt-4+(ez-zt+4)*t;seg(mx,my,mz,ex,ey,ez,skin);seg(ax2,ay2,zt-4,mx,my,mz,c);}
         else seg(ax2,ay2,zt-4,ex,ey,ez,c);
         box(ex-3.5,ex+3.5,ey-3.5,ey+3.5,ez-6,ez+1,skin,{fg:1,rg:1,tg:1});}});}
+    if(opt.armsOnly){if(ACT!=='phone')arms.forEach((o,i)=>{if([-1,1][i]===NK)o.d();});if(ACT!=='phone'&&ACT!=='chat')actProp(0);return;}
     // 描く順：奥（yが大きい）→手前。横向きのときは奥の腕・足を先に
     const order=[...legs,...arms].sort((p,q)=>q.y-p.y);
     const far=order.filter(o=>o.y>cy+0.5),near=order.filter(o=>o.y<=cy+0.5);
@@ -3442,14 +4440,14 @@ function draw(ctx,opt){
       if(lk.tie)poly([[cx-1.4,cy-hd-0.4,zt-2],[cx+1.4,cy-hd-0.4,zt-2],[cx+2,cy-hd-0.4,zt-18],[cx,cy-hd-0.4,zt-21],[cx-2,cy-hd-0.4,zt-18]],lk.tie);
       box(cx-hw,cx+hw,cy-hd-0.2,cy-hd+0.2,zh-2,zh+2,'#2a2420',{fg:1,rg:1,tg:1});}
     if(lk.cardigan&&dir==='down'){poly([[cx-hw,cy-hd-0.3,zh],[cx-3,cy-hd-0.3,zh],[cx-3,cy-hd-0.3,zt],[cx-hw,cy-hd-0.3,zt]],lk.cardigan);poly([[cx+3,cy-hd-0.3,zh],[cx+hw,cy-hd-0.3,zh],[cx+hw,cy-hd-0.3,zt],[cx+3,cy-hd-0.3,zt]],sh(lk.cardigan,0.9));}
-    near.forEach(o=>o.d());
+    near.forEach(o=>o.d());actProp(0);
     box(cx-4+lx0,cx+4+lx0,cy-4+ly0,cy+4+ly0,zt,zt+7,sh(skin,0.9),{fg:1,rg:1,tg:1});
     // 頭
     const C0=pj(cx+lx0,cy+ly0,zt+20*HEADK);const r=12.5*HEADK*sAt(cx+lx0,cy+ly0,zt+20*HEADK);const X=C0[0],Y=C0[1];
     const ell=(x,y,rx,ry,col,a0,a1)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,a0||0,a1||Math.PI*2);ctx.fillStyle=col;ctx.fill();};
     const gS=ctx.createRadialGradient(X-r*0.35,Y-r*0.35,r*0.2,X,Y,r*1.1);gS.addColorStop(0,sh(skin,1.08));gS.addColorStop(1,sh(skin,0.82));
     const gH=ctx.createRadialGradient(X-r*0.3,Y-r*0.4,r*0.2,X,Y,r*1.1);gH.addColorStop(0,sh(hair,1.6));gH.addColorStop(1,hair);
-    headA(ctx,X,Y,r,lk,skin,hair,dir,s);
+    headA(ctx,X,Y,r,lk,skin,hair,HD,s);actProp(1);if(ACT==='wawa')arms.forEach(o=>o.d());
     if(dir==='left'||dir==='right'){const f=dir==='right'?1:-1;if(lk.stub){ctx.save();ctx.globalAlpha=0.35;ell(X+f*r*0.4,Y+r*0.6,r*0.45,r*0.3,'#3a3430');ctx.restore();}if(lk.smoke)cig(ctx,X+f*r*0.72,Y+r*0.55,r,f,lk.smoke);}
     if(lk.helmet){ell(X,Y-r*0.3,r*1.12,r*0.95,'#f2c230',Math.PI,Math.PI*2);ctx.fillStyle='#fff2a0';ctx.fillRect(X-r*0.5,Y-r*1.05,r*0.6,r*0.18);ctx.fillStyle='#c49a20';ctx.fillRect(X-r*1.3,Y-r*0.36,r*2.6,r*0.2);}
     return;}
@@ -3469,6 +4467,29 @@ function draw(ctx,opt){
       poly([[cx-wT,yF,zsh],[cx+wT,yF,zsh],[cx+wT,yF+16,zsh],[cx-wT,yF+16,zsh]],shade(col,1.12));
       // 肩の丸み
       for(const sx of [-1,1]){const x0=cx+sx*wT;poly([[x0-sx*6,yF,zsh],[x0,yF,zsh-6],[x0,yF+16,zsh-6],[x0-sx*6,yF+16,zsh]],shade(col,sx>0?0.75:1.05));}};
+    if(face&&doA&&!doB&&lk.act&&!FU){const A=lk.act,T=(lk.ai||0)/8*Math.PI*2,w=Math.sin(T),up=Math.max(0,w);const ac=jacket||lk.cardigan||shirt,sl=lk.tee&&!jacket?skin:ac;
+      const QQ=(pts,col)=>poly(pts,col);
+      const arm=(sx,hx,hy,hz,ex,ey,ez)=>{const S0=pj(cx+sx*21,yb+2,zsh-6),E=pj(ex,ey,ez),Hd=pj(hx,hy,hz);const rr=sAt(cx,yb,zsh);ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.strokeStyle='rgba(20,16,12,0.55)';ctx.lineWidth=rr*9.5;ctx.beginPath();ctx.moveTo(S0[0],S0[1]);ctx.lineTo(E[0],E[1]);ctx.lineTo(Hd[0],Hd[1]);ctx.stroke();
+        ctx.strokeStyle=ac;ctx.lineWidth=rr*8;ctx.beginPath();ctx.moveTo(S0[0],S0[1]);ctx.lineTo(E[0],E[1]);ctx.stroke();
+        ctx.strokeStyle=sl;ctx.beginPath();ctx.moveTo(E[0],E[1]);ctx.lineTo(Hd[0],Hd[1]);ctx.stroke();
+        ctx.fillStyle=skin;ctx.beginPath();ctx.arc(Hd[0],Hd[1],rr*4.4,0,7);ctx.fill();ctx.restore();};
+      const rest=sx=>{const ax=cx+sx*22;box(ax-4-sx*3,ax+4-sx*3,yb-22,yb,H+0.5,H+7,sl,{fg:1,rg:1,tg:1});box(ax-4-sx*5,ax+3-sx*5,yb-27,yb-21,H+0.5,H+5.5,skin,{fg:1,rg:1,tg:1});};
+      const paper=(x0,x1,y0,y1)=>{QQ([[x0,y0,H+0.6],[x1,y0,H+0.6],[x1,y1,H+0.6],[x0,y1,H+0.6]],'#fbf8ef');for(let i=1;i<4;i++){const yy=y0+(y1-y0)*i/4;line([x0+3,yy,H+0.8],[x1-4,yy,H+0.8],'#9a958a',Math.max(1,s*0.5));}};
+      if(A==='phone'){rest(-1);box(cx+16,cx+23,yb-3,yb+7,zsh+10,zsh+34,'#1e1c1e',{fg:1,rg:1,tg:1});arm(1,cx+19,yb-2,zsh+16,cx+30,yb-10,H+16);}
+      else if(A==='hanko'){paper(cx-6,cx+24,yb-42,yb-22);ctx.save();ctx.globalAlpha=0.85;const P1=pj(cx+16,yb-30,H+0.9);ctx.fillStyle='#d03020';ctx.beginPath();ctx.ellipse(P1[0],P1[1],sAt(cx,yb,H)*3.2,sAt(cx,yb,H)*2.2,0,0,7);ctx.fill();ctx.restore();
+        rest(-1);const z0=H+1+up*14;box(cx+13,cx+19,yb-33,yb-27,z0,z0+11,'#c8a060',{fg:1,rg:1,tg:1});box(cx+13,cx+19,yb-33,yb-27,z0,z0+1.5,'#c03020',{fg:1,rg:1,tg:1});arm(1,cx+16,yb-30,z0+12,cx+30,yb-14,H+14+up*6);}
+      else if(A==='write'){paper(cx-14,cx+16,yb-44,yb-24);rest(-1);const hx=cx+4+w*5,hy=yb-34+Math.cos(T)*3;line([hx,hy,H+1],[hx+4,hy+6,H+12],'#2a2a30',Math.max(1.2,s*1.2));arm(1,hx,hy,H+3,cx+28,yb-14,H+10);}
+      else if(A==='read'){const sy=w*0.8;QQ([[cx-15,yb-26,H+8],[cx+15,yb-26,H+8],[cx+13,yb-20+sy,H+34],[cx-13,yb-20+sy,H+34]],'#fbf8ef');for(let i=1;i<5;i++){const z=H+8+i*5;line([cx-10,yb-26+i*1.2,z],[cx+10,yb-26+i*1.2,z],'#8a8478',Math.max(1,s*0.5));}
+        arm(-1,cx-14,yb-26,H+10,cx-28,yb-14,H+8);arm(1,cx+14,yb-26,H+10,cx+28,yb-14,H+8);}
+      else if(A==='news'){const sy=w*1.2;QQ([[cx-36,yb-25,H+6],[cx+36,yb-25,H+6],[cx+34,yb-19+sy,H+40],[cx-34,yb-19+sy,H+40]],'#ece7da');QQ([[cx-1,yb-25.2,H+6],[cx+1,yb-25.2,H+6],[cx+1,yb-19.2+sy,H+40],[cx-1,yb-19.2+sy,H+40]],'#c8c2b2');
+        for(const sgn of [-1,1]){const x0=cx+sgn*4,x1=cx+sgn*32;QQ([[x0,yb-23.6+sy*0.85,H+31],[x1,yb-23.6+sy*0.85,H+31],[x1,yb-22.6+sy*0.9,H+36],[x0,yb-22.6+sy*0.9,H+36]],sgn<0?'#c8302a':'#2a2a30');for(let i=0;i<4;i++){const z=H+10+i*5;line([x0,yb-24.5+i*0.9,z],[x1,yb-24.5+i*0.9,z],'#8a8478',Math.max(1,s*0.5));}}
+        arm(-1,cx-34,yb-24,H+24,cx-36,yb-8,H+12);arm(1,cx+34,yb-24,H+24,cx+36,yb-8,H+12);}
+      else if(A==='type'){box(cx-18,cx+18,yb-46,yb-26,H,H+7,'#3a4a4a',{fg:1,rg:1,tg:1});box(cx-15,cx+15,yb-30,yb-26,H+7,H+12,'#2a3434',{fg:1,rg:1,tg:1});QQ([[cx-11,yb-27,H+12],[cx+11,yb-27,H+12],[cx+11,yb-24,H+28],[cx-11,yb-24,H+28]],'#fbf8ef');
+        for(let i=0;i<3;i++)for(let j=0;j<6;j++){const x=cx-13+j*5,y=yb-43+i*5;QQ([[x,y,H+7.2],[x+3,y,H+7.2],[x+3,y+3,H+7.2],[x,y+3,H+7.2]],'#d8d4ca');}
+        const a=(lk.ai||0)%2;arm(-1,cx-7,yb-38,H+9+(a?4:0),cx-26,yb-16,H+10);arm(1,cx+7,yb-38,H+9+(a?0:4),cx+26,yb-16,H+10);}
+      else{rest(-1);rest(1);}
+      return;}
     if(face&&doA&&!doB){const ac=jacket||lk.cardigan||shirt;
       if(FU){const pc=lk.pants||'#2a2a30';for(const [sx,dy] of [[-1,0],[1,-6]]){const lx=cx+sx*8+dy*0.3;box(lx-6,lx+6,4+dy,yb-6,H+3,H+13,pc,{fg:1,rg:1,tg:1});box(lx-8,lx+8,-6+dy,6+dy,H+1,H+26,'#1e1a18',{fg:1,rg:1,tg:1});box(lx-6.5,lx+6.5,-6.4+dy,-5.6+dy,H+3,H+24,'#6a625a',{fg:1,rg:1,tg:1});box(lx-5,lx+5,-6.6+dy,-6.2+dy,H+6,H+10,'#3a3230',{fg:1,rg:1,tg:1});}return;}
       for(const sx of [-1,1]){const ax=cx+sx*22;box(ax-4-sx*3,ax+4-sx*3,yb-22,yb,H+0.5,H+7,lk.tee&&!jacket?skin:ac,{fg:1,rg:1,tg:1});box(ax-4-sx*5,ax+3-sx*5,yb-27,yb-21,H+0.5,H+5.5,skin,{fg:1,rg:1,tg:1});}return;}
@@ -3477,7 +4498,7 @@ function draw(ctx,opt){
       if(jacket){// えりとシャツ
         poly([[cx-6,yb-0.2,zsh],[cx+6,yb-0.2,zsh],[cx+2,yb-0.2,zsh-24],[cx-2,yb-0.2,zsh-24]],shirt);
         poly([[cx-6,yb-0.3,zsh],[cx-1,yb-0.3,zsh-16],[cx-9,yb-0.3,zsh-4]],shade(jacket,1.25));poly([[cx+6,yb-0.3,zsh],[cx+1,yb-0.3,zsh-16],[cx+9,yb-0.3,zsh-4]],shade(jacket,0.95));}
-      else if(lk.tee){poly([[cx-6,yb-0.2,zsh],[cx+6,yb-0.2,zsh],[cx+4,yb-0.2,zsh-4],[cx-4,yb-0.2,zsh-4]],shade(skin,0.85));if(lk.chain){ctx.save();ctx.strokeStyle='#e8c76a';ctx.lineWidth=Math.max(1,s*0.6);const a=pj(cx-7,yb-0.5,zsh-1),b=pj(cx,yb-0.5,zsh-9),c2=pj(cx+7,yb-0.5,zsh-1);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.quadraticCurveTo(b[0],b[1]+3,c2[0],c2[1]);ctx.stroke();ctx.restore();}}
+      else if(lk.tee){poly([[cx-6,yb-0.2,zsh],[cx+6,yb-0.2,zsh],[cx+4,yb-0.2,zsh-4],[cx-4,yb-0.2,zsh-4]],shade(skin,0.85));if(lk.skull){const q=pj(cx,yb-0.6,zsh-11),rr=sAt(cx,yb,zsh-11)*4.2;a2Skull(ctx,q[0],q[1],rr);}if(lk.chain){ctx.save();ctx.strokeStyle='#e8c76a';ctx.lineWidth=Math.max(1,s*0.6);const a=pj(cx-7,yb-0.5,zsh-1),b=pj(cx,yb-0.5,zsh-9),c2=pj(cx+7,yb-0.5,zsh-1);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.quadraticCurveTo(b[0],b[1]+3,c2[0],c2[1]);ctx.stroke();ctx.restore();}}
       else{poly([[cx-6,yb-0.2,zsh],[cx+6,yb-0.2,zsh],[cx,yb-0.2,zsh-7]],shade(shirt,0.85));}
       if(tie){poly([[cx-1.6,yb-0.4,zsh-3],[cx+1.6,yb-0.4,zsh-3],[cx+2.4,yb-0.4,zsh-20],[cx,yb-0.4,zsh-23],[cx-2.4,yb-0.4,zsh-20]],tie);poly([[cx-2,yb-0.45,zsh-1],[cx+2,yb-0.45,zsh-1],[cx+1.4,yb-0.45,zsh-4],[cx-1.4,yb-0.45,zsh-4]],shade(tie,0.8));}
       if(lk.cardigan){poly([[cx-16,yb-0.3,zs+6],[cx-5,yb-0.3,zs+6],[cx-6,yb-0.3,zsh-2],[cx-20,yb-0.3,zsh-2]],lk.cardigan);poly([[cx+5,yb-0.3,zs+6],[cx+16,yb-0.3,zs+6],[cx+20,yb-0.3,zsh-2],[cx+6,yb-0.3,zsh-2]],shade(lk.cardigan,0.9));}
@@ -3691,7 +4712,7 @@ function spr(key,o,X,Y,sz){const kk=RKEY+'|'+key+'@'+Math.round(X)+','+Math.roun
   const px=pixelate(src,pw,ph,null);const d=px.getContext('2d').getImageData(0,0,pw,ph).data;let x0=pw,y0=ph,x1=-1,y1=-1;
   for(let y=0;y<ph;y++)for(let x=0;x<pw;x++)if(d[(y*pw+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
   if(x1<0){v={c:null,dx:0,dy:0};}else{const c=document.createElement('canvas');c.width=x1-x0+1;c.height=y1-y0+1;c.getContext('2d').drawImage(px,-x0,-y0);v={c,dx:x0-ax/K,dy:y0-ay/K};}
-  if(SPR.size>700)SPR.clear();SPR.set(kk,v);return v;}
+  if(SPR.size>1600)SPR.clear();SPR.set(kk,v);return v;}
 function put(ctx,v,X,Y){if(!v||!v.c)return;const p=pjs(X,Y,0);ctx.drawImage(v.c,Math.round(p[0]+v.dx),Math.round(p[1]+v.dy));}
 // --- 見た目（ゲームの社員データから） ---
 const TIEC=['#b23a2e','#3d6fa8','#3e7d4f','#6a5acd','#8a2e2e','#2f8a8a','#c47a1e','#222222'];
@@ -3713,7 +4734,7 @@ const feetNow=(id,p)=>hsh(slot(id,2)*3.3+id*0.71)<p;
 // 熱血・ガラ悪い編集部
 const ROUGH=['#26242a','#5a5a60','#2a3446','#f4f2ec','#a8403a','#26242a','#f4f2ec','#26242a'];
 function roughLook(st,lk){const id=st.id||0;const r=hsh(id*1.7);const o=Object.assign({},lk);
-  if(st.role==='chief'){Object.assign(o,{jacket:null,tie:null,cardigan:null,tee:1,shirt:'#26242a',chain:1,shades:1,stub:1});}
+  if(st.role==='chief'){Object.assign(o,{jacket:null,tie:null,cardigan:null,tee:1,shirt:'#26242a',chain:1,shades:1,stub:1,skull:1});}
   else if(r<0.85){o.jacket=null;o.cardigan=null;o.tee=1;o.shirt=ROUGH[id%ROUGH.length];if(o.shirt!=='#f4f2ec'||hsh(id*3.1)<0.5)o.tie=null;}
   if(!o.fem&&hsh(id*2.3)<0.4)o.stub=1;
   if(!o.walk&&(o.st==='spiky'||o.st==='afro')&&hsh(id*5.7)<0.6)o.walk='yankee';
@@ -3756,7 +4777,7 @@ function seatsHenshu(){const M={};
   M.chief=Object.assign({},EXEC,{X0:250,Y0:790,items:[['lamp',130,40,1],['phone',14,36],['tray',98,22],['ash',52,14],['plate',63,2,'編集長']]});
   M.v0=Object.assign({},VICE,{X0:112,Y0:660,items:[['phone',10,38],['pile',90,20,6],['ash',40,12],['plate',46,2,'副編集長']]});
   M.v1=Object.assign({},VICE,{X0:422,Y0:660,items:[['pile',8,18,9],['phone',96,38],['ash',80,12],['plate',46,2,'副編集長']]});
-  for(const isl of [0,1]){const ix=isl?394:142;for(let i=0;i<3;i++){const y=150+i*121;
+  const IY=hasF('uchiawase')?190:150;for(const isl of [0,1]){const ix=isl?394:142;for(let i=0;i<3;i++){const y=IY+i*121;
     M['t'+isl+'b'+i]={side:'right',X0:ix,Y0:y,ix,y};M['t'+isl+'f'+i]={side:'left',X0:ix+62,Y0:y,ix,y};}}
   return M;}
 function seatsUnei(){const M={};const L=decorOn;const OU2=hasF('ousetsu2');
@@ -3779,8 +4800,10 @@ const PATR=[[['pile',10,30,3],['ash',60,40]],[['cup',10,30],['phone',60,40]],[['
 function busyOf(st){if(!st)return 1;try{return Math.max(1,Math.min(4,1+serials().filter(m=>m.tantou===st.id).length));}catch(e){return 1;}}
 function clutterLv(){if(!S.mag||!S.mag.launched)return 0;let n=0;try{n=serials().length;}catch(e){}return n>=6?2:1;}
 // 壁ぎわの書庫と散らかり（背景に描きこむ）
-function wallsHenshu(lv,skip){const O=[];let q=12345;const R=()=>{q=(q*1103515245+12345)%2147483648;return (q>>8)%10000/10000;};const BOXC=['#c49a5e','#b88a50','#d2aa70','#c8a068'];let sd=1;
-  for(let i=0;i<15;i++){const y=40+i*60;if(y<820)O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
+function wallsHenshu(lv,skip){const O=[];const SR=hasF('shiryo'),SY=hasF('shashoku');const freeL=y=>!(SR&&y>=270&&y<520),freeR=y=>!(SY&&y>=570&&y<700);let q=12345;const R=()=>{q=(q*1103515245+12345)%2147483648;return (q>>8)%10000/10000;};const BOXC=['#c49a5e','#b88a50','#d2aa70','#c8a068'];let sd=1;
+  for(let i=0;i<15;i++){const y=40+i*60;if(y<820&&freeL(y))O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});if(freeR(y))O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
+  if(SR)O.push({prop:'bshelf',X0:0,Y0:280,pa:{side:'L',len:240,h:200,d:40,seed:11},sx:20,sy:400});
+  if(SY)O.push({prop:'shashoku',X0:RW,Y0:580,pa:{side:'R',len:120,d:42},sx:RW-20,sy:640});
   const put1=(kind,x,y,z,sxk,syk)=>{const ang=(R()-0.5)*0.7;sd++;let o;
     if(kind==='box'){const w=32+R()*16,dd=26+R()*10;o={prop:'cbox',pa:{w,d:dd,h:20+R()*12,n:R()<0.35?2:1,open:R()<0.3,z0:z,col:BOXC[(R()*4)|0],seed:sd}};}
     else if(kind==='bun')o={prop:'bundle',pa:{n:1+((R()*3)|0),z0:z,seed:sd}};
@@ -3789,45 +4812,53 @@ function wallsHenshu(lv,skip){const O=[];let q=12345;const R=()=>{q=(q*110351524
     O.push(Object.assign(o,{X0:x,Y0:y,ang,sx:sxk,sy:syk,z0:z}));};
   const pick=(fl)=>{const r=R();return fl?(r<0.34?'box':r<0.58?'heap':r<0.8?'bun':'env'):(r<0.35?'box':r<0.65?'heap':r<0.9?'bun':'env');};
   for(let i=0;i<15;i++){const y=40+i*60;for(const side of [0,1]){const r=R();const n=r<0.22?0:r<0.65?1:2;for(let k=0;k<n;k++){const yy=y+6+k*26+R()*8;const kd=pick(0),xx=side?RW-38+R()*4:4+R()*4;
-      if(lv>=1&&(side||y<800))put1(kd,xx,yy,90,side?RW-44:44,yy+12);else{R();R();R();R();R();}}}}
+      if(lv>=1&&(side?freeR(yy):(y<800&&freeL(yy))))put1(kd,xx,yy,90,side?RW-44:44,yy+12);else{R();R();R();R();R();}}}}
   for(const side of [0,1]){let y=70;while(y<920){const r=R();if(skip.some(([a,b])=>y>a-30&&y<b)){y+=20;continue;}if(r<0.3){y+=50+R()*80;continue;}
       const n=2+((R()*3)|0);for(let k=0;k<n&&y<920&&!skip.some(([a,b])=>y>a-30&&y<b);k++){const kind=pick(1);const xo=R()*22;const x=side?RW-86-xo:44+xo;if(lv>=2&&(side||y<780))put1(kind,x,y,0,side?x+14:x+18,y+14);else{R();R();R();R();R();R();}y+=18+R()*26;}
       y+=20+R()*40;}}
   O.push({prop:'lowcab',X0:10,Y0:RD-40,pa:{side:'B',len:240,h:200,d:40,unit:60},sx:130,sy:RD-20});
   O.push({prop:'lowcab',X0:460,Y0:RD-40,pa:{side:'B',len:190,h:200,d:40,unit:63},sx:555,sy:RD-20});
   if(lv>=1)O.push({prop:'cbox',X0:140,Y0:RD-36,pa:{w:40,d:32,h:26,n:2,z0:200,seed:5},sx:160,sy:RD-20,z0:200},{prop:'bundle',X0:500,Y0:RD-36,pa:{n:3,z0:200,seed:6},sx:516,sy:RD-20,z0:200});
-  O.push({prop:'lowcab',X0:40,Y0:10,pa:{side:'B',len:200,h:90,d:40},sx:140,sy:30});
+  const UC=hasF('uchiawase');if(!UC)O.push({prop:'lowcab',X0:40,Y0:10,pa:{side:'B',len:200,h:90,d:40},sx:140,sy:30});
   O.push({prop:'lowcab',X0:420,Y0:10,pa:{side:'B',len:200,h:90,d:40},sx:520,sy:30});
-  if(lv>=1)for(const x0 of [40,420]){let x=x0+6;while(x<x0+190){if(R()<0.25){x+=40;continue;}put1(pick(0),x,16+R()*6,90,x+16,24);x+=30+R()*20;}}
+  if(lv>=1)for(const x0 of (UC?[420]:[40,420])){let x=x0+6;while(x<x0+190){if(R()<0.25){x+=40;continue;}put1(pick(0),x,16+R()*6,90,x+16,24);x+=30+R()*20;}}
   return O;}
-function wallsUnei(OU2){const O=[];
-  for(let i=0;i<15;i++){const y=40+i*60;if(!(OU2&&y<150)&&y<820)O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
-  for(const y of [120,300,480,660,840]){if(!(OU2&&y<150)&&y<800)O.push({prop:'binders',X0:32,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:22,sy:y+20});O.push({prop:'binders',X0:RW-8,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:RW-18,sy:y+20});}
+function wallsUnei(OU2){const O=[];const SK=hasF('souko');
+  for(let i=0;i<15;i++){const y=40+i*60;if(!(OU2&&y<150)&&y<820)O.push({prop:'lowcab',X0:0,Y0:y,pa:{side:'L',len:60,h:90,d:40,unit:60},sx:20,sy:y+30});if(!(SK&&y>=570&&y<700))O.push({prop:'lowcab',X0:RW,Y0:y,pa:{side:'R',len:60,h:90,d:40,unit:60},sx:RW-20,sy:y+30});}
+  if(SK)O.push({prop:'rack',X0:RW,Y0:580,pa:{side:'R',len:120,d:40,h:170,seed:5},sx:RW-20,sy:640});
+  for(const y of [120,300,480,660,840]){if(!(OU2&&y<150)&&y<800)O.push({prop:'binders',X0:32,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:22,sy:y+20});if(!(SK&&y===660))O.push({prop:'binders',X0:RW-8,Y0:y,ang:Math.PI/2,pa:{n:7,z0:90,d:24},sx:RW-18,sy:y+20});}
   O.push({prop:'lowcab',X0:10,Y0:RD-40,pa:{side:'B',len:240,h:200,d:40,unit:60},sx:130,sy:RD-20});
   O.push({prop:'lowcab',X0:460,Y0:RD-40,pa:{side:'B',len:190,h:200,d:40,unit:63},sx:555,sy:RD-20});
   O.push({prop:'binders',X0:150,Y0:RD-34,pa:{n:12,z0:200,d:26},sx:190,sy:RD-20},{prop:'binders',X0:500,Y0:RD-34,pa:{n:16,z0:200,d:26},sx:555,sy:RD-20});
   if(!OU2)O.push({prop:'lowcab',X0:40,Y0:10,pa:{side:'B',len:200,h:90,d:40},sx:140,sy:30},{prop:'binders',X0:60,Y0:16,pa:{n:10,z0:90,d:24},sx:100,sy:28});
   return O;}
-function propsHenshu(){return [];}
-function propsUnei(){const O=[];const OU2=hasF('ousetsu2');
+function propsHenshu(){const O=[];
+  if(hasF('uchiawase')){
+    O.push({prop:'partX',X0:44,Y0:124,pa:{len:232},sx:160,sy:126},{prop:'partY',X0:274,Y0:0,pa:{len:124},sx:276,sy:62});
+    O.push({prop:'sofa',X0:100,Y0:80,pa:{w:120,col:'#4a6a4a',facing:'viewer'},sx:160,sy:122},{prop:'table',X0:115,Y0:43,pa:{w:90,d:34,cups:1},sx:160,sy:60},{prop:'sofa',X0:100,Y0:0,pa:{w:120,col:'#4a6a4a'},sx:160,sy:2});}
+  const HG=(t,x,y,z,col)=>O.push({prop:'hang',X0:x,Y0:y,pa:{t,z,w:34,h:22,fs:13,col},sx:x,sy:y-20});
+  {const IY=hasF('uchiawase')?190:150;for(const tm of [0,1])if(byRole('vice').some(x=>(x.team||0)===tm))HG(hanName(tm),tm?456:204,IY-6,175,'#7a2a22');}
+  if(hasF('shiryo'))HG('資料室',112,400,215,'#5a3a22');if(hasF('shashoku'))HG('写植機',RW-112,640,215,'#2a3446');
+  return O;}
+function propsUnei(){const O=[];const OU2=hasF('ousetsu2');if(hasF('souko'))O.push({prop:'hang',X0:RW-112,Y0:640,pa:{t:'倉庫の在庫',z:215,w:34,h:22,fs:13,col:'#6a4a2a'},sx:RW-72,sy:380});
   if(!OU2)O.push({prop:'plant',X0:270,Y0:40,sx:270,sy:40});
   O.push({prop:'plant',X0:70,Y0:760,sx:70,sy:760});
   O.push({prop:'partY',X0:398,Y0:60,pa:{len:180},sx:400,sy:150},{prop:'partX',X0:398,Y0:300,pa:{len:222},sx:510,sy:302});
-  O.push({prop:'sofa',X0:452,Y0:220,pa:{w:120,col:'#3a3f4a',facing:'viewer'},sx:512,sy:240});
+  O.push({prop:'sofa',X0:452,Y0:220,pa:{w:120,col:'#3a3f4a',facing:'viewer'},sx:512,sy:262});
   O.push({prop:'table',X0:467,Y0:150,pa:{w:90,d:46,cups:1},sx:512,sy:173});
-  O.push({prop:'sofa',X0:452,Y0:96,pa:{w:120,col:'#3a3f4a'},sx:512,sy:116});
+  O.push({prop:'sofa',X0:452,Y0:96,pa:{w:120,col:'#3a3f4a'},sx:512,sy:98});
   O.push({prop:'plant',X0:600,Y0:280,sx:600,sy:280});
   if(OU2){O.push({prop:'partX',X0:0,Y0:148,pa:{len:290},sx:145,sy:150},{prop:'partY',X0:288,Y0:0,pa:{len:150},sx:290,sy:80});
-    O.push({prop:'sofa',X0:85,Y0:104,pa:{w:120,col:'#5a3a3a',facing:'viewer'},sx:145,sy:124});
+    O.push({prop:'sofa',X0:85,Y0:104,pa:{w:120,col:'#5a3a3a',facing:'viewer'},sx:145,sy:146});
     O.push({prop:'table',X0:100,Y0:54,pa:{w:90,d:42,cups:1},sx:145,sy:75});
-    O.push({prop:'sofa',X0:85,Y0:2,pa:{w:120,col:'#5a3a3a'},sx:145,sy:22});
+    O.push({prop:'sofa',X0:85,Y0:2,pa:{w:120,col:'#5a3a3a'},sx:145,sy:4});
     O.push({prop:'plant',X0:30,Y0:128,sx:30,sy:128});}
   const KY=OU2?190:150;[['経理部',150,KY],['営業部',150,450],['宣伝部',388,450]].forEach(([t,ix,y],i)=>O.push({prop:'hang',X0:ix+62,Y0:y+(i?-10:70),pa:{t,z:i?200:170,w:34,h:22,fs:13,col:'#2a3446'},sx:ix+62,sy:y+(i?-30:50)}));
   if(decorOn('tank'))O.push({prop:'tank',X0:560,Y0:850,sx:590,sy:865});
   return O;}
 // --- 部屋の背景（壁・床・書庫・散らかり・影）。変わったときだけ作り直す ---
 const BG={};
-function bgCanvas(room,statics,deco,floorProps){const key=room+'|'+RKEY+'|'+(room==='unei'?Math.min(6,S.mailbox||0)+'|'+(decorOn('art')?1:0)+(decorOn('rug')?1:0)+(hasF('ousetsu2')?1:0):clutterLv())+'|'+Math.floor(nowH()*6);
+function bgCanvas(room,statics,deco,floorProps){const key=room+'|'+RKEY+'|'+(room==='unei'?Math.min(6,S.mailbox||0)+'|'+(decorOn('art')?1:0)+(decorOn('rug')?1:0)+(hasF('ousetsu2')?1:0)+(hasF('souko')?1:0):clutterLv()+'|'+['shiryo','shashoku','uchiawase'].map(k=>hasF(k)?1:0).join(''))+'|'+Math.floor(nowH()*6);
   if(BG[room]&&BG[room].key===key)return BG[room].c;
   const cfg=room==='unei'?{win:[270],wall:'#efe9d8',koshi:'#8a7a68',lwall:'#ddd4be',floor:'#b9a07a',wallDeco:wallUnei}:{win:[270],wallDeco:g=>clock(g,560,206)};
   const L=roomLayer(cfg);const g2=L.getContext('2d');const base={a:0,b:0,s,ox:0,oy:0,detail:2,persp:pj,camPos:[CAM.x,CAM.y,CAM.z]};
@@ -3851,9 +4882,11 @@ function wallUnei(g){
 // --- 1コマ描く ---
 function blitWalker(ctx,ents,st,lk,x,y,dir,ph,opt={}){const idx=opt.still?'s':String(Math.floor(((ph%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI*2)*8));
   const qx=Math.round(x/16)*16,qy=Math.round(y/16)*16;const L0=stripLk(lk);
-  const key='w|'+lk2key(L0)+'|'+dir+'|'+idx+(opt.sit?'|sit':'')+(opt.run?'|run':'');
+  const key='w|'+lk2key(L0)+'|'+dir+'|'+idx+(opt.sit?'|sit':'')+(opt.run?'|run':'')+(opt.act?'|'+opt.act+(opt.ai||0)+(opt.soro?'s':'')+(opt.mark?'m':'')+(opt.bk||''):'')+(opt.hd?'|h'+opt.hd:'');
   ents.push({k:camD(x,y),d:()=>{const p=pjs(x,y,0);ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#1a1208';ctx.beginPath();ctx.ellipse(p[0]+2,p[1],8*s,3.5*s,0,0,7);ctx.fill();ctx.restore();
-    put(ctx,spr(key,{walker:1,dir,phase:opt.still?0:(+idx)/8*Math.PI*2,look:L0,run:opt.run,sit:opt.sit},qx,qy,'W'),x,y);}});
+    put(ctx,spr(key,{walker:1,dir,phase:opt.still?0:(+idx)/8*Math.PI*2,look:L0,run:opt.run,sit:opt.sit,act:opt.act,aph:(opt.ai||0)/8,soro:opt.soro,mark:opt.mark,bk:opt.bk,hd:opt.hd},qx,qy,'W'),x,y);
+    if(opt.mark){const hc=pjs(x,y,(opt.sit?98:126)+44*HEADK);const bob=Math.abs(Math.sin(tick*0.5))*1.5*s;ctx.save();ctx.font=Math.round(9*s)+"px 'Mochiy Pop One',sans-serif";ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=2.6*s;ctx.strokeStyle='#fff';const tx=opt.mark,mx=hc[0]+(dir==='left'?-9:9)*s;ctx.strokeText(tx,mx,hc[1]-bob);ctx.fillStyle=opt.markC||'#c8302a';ctx.fillText(tx,mx,hc[1]-bob);ctx.restore();}}});
+  if(opt.ovK!=null)ents.push({k:opt.ovK,d:()=>put(ctx,spr('a|'+key,{walker:1,dir,sit:1,armsOnly:1,look:L0,act:opt.act,aph:(opt.ai||0)/8,soro:opt.soro,bk:opt.bk,hd:opt.hd},qx,qy,'W'),x,y)});
   if(opt.feetUp)ents.push({k:camD(opt.fk[0],opt.fk[1]),d:()=>put(ctx,spr('f|'+key,{walker:1,dir,sit:1,feetOnly:1,footF:opt.footF,look:L0},qx,qy,'W'),x,y)});
   const zt=opt.sit?98:126;const hc=toL(x,y,zt+20*HEADK);const top=hc[1]-13*HEADK*s/K/4;if(st&&st.id!=null)OSPOT[st.id]=[hc[0],top];return [hc[0],top];}
 function compose(room,statics,ents,deco,floorProps){const ctx=g;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
@@ -3862,14 +4895,44 @@ function compose(room,statics,ents,deco,floorProps){const ctx=g;ctx.save();ctx.s
   all.sort((p,q)=>q.k-p.k).forEach(it=>it.d());ctx.restore();}
 function phOf(st,sp){return (tick*(sp||0.45)+(st&&st.id||0)*1.3);}
 // 机を statics に積む（横向き席は 椅子・机・人 を分ける）
+const ACTNOW={};
+const BKC=['#c83a3a','#2a5aa8','#e0a020','#3a8a4a','#8a3aa8'];
+function actOf(st,id,mode,lk){const sid=st.id||0;const sl=slot(sid,3);const r=hsh(sl*5.31+sid*0.13),r2=hsh(sl*2.7+sid*1.9);let A='',hd=null,dir=null,mark=null,markC=null,spd=3;
+  if(mode==='h'){
+    if(r<0.2)A='write';else if(r<0.4)A='name';else if(r<0.55)A='read';else if(r<0.65)A='phone';else if(r<0.77)A='chat';else if(r<0.85)A='yoko';
+    if(lk&&lk.slouch)A='';
+  }else{const p=id[0];
+    if(p==='k'){A=r<0.85?'calc':'write';}
+    else if(p==='s'){const mt=hsh(Math.floor(tick/260)*4.17)<0.45;A=mt?'wawa':(r<0.5?'write':r<0.75?'phone':'');}
+    else{A=r<0.4?'write':r<0.7?'phone':'';}}
+  if(A==='yoko'){dir='down';A='';}
+  if(A==='chat'){hd='down';spd=2;if(Math.floor(tick/12+sid)%5<2)mark='♪';markC='#3a7ad0';}
+  if(A==='read'&&hsh(Math.floor(tick/30)*3.3+sid)<0.35){mark='ププッ';markC='#d0602a';}
+  if(A==='wawa'){spd=2;if(Math.floor(tick/8+sid)%3<2)mark='！！';}
+  if(A==='calc'){spd=1;if(Math.floor(tick/6+sid)%4===0){mark='パチ';markC='#6a5a4a';}}
+  if(A==='name'||A==='write')spd=3;if(A==='phone'||A==='read')spd=6;
+  const ai=A?Math.floor(tick/spd+sid)%8:0;ACTNOW[sid]=A||(dir?'yoko':'');
+  return {act:A,ai,hd,dir,mark,markC,soro:A==='calc'&&(S.y||1970)<1978,bk:A==='read'?BKC[sid%BKC.length]:null};}
+function faceAct(st,id,mode){const sid=st.id||0;const r=hsh(slot(sid,3)*4.77+sid*0.29);let L;
+  if(id==='chief')L=[['news',0.3],['phone',0.2],['read',0.2],['hanko',0.15]];
+  else if(id[0]==='v')L=[['write',0.3],['read',0.25],['phone',0.2]];
+  else if(id==='pres')L=[['news',0.3],['hanko',0.25],['phone',0.2],['write',0.1]];
+  else if(id==='sec')L=[['type',0.55],['phone',0.25],['write',0.1]];
+  else L=[['hanko',0.3],['phone',0.25],['write',0.2],['news',0.1]];
+  let A='',acc=0;for(const [a,p] of L){acc+=p;if(r<acc){A=a;break;}}
+  const spd={news:8,phone:6,read:6,hanko:2,write:3,type:1}[A]||3;const ai=A?Math.floor(tick/spd+sid)%8:0;
+  let mark=null,markC=null;if(A==='hanko'&&(ai===6||ai===7)){mark='ポン';markC='#c8302a';}if(A==='type'&&Math.floor(tick/5+sid)%3<2){mark='カタカタ';markC='#4a5a6a';}
+  ACTNOW[sid]=A;return {act:A,ai,mark,markC};}
 function pushDesk(statics,ents,id,o,st,lk,mode){
   if(o.side){const ix=o.ix,y=o.y;const lv=clutterLv();const busy=mode==='h'?(lv?busyOf(st):0):1;const sd=(id.charCodeAt(id.length-1)+id.length)%3;
     if(o.side==='right'){const it=mode==='h'?(busy?[['files',2,40,10+busy*4],['tower',6,4,2+busy*4]]:[]).concat(PATL[sd]).concat(busy>=3?[['pile',36,6,8]]:[]):[['files',92,40,2],['phone',64,8],['pens',40,44],['cup',30,14]];
       statics.push({key:'c|'+id,X0:ix,Y0:y,rot:1,rev:0,chairOnly:'front',sx:ix-31,sy:y+79});statics.push({key:'d|'+id+'|'+busy,X0:ix,Y0:y,rot:1,rev:0,items:it,sx:ix+31,sy:y+60});}
     else{const it=mode==='h'?(busy?[['files',2,0,10+busy*4],['tower',80,26,2+busy*4]]:[]).concat(PATR[sd]):[['files',92,0,2],['tray',70,30],['phone',10,40],['ruler',40,8]];
       statics.push({key:'c|'+id,X0:ix+62,Y0:y,rot:1,rev:1,chairOnly:'back',sx:ix+139,sy:y+60});statics.push({key:'d|'+id+'|'+busy,X0:ix+62,Y0:y,rot:1,rev:1,items:it,sx:ix+93,sy:y+60});}
-    if(lk){const [px,py]=sideSit(o);const fu=lk.feetUp;blitWalker(g,ents,st,lk,px,py,o.side,0,{sit:1,feetUp:fu,footF:o.side==='right'?6:-4,fk:o.side==='right'?[ix+40,y+30]:[ix+80,y+30]});}
+    if(lk){const [px,py]=sideSit(o);const fu=lk.feetUp;const AC=st?actOf(st,id,mode,lk):{};if(AC.act&&AC.act!=='wawa'){const dk=o.side==='right'?camD(ix+31,y+60):camD(ix+93,y+60);AC.ovK=dk-0.5;}blitWalker(g,ents,st,lk,px,py,AC.dir||o.side,0,Object.assign({sit:1,feetUp:fu,footF:o.side==='right'?6:-4,fk:o.side==='right'?[ix+40,y+30]:[ix+80,y+30]},AC,{dir:undefined}));}
     return;}
+  if(lk&&st&&!lk.feetUp){const FA=window.__FACT?window.__FACT(st,id,mode,{tick}):faceAct(st,id,mode);if(FA&&FA.act){lk=Object.assign({},lk,{act:FA.act,ai:FA.ai});
+    if(FA.mark){const hw=headW(o);ents.push({k:-1,d:()=>{const hc=pjs(hw[0],hw[1],hw[2]+30*HEADK);const bob=Math.abs(Math.sin(tick*0.5))*1.5*s;g.save();g.font=Math.round(9*s)+"px 'Mochiy Pop One',sans-serif";g.textAlign='center';g.lineJoin='round';g.lineWidth=2.6*s;g.strokeStyle='#fff';g.strokeText(FA.mark,hc[0]+14*s,hc[1]-bob);g.fillStyle=FA.markC||'#c8302a';g.fillText(FA.mark,hc[0]+14*s,hc[1]-bob);g.restore();}});}}}
   statics.push(Object.assign({},o,{key:'d|'+id+'|'+(lk?lk2key(stripLk(lk)):'-'),person:lk?stripLk(lk):undefined,sx:o.X0+(o.w||120)/2,sy:o.Y0+31}));}
 // ===== 編集部 =====
 function henshu(bs){setRoom(660,980);const SE=seatsHenshu();const SM=seatMap();const c=chief();SM.chief=c;
@@ -3890,16 +4953,17 @@ function henshu(bs){setRoom(660,980);const SE=seatsHenshu();const SM=seatMap();c
   for(const p of P)statics.push(Object.assign({key:'p|'+p.prop+'|'+JSON.stringify(p.pa||{})},p));
   // 打ち合わせの会話（入口の前で立ち話）
   if(hasF('uchiawase')&&S.meetK2){const M2=S.meetK2;const tn=staffById(M2.tn),art=S.manga.find(x=>x.id===M2.art);
-    if(tn)blitWalker(g,ents,tn,roughLook(tn,lookOf(tn)),300,90,'right',0,{still:1});if(art){const sp=blitWalker(g,ents,null,lookOf(art),360,90,'left',0,{still:1});OSPOT.art2=sp;}
-    const k=Math.min(M2.lines.length-1,Math.floor((absT()-M2.a0)/0.07*M2.lines.length));const [id,tx]=M2.lines[k];const sp=id==='art'?OSPOT.art2:id==='sec'?null:OSPOT[id];if(sp)bs.push([sp[0],sp[1],tx,'']);const lb=toL(330,90,190);bs.push([lb[0],lb[1],M2.label,'sign']);}
+    if(tn)blitWalker(g,ents,tn,roughLook(tn,lookOf(tn)),160,102,'down',0,{sit:1});if(art){const sp=blitWalker(g,ents,null,lookOf(art),160,16,'up',0,{sit:1});OSPOT.art2=sp;}
+    const k=Math.min(M2.lines.length-1,Math.floor((absT()-M2.a0)/0.07*M2.lines.length));const [id,tx]=M2.lines[k];const sp=id==='art'?OSPOT.art2:id==='sec'?null:OSPOT[id];if(sp)bs.push([sp[0],sp[1],tx,'']);const lb=toL(160,124,215);bs.push([lb[0],lb[1],M2.label,'sign']);}
+  if(hasF('uchiawase')&&!S.meetK2){const lb=toL(160,124,215);bs.push([lb[0],lb[1],'打ち合わせ室','sign']);}
   // 席のない人はウロウロ（入口の前）
   {const nos=S.staff.filter(x=>(x.role==='mi'||(!capOf(x.role)&&DESKS_OF[x.role]))&&!REP.has(x.id)&&presence(x)===1).slice(0,5);
     nos.forEach((x,i)=>{const L0=110+((x.id*37)%60),span=330;const t=(tick*1.2+x.id*90)%(span*2);const fwd=t<span;const px=L0+(fwd?t:span*2-t),py=80+((x.id*13)%40);blitWalker(g,ents,x,lookOf(x),px,py,fwd?'right':'left',phOf(x));});
     if(nos.length){const x=nos[Math.floor(tick/150)%nos.length];if(OSPOT[x.id]&&Math.floor(tick/75)%2===0)bs.push([OSPOT[x.id][0],OSPOT[x.id][1],x.role==='kenshu'?'研修中…':'席がない…','']);}}
   dayqDraw(g,ents,bs,'henshu',[70,880],'right');
   if(S.intro){blitWalker(g,ents,PRES,lookOf(PRES),330,560,'down',0,{still:1});}
-  compose('henshu',statics,ents,deco);
-  {const on=byRole('tantou').filter(x=>presence(x)===1&&OSPOT[x.id]);const w=Math.floor(tick/180);if(on.length&&hash(w*7.7)<0.35){const x=on[Math.floor(hash(w*3.1)*on.length)];const Lw=['もしもし、先生ですか？','持ち込みのご予約ですね！','締め切りは来週ですよ！','ネーム、拝見しました！','はい、編集部です！'];bs.push([OSPOT[x.id][0],OSPOT[x.id][1],'☎ '+Lw[w%Lw.length],'']);}}
+  compose('henshu',statics,ents,deco,hasF('uchiawase')?[{prop:'rug',X0:48,Y0:4,pa:{w:222,d:116,col:'#3a5a3a',bd:'#8a6a3a'}}]:[]);
+  {const on=byRole('tantou').filter(x=>presence(x)===1&&OSPOT[x.id]&&ACTNOW[x.id]==='phone');const w=Math.floor(tick/180);if(on.length&&hash(w*7.7)<0.35){const x=on[Math.floor(hash(w*3.1)*on.length)];const Lw=['もしもし、先生ですか？','持ち込みのご予約ですね！','締め切りは来週ですよ！','ネーム、拝見しました！','はい、編集部です！'];bs.push([OSPOT[x.id][0],OSPOT[x.id][1],'☎ '+Lw[w%Lw.length],'']);}}
   if(S.mag.launched){const t=byRole('tantou').find(t=>serials().some(m=>m.tantou===t.id&&m.tags.includes('遅筆')));if(t&&OSPOT[t.id]){const [x,y]=OSPOT[t.id];bs.push([x,y,'原稿まだ…','']);}}
   if(!S.newRead&&c&&(S.reports||[]).length){const hw=toL(...headW(SE.chief));bs.push([hw[0],hw[1]-6,'！','red']);}
 }
@@ -3925,7 +4989,7 @@ function unei(bs){setRoom(660,980);const SE=seatsUnei();const UM=uneiMap();const
     arr.forEach((R0,i)=>{const [qx,qy]=QP[Math.min(i,QP.length-1)];const lk0=R0.s.role==='chief'||R0.s.role==='vice'||R0.s.role==='tantou'?roughLook(R0.s,lookOf(R0.s)):suitLook(R0.s,lookOf(R0.s));const sp=blitWalker(g,ents,R0.s,lk0,qx,qy,'up',0,{still:1});bs.push([sp[0],sp[1],i===0?'！ 報告です':'！','red ev kq',R0.k]);});}
   // 応接室
   {const MMon=['meetS','meetP'].map(k=>S[k]).find(M=>M&&M.on);const two=OU2&&S.meetK&&MMon;
-    const room1=[[485,252,'down'],[540,252,'down'],[485,112,'up'],[540,112,'up']],room2=[[118,136,'down'],[172,136,'down'],[118,18,'up'],[172,18,'up']];
+    const room1=[[485,242,'down'],[540,242,'down'],[485,112,'up'],[540,112,'up']],room2=[[118,126,'down'],[172,126,'down'],[118,18,'up'],[172,18,'up']];
     const sitAll=(ppl,at,MK)=>{ppl.forEach((x,i)=>{if(!x||!at[i])return;const [px,py,d]=at[i];const lk0=x.story!=null?lookOf(x):(['chief','vice','tantou'].includes(x.role)?roughLook(x,lookOf(x)):lookOf(x));const sp=blitWalker(g,ents,x.story!=null?null:x,lk0,px,py,d,0,{sit:1});if(x.story!=null&&MK)OSPOT.art=sp;if(x===PRES)OSPOT.pres=sp;});};
     const MK1=two?null:S.meetK,MM=MK1?null:MMon;
     if(MK1){const ppl=mkPeople(MK1);sitAll(ppl,room1,MK1);}
@@ -4010,8 +5074,8 @@ const OPX=(()=>{
         og.beginPath();og.arc(s[0],s[1],r+2,0,7);og.fillStyle='#e89a2a';og.fill();og.beginPath();og.arc(s[0],s[1],r,0,7);og.fillStyle='#ffd84a';og.fill();og.beginPath();og.arc(s[0],s[1],r*0.55,0,7);og.fillStyle='#fff3b0';og.fill();}
       else{og.fillStyle='#ffffff';og.fillRect(s[0]-28,s[1]-6,56,12);og.fillRect(s[0]-16,s[1]-14,30,10);og.fillRect(s[0]-36,s[1]-1,10,7);}}}
   function render(t,inside){
-    if(!inside){const gd=og.createLinearGradient(0,0,0,OH2);gd.addColorStop(0,'#b8dcf2');gd.addColorStop(0.6,'#9fd0ee');gd.addColorStop(1,'#cfe6f4');og.fillStyle=gd;}else og.fillStyle='#2a2420';
-    og.fillRect(0,0,OW2,OH2);if(!inside)billboards();
+    if(!inside){const gd=og.createLinearGradient(0,0,0,OH2);const sk=SKY||['#b8dcf2','#9fd0ee','#cfe6f4'];gd.addColorStop(0,sk[0]);gd.addColorStop(0.6,sk[1]);gd.addColorStop(1,sk[2]);og.fillStyle=gd;}else og.fillStyle='#2a2420';
+    og.fillRect(0,0,OW2,OH2);if(!inside&&!SKY)billboards();
     const extra=[];if(!inside)for(const [n,pt,f] of cars(t)){const gp={n,pt,polys:[],ord:1};f(gp);extra.push(gp);}
     const list=G.concat(extra).filter(gp=>{if(inside&&!gp.inside)return false;if(!gp.n)return true;return dot(sub(CAM.C,gp.pt),gp.n)>0;});
     for(const gp of list)gp.k=gp.ord===0?1e12:(gp.ord===2?Math.hypot(...sub(gp.pt,CAM.C))-40:Math.hypot(...sub(gp.pt,CAM.C)));
@@ -4035,7 +5099,43 @@ const OPX=(()=>{
     const inside=camAt(Math.min(6,t),GT,GCAM);const iw=CAM.C[1]<960?1:0;for(const p of INW)p.alpha=iw;render(t,inside);
     const ctx=g;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(OC,0,0,OW2,OH2,0,0,OUTW,OUTH);ctx.restore();}
   const CAM0=()=>({x:RW/2,y:-CAMC.d});
-  return {draw3,last:()=>OC};})();
+  // ===== 自社ビルの建設（演出用）=====
+  const HQ={x0:2700,x1:3900,y0:-100,y1:1000,nf:8};let SKY=null;
+  function hqClear(){if(G)G=G.filter(gp=>!gp.hq);}
+  function hqBuild(p,o={}){// p：工事の進み 0〜1
+    const n0=G.length;const {x0,x1,y0,y1,nf}=HQ;const H=nf*FH;const tag=gp=>{gp.hq=1;return gp;};
+    // 敷地
+    const lot=tag(grp(null,null,0));QZ(lot,1,x0-120,x1+120,y0-120,y1+200,p<0.02?'#a89868':'#8a8070');
+    if(p<0.02){// 草と札
+      for(let i=0;i<40;i++){const x=x0+((i*173)%(x1-x0)),y=y0+((i*97)%(y1-y0));const gq=tag(grp(null,[x,y,20],1));QY(gq,y,x-18,x+18,0,40,'#7aa04a');}
+      const sg=tag(grp([0,1,0],[(x0+x1)/2,y1+150,300],1));QY(sg,y1+150,(x0+x1)/2-340,(x0+x1)/2+340,180,520,'#fffdf6');QY(sg,y1+151,(x0+x1)/2-330,(x0+x1)/2+330,190,510,'#fffdf6');
+      const ps=tag(grp(null,[(x0+x1)/2,y1+150,90],1));QY(ps,y1+148,(x0+x1)/2-300,(x0+x1)/2-270,0,180,'#6a4a2a');QY(ps,y1+148,(x0+x1)/2+270,(x0+x1)/2+300,0,180,'#6a4a2a');
+      return;}
+    // 基礎
+    QZ(lot,2,x0-20,x1+20,y0-20,y1+20,'#9a9a94');
+    const fr=Math.min(1,p/0.5),wl=Math.min(1,Math.max(0,(p-0.3)/0.45)),sc=p<0.82?Math.min(1,Math.max(0,(p-0.12)/0.45)):0;
+    const fH=Math.floor(fr*nf)*FH+(fr<1?FH*((fr*nf)%1):0),wF=Math.floor(wl*nf);
+    // 外壁（下の階から）
+    if(wF>0){building(x0,x1,y0,y1,wF*FH,'#d8d2c4',{cols:[x0+150,x0+450,x0+750,x0+1050],winW:150,trim:wF===nf?'#8a3a2a':'#b8b2a4',ground:true,door:(x0+x1)/2,our:o.lit?(z0,c)=>((z0/FH+c/300)%3)<2:null});}
+    // 鉄骨（赤さび色）
+    const SC='#c0502e';const zb=wF*FH;if(fH>zb+1)for(const x of [x0,x0+300,x0+600,x0+900,x1])for(const y of [y0,y1]){const c=tag(grp(null,[x,y,(zb+fH)/2],1));QY(c,y+(y===y1?2:-2),x-22,x+22,zb,fH,SC);QX(c,x+22,y-22,y+22,zb,fH,sh(SC,0.75));}
+    for(let z=zb+FH;z<=fH+1;z+=FH){const bm=tag(grp(null,[(x0+x1)/2,y1,z],1));QY(bm,y1+3,x0-22,x1+22,z-26,z,SC);const bs=tag(grp(null,[x1,(y0+y1)/2,z],1));QX(bs,x1+23,y0,y1,z-26,z,sh(SC,0.75));}
+    // 足場（灰色の網）
+    if(sc>0){const sH=Math.min(fH+FH*0.6,H+FH*0.5)*Math.min(1,sc*1.5);const sf=tag(grp(null,[(x0+x1)/2,y1+60,sH/2],2));QY(sf,y1+60,x0-60,x1+60,0,sH,'#8a9094',0.55);for(let z=FH/2;z<sH;z+=FH/2)QY(sf,y1+61,x0-60,x1+60,z-8,z,'#5a6064',0.9);for(let x=x0-60;x<=x1+60;x+=200)QY(sf,y1+62,x-6,x+6,0,sH,'#5a6064',0.9);
+      const ss=tag(grp(null,[x1+60,(y0+y1)/2,sH/2],2));QX(ss,x1+60,y0-60,y1+60,0,sH,'#7a8084',0.55);for(let z=FH/2;z<sH;z+=FH/2)QX(ss,x1+61,y0-60,y1+60,z-8,z,'#5a6064',0.9);}
+    // クレーン
+    if(p<0.9){const cx=x1+260,cy=y0+200,cH=Math.max(fH,FH*2)+FH*2.2;const cr=tag(grp(null,[cx,cy,cH/2],1));QY(cr,cy+40,cx-40,cx+40,0,cH,'#e8b830');QX(cr,cx+40,cy-40,cy+40,0,cH,'#c89820');for(let z=120;z<cH;z+=160)QY(cr,cy+41,cx-40,cx+40,z,z+14,'#8a6a10');
+      const a=o.t*0.6;const jx=Math.cos(a),jy=Math.sin(a);const L=1400,B=360;const j=tag(grp(null,[cx,cy,cH+30],1));
+      quad(j,[[cx-jx*B,cy-jy*B,cH],[cx+jx*L,cy+jy*L,cH],[cx+jx*L,cy+jy*L,cH+50],[cx-jx*B,cy-jy*B,cH+50]],'#e8b830');quad(j,[[cx-jx*B-jy*30,cy-jy*B+jx*30,cH-80],[cx-jx*B+jy*30,cy-jy*B-jx*30,cH-80],[cx-jx*B+jy*30,cy-jy*B-jx*30,cH],[cx-jx*B-jy*30,cy-jy*B+jx*30,cH]],'#6a6a6a');
+      const hx=cx+jx*L*0.7,hy=cy+jy*L*0.7;quad(j,[[hx-3,hy,cH],[hx+3,hy,cH],[hx+3,hy,cH-400],[hx-3,hy,cH-400]],'#3a3a3a');}
+    // 屋上の看板
+    if(p>=0.95){const sg=tag(grp([0,1,0],[(x0+x1)/2,y1-60,H+200],1));QY(sg,y1-60,x0+200,x1-200,H+40,H+300,'#c8302a');QY(sg,y1-59,x0+215,x1-215,H+55,H+285,'#fffdf6');}
+    for(let i=n0;i<G.length;i++)G[i].hq=1;}
+  // 画面の座標（3D → 2D）
+  function proj(p){const q=toCam(p);if(q[2]<NEAR)return null;return [...scr(q),q[2]];}
+  // 演出用：好きな大きさのキャンバスに描く
+  function drawB(ctx,W,Hh,cam,p,o){OW2=W;OH2=Hh;og=ctx;FOC=W*0.78;CX=W/2;CY=Hh/2;if(!G)build();for(const q of OUR)q.alpha=0;for(const q of INW)q.alpha=0;hqClear();hqBuild(p,o);look(cam.C,cam.T);SKY=o.sky||null;render(o.t||0,false);SKY=null;}
+  return {draw3,drawB,proj,HQ,last:()=>OC};})();
 // OPの部屋のシーン（新しい部屋で、人が歩く）
 function opRoom(stage,u,bs,fade){setRoom(660,980);const ents=[],statics=[];const L=lookOf;
   const path=(pts,t)=>{t=Math.max(0,Math.min(1,t));let tot=0;const seg=[];for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(d);tot+=d;}let r=t*tot;for(let i=0;i<seg.length;i++){if(r<=seg[i]){const k=seg[i]?r/seg[i]:0;const a=pts[i],b=pts[i+1];return {x:a[0]+(b[0]-a[0])*k,y:a[1]+(b[1]-a[1])*k,dir:dirOf(b[0]-a[0],b[1]-a[1])};}r-=seg[i];}const e=pts[pts.length-1];return {x:e[0],y:e[1],dir:'down'};};
@@ -4065,7 +5165,7 @@ function peek(st,lk){setRoom(660,980);const ents=[],statics=[];const L0=lookOf(s
   blitWalker(g,ents,null,L0,150,130,'down',0,{still:1});blitWalker(g,ents,null,L0,270,130,'right',Math.PI*0.5);blitWalker(g,ents,null,L0,390,130,'up',0,{still:1});
   statics.push(Object.assign({},VICE,{X0:440,Y0:60,key:'peek|'+lk2key(L0),person:stripLk(L0),items:[['phone',10,38],['cup',90,14]],sx:503,sy:91}));
   compose('peek',statics,ents,[],[]);}
-return {setHeadK,peek,peekWalk,op3:OPX.draw3,opRoom,henshu,unei,heightL,clear:()=>{SPR.clear();for(const k in BG)delete BG[k];}};
+return {opx:OPX,headA,lookOf,roughLook,suitLook,shade:sh,toL,setHeadK,peek,peekWalk,op3:OPX.draw3,opRoom,henshu,unei,heightL,clear:()=>{SPR.clear();for(const k in BG)delete BG[k];}};
 
 
 })();
