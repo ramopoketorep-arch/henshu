@@ -1,7 +1,7 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="編集者がゆく"><meta name="theme-color" content="#1d1b18"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><style>body{margin:0;background:#1d1b18}[hidden]{display:none!important}</style></head><body><title>編集者がゆく！</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="出版社経営物語"><meta name="theme-color" content="#1d1b18"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><style>body{margin:0;background:#1d1b18}[hidden]{display:none!important}</style></head><body><title>出版社経営物語</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Mochiy+Pop+One&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
 <style>
 /* 一画面のゲーム：上にドット絵の編集室、下に情報欄。昭和の編集部の夜、暗い木と黄色い電灯 */
 :root{
@@ -78,8 +78,9 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #opcap .btn{align-self:flex-end}
 .titlebox{position:relative;margin:-12px -16px 0}
 .titlebox canvas{display:block;width:100%;aspect-ratio:200/160;image-rendering:pixelated}
-.titlebox .logo{position:absolute;left:0;right:0;top:2%;text-align:center;font-family:var(--f-dot);font-size:36px;color:#ffd970;text-shadow:3px 3px 0 #3a2a22,-2px -2px 0 #3a2a22,2px -2px 0 #3a2a22,-2px 2px 0 #3a2a22}
-.titlebox .sub{position:absolute;left:50%;transform:translateX(-50%);top:21%;white-space:nowrap;text-align:center;font-family:var(--f-dot);font-size:15px;color:#fffdf6;background:rgba(43,42,38,.8);border-radius:6px;padding:2px 10px}
+.titlebox .logo{position:absolute;left:0;right:0;top:1%;text-align:center;font-family:'Mochiy Pop One',var(--f-dot);font-size:min(16vw,72px);line-height:1.1;letter-spacing:.02em;color:#ffd970;text-shadow:-3px -3px 0 #3a2a22,0px -3px 0 #3a2a22,3px -3px 0 #3a2a22,-3px 0px 0 #3a2a22,3px 0px 0 #3a2a22,-3px 3px 0 #3a2a22,0px 3px 0 #3a2a22,3px 3px 0 #3a2a22,4px 4px 0 #e07a3a,5px 5px 0 #e07a3a,6px 6px 0 #e07a3a,7px 7px 0 #e07a3a,8px 8px 0 #b04a28,9px 9px 0 #b04a28,10px 10px 0 #b04a28,11px 11px 0 #3a2a22,12px 12px 0 #3a2a22,13px 13px 0 #3a2a22}
+.titlebox .logo span{display:block}
+.titlebox .sub{position:absolute;left:50%;transform:translateX(-50%);top:47%;white-space:nowrap;text-align:center;font-family:var(--f-dot);font-size:15px;color:#fffdf6;background:rgba(43,42,38,.8);border-radius:6px;padding:2px 10px}
 #sheet{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:5}
 .sh-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:#151412;border-bottom:3px solid var(--line)}
 .sh-head h2{margin:0;font-family:var(--f-dot);font-weight:400;font-size:23px}
@@ -2078,7 +2079,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo">編集者がゆく！</div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   const ok=S.over==='end';
@@ -2443,7 +2444,7 @@ function start(){
   // 序盤に1人だけBランクの人材
   const friend=newStaff({exp:true,base:64,age:28});friend.name='桐生 健一';friend.sei='桐生';friend.fem=false;friend.lk=Object.assign({},KIRYU_LK);friend.shirt=KIRYU_LK.shirt;friend.hidden=0;friend.role='chief';friend.jonetsu=85;
   S.staff.push(friend);
-  S.flags.phone=3;S.desks={t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,sb:1,s1:1,kb:1,k1:1};S.uneiV=1;S.view='henshu';S.clock={d:0,t:0.02};S.speed=1;S.paused=false;S.dayq=[];
+  S.flags.phone=3;S.desks={t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,e2:1,sb:1,s1:1,s2:1,kb:1,k1:1,k2:1};S.uneiV=1;S.view='henshu';S.clock={d:0,t:0.02};S.speed=1;S.paused=false;S.dayq=[];
   say('桐生','大学の友人の桐生です。手伝わせてくれ。編集長をやろう。');
   say('社長','マンションの一室を800万円で買った。内装と机で200万円。のこりは9,000万円。');
   makeReports();
@@ -2779,11 +2780,38 @@ const FUDO={id:9003,name:'不動産屋',age:58,fem:false,shirt:'#6a6a6a',lk:{fem
 const WORKER=i=>({id:9010+i,name:'工事'+i,age:30+i*7,fem:false,shirt:'#3d5a8a',lk:{fem:false,hs:i%3,style:'short',eye:['dot','narrow','smile'][i%3],brow:'flat',mouth:'open',glasses:false,blush:false,mus:i===1,beard:false,bald:false,ribbon:false,shirt:'#3d5a8a',skin:i===2?1:0}});
 const PASSERS=[{id:9101,name:'通行人',age:30,fem:true,shirt:'#c46a8a'},{id:9102,name:'通行人',age:45,fem:false,shirt:'#8a5a2e'},{id:9103,name:'通行人',age:20,fem:false,shirt:'#3e7d4f'}];
 function helmet(x,y){OB(x+1,y-2,12,6,'#f2c230');P(x+3,y-1,8,1,'#fff2a0');P(x,y+3,14,1,'#c49a20');}
+// タイトルの道路を走る車：2車線で5台が行き来する（手前は右へ、奥は左へ）
+function carDraw(kind,cx,dir,dy){const ol='#2b2a26',gl='#cde8f5',ch='#d8d8d8';const W=kind===4?54:42;
+  const R=(x,y,w,h,c)=>P(dir>0?cx+x:cx+(W-x-w),y+dy,w,h,c);const O=(x,y,w,h,c)=>{R(x,y,w,h,ol);R(x+1,y+1,w-2,h-2,c);};
+  const wheel=(x)=>{R(x+1,148,6,7,ol);R(x,149,8,5,ol);R(x+2,150,4,3,'#8a8a8a');R(x+3,151,2,1,'#d8d8d8');};
+  if(kind===0){const c='#c0392b';O(0,139,42,10,c);R(1,140,40,2,'#e0574a');O(10,132,22,8,c);R(12,133,8,6,gl);R(22,133,8,6,gl);R(21,133,1,6,c);
+    R(-1,146,4,2,ch);R(39,146,4,2,ch);R(40,141,2,2,'#ffe680');R(0,141,2,2,'#e05a3a');R(20,142,1,6,'#8a2a20');wheel(5);wheel(29);}
+  else if(kind===1){const c='#7ab8d8';R(8,131,16,1,ol);R(5,132,22,1,ol);R(6,132,20,4,c);R(3,136,26,1,ol);R(3,136,26,5,c);R(1,141,30,8,c);R(1,149,30,1,ol);R(0,137,1,12,ol);R(31,137,1,12,ol);
+    R(8,133,7,4,gl);R(17,133,7,4,gl);R(6,140,24,1,'#a8d4ea');R(29,142,2,2,'#ffe680');R(1,146,30,1,ch);wheel(3);wheel(21);}
+  else if(kind===2){const c='#3e7d4f';O(0,141,26,8,c);R(1,142,24,1,'#5a9a6a');O(3,134,9,7,'#c49a5e');O(12,136,9,5,'#d2aa70');R(7,134,1,7,'#a8804a');
+    O(26,133,12,16,c);R(28,135,8,6,gl);R(37,144,2,2,'#ffe680');R(38,147,3,2,ch);wheel(5);R(31,149,5,6,ol);R(32,150,3,3,'#8a8a8a');}
+  else if(kind===3){const c='#f2c230';O(0,139,42,10,c);R(1,140,40,2,'#ffd84a');O(10,132,22,8,c);R(12,133,8,6,gl);R(22,133,8,6,gl);R(21,133,1,6,c);
+    O(16,128,10,5,'#fffdf6');R(18,130,6,1,'#b23a2e');R(1,144,40,1,'#c0392b');R(11,141,20,2,'#2b2a26');
+    R(-1,146,4,2,ch);R(39,146,4,2,ch);R(40,141,2,2,'#ffe680');wheel(5);wheel(29);}
+  else {// 雑誌を運ぶトラック（荷台に雑誌の束を山積み）
+    const c='#2f5a9a';O(0,141,38,7,'#5a5a5e');R(1,142,36,1,'#8a8a8a');
+    const MAG=['#d94a3a','#3d6fa8','#e8c76a','#3e7d4f','#e07aa0','#6a5acd'];let q=7;
+    for(let row=0;row<3;row++)for(let k=0;k<4-(row===2?1:0);k++){q=(q*31+11)%97;const x=2+k*9+(row===2?4:0),y=135-row*6;O(x,y,9,6,'#efe9da');R(x+1,y+1,7,1,MAG[q%6]);R(x+1,y+4,7,1,MAG[(q+2)%6]);R(x+4,y,1,6,'#cdb98a');}
+    O(38,131,16,17,c);R(40,133,10,6,gl);R(39,141,14,1,'#4a7ac0');R(52,144,2,2,'#ffe680');R(52,147,3,2,ch);R(37,131,1,17,ol);
+    wheel(3);wheel(11);wheel(42);}}
+function drawTraffic(tm){
+  // 奥の車線（左へ）：タクシーとオート三輪
+  const L=430;for(const [k,ph] of [[3,0],[2,215]]){const u=(tm*0.9+ph)%L;carDraw(k,Math.round(OW+10-u),-1,-8);}
+  // 手前の車線（右へ）：セダン・てんとう虫・トラック
+  for(const [k,ph] of [[0,0],[1,143],[4,286]]){const u=(tm*1.1+ph)%L;carDraw(k,Math.round(u-70),1,2);}}
 function drawStreet(){
   const tm=tick;
   // 空
   P(0,0,OW,96,'#9fd0ee');P(0,0,OW,30,'#b8dcf2');
-  OB(8,30,12,12,'#ffe680');
+  // 太陽（右上・丸くて光線がチカチカ）
+  {const cx=182,cy=17,r=8;const on=Math.floor(tm/6)%2;
+   for(let k=0;k<8;k++){const an=k/8*Math.PI*2+(on?Math.PI/8:0);const d0=r+3,d1=r+(k%2?6:8);for(let d=d0;d<=d1;d++)P(Math.round(cx+Math.cos(an)*d),Math.round(cy+Math.sin(an)*d),2,2,'#ffc83a');}
+   for(let y=-r-1;y<=r+1;y++)for(let x=-r-1;x<=r+1;x++){const q=x*x+y*y;if(q<=(r+1)*(r+1)&&q>r*r)P(cx+x,cy+y,1,1,'#e89a2a');else if(q<=r*r)P(cx+x,cy+y,1,1,q<(r*0.55)**2?'#fff3b0':'#ffd84a');}}
   for(let i=0;i<3;i++){const cx=((tm*0.08+i*80)%260)-40;P(cx,14+i*9,18,4,'#ffffff');P(cx+4,11+i*9,10,3,'#ffffff');}
   // 遠くのビル
   [[0,46,26,50,'#8fa3b8'],[22,36,22,60,'#7d92a8'],[146,40,24,56,'#8fa3b8'],[168,30,32,66,'#7d92a8']].forEach(([x,y,w,h,c])=>{P(x,y,w,h,c);for(let j=y+4;j<y+h-4;j+=7)for(let i=x+3;i<x+w-3;i+=6)P(i,j,3,3,'#b8c8d8');});
@@ -2797,7 +2825,7 @@ function drawStreet(){
   P(0,122,OW,12,'#cfc8b8');for(let x=0;x<OW;x+=10)P(x,122,1,12,'#b8b0a0');P(0,121,OW,1,'#8a8070');
   P(0,134,OW,26,'#5a5a5e');for(let x=((tm*0.6)%30)-30;x<OW;x+=30)P(x,146,14,2,'#e8e8e0');
   // 車
-  {const cx=((tm*1.2)%320)-60;OB(cx,138,34,12,'#b23a2e');OB(cx+6,132,20,8,'#b23a2e');P(cx+8,133,7,5,'#cde8f5');P(cx+17,133,7,5,'#cde8f5');OB(cx+4,147,7,7,'#1e1e1e');OB(cx+23,147,7,7,'#1e1e1e');}
+  drawTraffic(tm);
 }
 function drawShell(){
   P(0,0,OW,36,'#efe3c6');for(let x=0;x<OW;x+=8)P(x,0,1,22,'#e6d8b8');
@@ -3836,7 +3864,8 @@ musicUI();
 // ===== はじめ =====
 function migrate(){
  for(const m of S.manga||[]){if(m.enshutsu==null)m.enshutsu=Math.round((m.ga+m.kousei)/2);if(m.est&&m.est.enshutsu==null)m.est.enshutsu=Math.round((m.est.ga+m.est.kousei)/2);}
- if(S.staff&&S.staff.length&&S.flags){if((S.flags.phone||0)<3)S.flags.phone=3;S.desks=Object.assign({t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,sb:1,s1:1,kb:1,k1:1},S.desks||{});S.uneiV=1;}
+ if(S.desks)for(const k of ['e2','s2','k2'])S.desks[k]=1;
+ if(S.staff&&S.staff.length&&S.flags){if((S.flags.phone||0)<3)S.flags.phone=3;S.desks=Object.assign({t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,e2:1,sb:1,s1:1,s2:1,kb:1,k1:1,k2:1},S.desks||{});S.uneiV=1;}
 if(!S.desks){S.desks={};if(S.staff.length>1||S.mag.launched){for(const isl of [0,1])for(const k of SEATS_I)S.desks['t'+isl+k]=1;S.desks.v0=1;S.desks.v1=1;S.desks.zm=1;}else S.desks.t0b0=1;}
 if(!S.clock)S.clock={d:0,t:0.02};
 if(S.desks&&!S.uneiV){S.uneiV=1;if(S.desks.zm||byRole('zatsumu').length)S.desks.sec=1;delete S.desks.zm;for(const d of ['eigyo','senden','keiri']){const p=DP[d],D=DEPTS[d];if(byRole(D.lead).length)S.desks[p+'b']=1;const n=byRole(D.mem).length;for(let i=1;i<=Math.min(3,n);i++)S.desks[p+i]=1;}if(S.view==='gyomu')S.view='unei';}
