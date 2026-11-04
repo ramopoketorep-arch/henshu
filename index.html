@@ -321,7 +321,7 @@ function newStaff(opts={}){
   const age0=opts.age??(exp?ri(27,38):22);const NM=staffName(age0);
   const s={id:nid(),name:NM.name,sei:NM.sei,fem:NM.fem,age:age0,role:opts.role||'none',
     henshu:st(4),kikaku:st(-3),bigan:st(4),eigyo:st(-3),jimu:st(-3),jonetsu:ri(55,90),pot:clamp(base+ri(15,40),35,99),lv:1,xp:0,pts:0,
-    hidden:exp?0:3,team:0,hair:pick(HAIR),shirt:pick(SHIRT),trust:50,exp};
+    hidden:exp?0:1,team:0,hair:pick(HAIR),shirt:pick(SHIRT),trust:50,exp};
   if(opts.focus){s[opts.focus]=clamp(s[opts.focus]+ri(8,18),15,98);}
   if(opts.base==null)topRank(s,exp,lift,opts.focus);
   return s;
@@ -1942,22 +1942,7 @@ function endTurn(){
   }
   if(S.y===1973&&S.m===11)S.pendingEvents.push({who:'経理',t:'オイルショックで紙が足りません。印刷代が上がります……',warn:true});
   // 交渉の返事
-  for(const o of S.offers){o.wait--;}
-  const done=S.offers.filter(o=>o.wait<=0);S.offers=S.offers.filter(o=>o.wait>0);
-  for(const o of done){
-    const m=S.manga.find(x=>x.id===o.id);if(!m||m.status!=='market')continue;
-    const r=mRank(m);const base={S:.35,A:.5,B:.65,C:.75}[r]??.85;
-    const big=tooBig(m);
-    const p=(big?0.12:0)+(big?0:base)+(S.mag.launched?S.mag.aware/250:0)-(o.kanban&&!chief()?1:0)+(o.kudoki?0.2:0);
-    if(R()<p){
-      const fee=o.fee;
-      if(S.money<fee){(S.popups=S.popups||[]).push({id:m.id,kanban:o.kanban,fee,no:true,poor:true});continue;}
-      S.money-=fee;bk.fee+=fee;m.status='stock';m.tantou=null;assignTantou(m);if(big){m.bigOne=1;S.pendingEvents.push({dept:'編集部',who:'編集長',t:m.name+'先生が来てくれる……ただし「フリーで1本だけ。長くても2年だ」という条件つきだ。'});}else{if(o.kanban){m.isKanban=true;}if(o.excl)m.exclusive=true;}if(o.kudoki){m.fav=true;S.pendingEvents.push({dept:'編集部',who:'社長',t:m.name+'先生が「社長にそこまで言われたら」と引き受けてくれた。社長のご愛顧の先生だ。'});}
-      if(!m.tantou){const t=byRole('tantou')[0];m.tantou=t?t.id:null;}
-      (S.popups=S.popups||[]).push({id:m.id,kanban:o.kanban,fee});
-      S.bubbles.push({kind:'phone'});
-    } else {(S.popups=S.popups||[]).push({id:m.id,kanban:o.kanban,fee:o.fee,no:true});}
-  }
+  offerTick(bk);
   // 大物：フリーで1本。連載が始まって2年でやめる／連載が終わったら去る
   for(const m of S.manga){if(!m.bigOne||m.status==='gone')continue;
     if(m.status==='serial'&&m.leaveAt==null){m.leaveAt=S.turns+24;}
@@ -1966,11 +1951,11 @@ function endTurn(){
   // 持ち込み・アシスタント
   const zm=byRole('zatsumu')[0];
   if(S.flags.phone>=3&&byRole('tantou').length&&R()<(zm?0.25+(zm.jimu??50)/250:0.15)){
-    const t=pick(byRole('tantou'));
+    const room=byRole('tantou').filter(x=>stockOf(x).length<3);const t=room.length?pick(room):pick(byRole('tantou'));
     if(stockOf(t).length<3){const YL=S.y>=1975&&R()<0.08?legendPick(true):null;const n=YL?makeLegend(YL,true):rookieManga(compTier(),{age:ri(17,23)});n.status='pending';n.tantou=t.id;S.manga.push(n);
       const A=(100-(t.hidden?40:t.bigan))/100*26*(hasF('uchiawase')?0.6:1);const ns=k=>(R()*2-1)*A*k;n.est={story:clamp(Math.round(n.story+ns(0.5)),10,99),idea:clamp(Math.round(n.idea+ns(0.5)),10,99),ga:clamp(Math.round(n.ga+ns(0.5)),10,99),kousei:clamp(Math.round(n.kousei+ns(0.5)),10,99),enshutsu:clamp(Math.round(n.enshutsu+ns(0.5)),10,99),cap:clamp(Math.round(n.cap+ns(1)),20,99)};const ok=n.est.cap>=70;n.judge=ok;
       (S.popups=S.popups||[]).push({mochi:n.id});
-      S.pendingEvents.push({type:'mochikomi',dept:'編集部',id:n.id,ok,who:'担当・'+t.name,t:'新人の'+n.name+'さん（'+n.age+'歳・得意：'+gtxt(n)+'）が原稿を持ち込みに来ました。わたしが見ました。'+(ok?'この子は、わたしが育てたいです！持ち駒にさせてください。':'正直、見込みナシです。わたしは手を上げません。')});
+      /* 持ち込みは報告書に載せない：ピンポーンで会ってから決める */
       S.bubbles.push({kind:'phone'});}
   }
   for(const m of serials()){
@@ -2288,7 +2273,7 @@ function hire(id,role){
   if(byRole(role).length>=capOf(role))return toast(ROLES[role]+'の席がいっぱいです');
   c.role=role;c.joinY=S.y;if(!c.exp)c.ki=S.y-1969;if(S.y===1970&&S.m<=2)c.founder=true;else if(!S.mag.launched)c.launchMem=true;assignTeam(c);S.staff.push(c);S.cands=S.cands.filter(x=>x!==c);
   if(S.clock&&S.clock.t<0.6){c.arrTmp={k:dayKey(),t:S.clock.t+0.04};c.hello=1;}
-  say('人事',c.name+(role==='kenshu'?'を採用して、研修に入れました（'+c.ki+'期生）。3か月後に力がわかります。':'を'+ROLES[role]+'として採用しました。'));save();render();
+  say('人事',c.name+(role==='kenshu'?'を採用して、研修に入れました（'+c.ki+'期生）。来月には力がわかります。':'を'+ROLES[role]+'として採用しました。'));save();render();
 }
 function assignTeam(s){if(s.role==='vice'){const z=byRole('vice').some(v=>v.team===0&&v!==s);s.team=S.desks?(hasDesk('v0')&&!z?0:1):(z?1:0);}if(s.role==='tantou'){const a=byRole('tantou').filter(t=>t.team===0&&t!==s).length,b=byRole('tantou').filter(t=>t.team===1&&t!==s).length;if(S.desks){const f0=deskCount('t0')-a,f1=deskCount('t1')-b;s.team=f0>0&&(f0>=f1||f1<=0)?0:f1>0?1:(a<=b?0:1);}else s.team=a<=b?0:1;}}
 function setRole(id,role){
@@ -2297,6 +2282,25 @@ function setRole(id,role){
   if(role==='fire'){S.staff=S.staff.filter(x=>x!==s);for(const m of S.manga)if(m.tantou===s.id){m.tantou=null;if(m.status==='serial'||m.status==='queue')assignTantou(m);}say('人事',s.name+'を解雇しました。');}
   else{const from=s.role;s.role=role;assignTeam(s);if(from==='tantou')for(const m of S.manga)if(m.tantou===s.id&&(m.status==='serial'||m.status==='queue'))assignTantou(m);say('人事',s.name+'を'+ROLES[role]+'にしました。');}
   save();render();
+}
+// 先生への打診の返事（半月ごとに進む：1日と16日）
+function offerTick(bk){
+  for(const o of S.offers){o.wait--;}
+  const done=S.offers.filter(o=>o.wait<=0);S.offers=S.offers.filter(o=>o.wait>0);
+  for(const o of done){
+    const m=S.manga.find(x=>x.id===o.id);if(!m||m.status!=='market')continue;
+    const r=mRank(m);const base={S:.35,A:.5,B:.65,C:.75}[r]??.85;
+    const big=tooBig(m);
+    const p=(big?0.12:0)+(big?0:base)+(S.mag.launched?S.mag.aware/250:0)-(o.kanban&&!chief()?1:0)+(o.kudoki?0.2:0);
+    if(R()<p){
+      const fee=o.fee;
+      if(S.money<fee){(S.popups=S.popups||[]).push({id:m.id,kanban:o.kanban,fee,no:true,poor:true});continue;}
+      S.money-=fee;if(bk)bk.fee+=fee;m.status='stock';m.tantou=null;assignTantou(m);if(big){m.bigOne=1;S.pendingEvents.push({dept:'編集部',who:'編集長',t:m.name+'先生が来てくれる……ただし「フリーで1本だけ。長くても2年だ」という条件つきだ。'});}else{if(o.kanban){m.isKanban=true;}if(o.excl)m.exclusive=true;}if(o.kudoki){m.fav=true;S.pendingEvents.push({dept:'編集部',who:'社長',t:m.name+'先生が「社長にそこまで言われたら」と引き受けてくれた。社長のご愛顧の先生だ。'});}
+      if(!m.tantou){const t=byRole('tantou')[0];m.tantou=t?t.id:null;}
+      (S.popups=S.popups||[]).push({id:m.id,kanban:o.kanban,fee});
+      S.bubbles.push({kind:'phone'});
+    } else {(S.popups=S.popups||[]).push({id:m.id,kanban:o.kanban,fee:o.fee,no:true});}
+  }
 }
 function offer(id,kanban,excl,kudoki){
   const m=S.manga.find(x=>x.id===id);if(!m)return;
@@ -2308,7 +2312,7 @@ function offer(id,kanban,excl,kudoki){
   if(kudoki){if(kudokiLeft()>0)return toast('社長が口説けるのは2年に1回です');S.kudokiAt=S.turns;}
   const fee=kanban?TFEE[tierOf(m)]*500*eraF():TFEE[tierOf(m)]*80*eraF();
   S.offers.push({id,wait:ri(1,2),kanban,fee,excl:!!(excl||kanban),kudoki:!!kudoki});
-  say('社長',kudoki?m.name+'先生のところへ、社長みずから口説きに行った。「うちの雑誌には、先生が必要なんです！」':m.name+'先生に'+(kanban?'看板として':excl?'専属で':'')+'連載を打診した。返事は1〜2か月後。');save();render();
+  say('社長',kudoki?m.name+'先生のところへ、社長みずから口説きに行った。「うちの雑誌には、先生が必要なんです！」':m.name+'先生に'+(kanban?'看板として':excl?'専属で':'')+'連載を打診した。返事は半月〜1か月後。');save();render();
 }
 function prize(){
   if(S.contest||S.prizeCool>0||!byRole('tantou').length)return;
@@ -2608,7 +2612,7 @@ function sheetManga(){
         h+=mangaCard(m,'<div class="s">'+TIERS[tierOf(m)]+'・総合 '+mRank(m)+'・原稿料 1ページ '+yen(TFEE[tierOf(m)]*eraF())+'</div><div class="row">'+(pending?'<span class="s">返事待ち</span>':'<button class="btn pri" data-act="offer" data-arg="'+m.id+':1"'+(chief()?'':' disabled')+'>看板として迎える（契約金 '+yen(kfee)+'）</button>'+(kudokiLeft()?'':'<button class="btn" data-act="offer" data-arg="'+m.id+':4"'+(chief()?'':' disabled')+'>社長が口説く（看板）</button>'))+'</div>');}
     }
   } else {
-    h+='<div class="card"><div class="s">連載を打診すると、返事は1〜2か月後。受けてもらえたら持ち駒に入る。看板の先生は「看板」タブから。</div><div class="s">社長特権「社長が口説く」：2年に1回だけ、社長みずから口説きに行ける。受けてもらいやすくなり、その先生は「社長のご愛顧」になって、よそへ移らない。'+(kudokiLeft()?'<b>次に口説けるのは、あと'+kudokiLeft()+'か月後。</b>':'<b style="color:var(--green)">いま口説けます！</b>')+'</div></div>';
+    h+='<div class="card"><div class="s">連載を打診すると、返事は半月〜1か月後。受けてもらえたら持ち駒に入る。看板の先生は「看板」タブから。</div><div class="s">社長特権「社長が口説く」：2年に1回だけ、社長みずから口説きに行ける。受けてもらいやすくなり、その先生は「社長のご愛顧」になって、よそへ移らない。'+(kudokiLeft()?'<b>次に口説けるのは、あと'+kudokiLeft()+'か月後。</b>':'<b style="color:var(--green)">いま口説けます！</b>')+'</div></div>';
     h+='<div class="card"><div class="who">ほかの先生を探す</div><div class="t">'+(S.searchReq?'編集長が電話をかけて探しています。結果は来月の報告で。':'ここにいない先生を、編集長に電話で探してもらう。結果は来月。')+'</div>'+(S.searchReq?(S.searchGenre?'<div class="s">探しているジャンル：'+esc(S.searchGenre)+'</div>':''):(chief()?'<div class="row"><button class="btn pri" data-act="search" data-arg="">ジャンルを問わず探す</button></div><div class="s">ジャンルを決めて探す（無名の先生も多い）</div><div class="row">'+GENRES.map(g=>'<button class="btn" data-act="search" data-arg="'+g+'">'+g+'</button>').join('')+'</div>':'<span class="s">編集長がいないと頼めない</span>'))+'</div>';
     h+='<div class="sec">いま見つかっている先生（ジャンルでしぼる）</div><div class="row">'+['すべて',...GENRES].map(g=>'<button class="btn'+((S.mkFilter||'すべて')===g?' sel':'')+'" data-act="mkfilter" data-arg="'+g+'">'+g+'</button>').join('')+'</div>';
     const mk=S.manga.filter(m=>m.status==='market'&&!m.kanbanOK&&!tooBig(m)&&(!S.mkFilter||S.mkFilter==='すべて'||gsOf(m).includes(S.mkFilter))).sort((a,b)=>mLevel(b)-mLevel(a));
@@ -3770,7 +3774,7 @@ function timeTick(){
   if(!anyone&&(S.clock.t>0.55||S.clock.t<0.03))rate*=8;
   S.clock.t+=rate;kqPrune();
   dayEvents();meetTick();
-  if(S.clock.t>=1){S.clock.t=0;if(S.flags.phone>=3)S.mailbox=Math.min(12,(S.mailbox||0)+1+(S.mag.launched?Math.floor(R()*2):0));if(S.flags.phone===2){S.flags.phone=3;say('社長','電話が開通した！これで社員の採用も、先生への連絡もできる。');(S.popups=S.popups||[]).unshift({news:'phone'});showPop();sfx();}if(S.clock.d===0){S.clock.d=1;refreshCands();if(S.staff.length<25)say(byRole('zatsumu')[0]?'秘書・'+byRole('zatsumu')[0].name:'社長',pick(['今月の募集に応募が来ています。「人事」の「採用」で面接しましょう。','求人を見た人たちから応募が届いています。新卒8人、経験者8人です。','応募の履歴書がたまってきました。面接しますか？']));if(sheet==='staff')drawSheet();}else{S.clock.d=0;monthEnd();}}
+  if(S.clock.t>=1){S.clock.t=0;if(S.flags.phone>=3)S.mailbox=Math.min(12,(S.mailbox||0)+1+(S.mag.launched?Math.floor(R()*2):0));if(S.flags.phone===2){S.flags.phone=3;say('社長','電話が開通した！これで社員の採用も、先生への連絡もできる。');(S.popups=S.popups||[]).unshift({news:'phone'});showPop();sfx();}if(S.clock.d===0){S.clock.d=1;refreshCands();try{const n0=(S.dayq||[]).length;offerTick(null);deferPops();for(const q of S.dayq.slice(n0)){q.d=1;q.t=Math.max(q.t,0.12);q.on=false;}}catch(e){}if(S.staff.length<25)say(byRole('zatsumu')[0]?'秘書・'+byRole('zatsumu')[0].name:'社長',pick(['今月の募集に応募が来ています。「人事」の「採用」で面接しましょう。','求人を見た人たちから応募が届いています。新卒8人、経験者8人です。','応募の履歴書がたまってきました。面接しますか？']));if(sheet==='staff')drawSheet();}else{S.clock.d=0;monthEnd();}}
   if(now-lastRender>400){lastRender=now;render();}
   if(now-lastSave>8000){lastSave=now;save();}
 }
