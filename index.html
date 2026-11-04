@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="出版社経営物語"><meta name="theme-color" content="#1d1b18"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><style>body{margin:0;background:#1d1b18}[hidden]{display:none!important}</style></head><body><title>出版社経営物語</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="出版社経営物語"><meta name="theme-color" content="#1d1b18"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><style>body{margin:0;background:#1d1b18}[hidden]{display:none!important}</style></head><body><title>出版社経営物語</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Mochiy+Pop+One&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
@@ -113,6 +113,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .bars div{flex:1;background:var(--accent);min-height:2px;border-radius:2px 2px 0 0}
 .bars-lab{display:flex;justify-content:space-between;font-size:13px;color:var(--sub)}
 .story{font-size:18px;line-height:1.8;white-space:pre-line}
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 input[type=text]{font:inherit;font-size:19px;padding:10px 12px;border-radius:6px;border:2px solid var(--sub);background:#151412;color:var(--fg);width:100%;box-sizing:border-box}
 #pop{position:absolute;inset:0;z-index:8;background:#000a;display:flex;align-items:center;justify-content:center;padding-top:12px;padding-bottom:12px;box-sizing:border-box;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 #pop .box{width:100%;max-width:400px;max-height:100%;overflow-y:auto;box-sizing:border-box;background:var(--panel);border:4px solid var(--accent);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;animation:popin .25s ease-out}
@@ -184,6 +185,9 @@ input[type=text]{font:inherit;font-size:19px;padding:10px 12px;border-radius:6px
 </div>
 
 <script>
+// スマホで画面が拡大されないように（ピンチ・ダブルタップ）
+(()=>{for(const ev of ['gesturestart','gesturechange','gestureend'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false});let last=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-last<350&&!e.target.closest('input,textarea'))e.preventDefault();last=n;},{passive:false});document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});})();
+
 (()=>{
 'use strict';
 // ===== 乱数・道具 =====
@@ -3343,7 +3347,7 @@ function actRest(a,arg,b){
     case 'add':{const id=+arg;const i=S.half.add.indexOf(id);if(i>=0)S.half.add.splice(i,1);else S.half.add.push(id);drawSheet();break;}
     case 'halfok':if(S.half&&S.half.played)halfOk();else meetPlay(halfOk);break;
     case 'meddle':S.half.meddle=true;drawSheet();break;
-    case 'srename':{const st=staffById(+arg);const n=$('sn-'+arg);if(st&&n&&n.value.trim()){st.name=n.value.trim();save();toast('名前を変えました');}drawSheet();break;}
+    case 'srename':{const st=staffById(+arg);const n=$('sn-'+arg);if(st&&n&&n.value.trim()){st.name=n.value.trim().replace(/\u3000/g,' ');st.sei=st.name.split(' ')[0];save();toast('名前を変えました');}drawSheet();break;}
     case 'hiretab':S.hireTab=arg;expand=null;drawSheet();break;
     case 'sfilter':S.staffFilter=arg;expand=null;drawSheet();const sb=document.querySelector('.sh-body');if(sb)sb.scrollTop=0;break;
     case 'kpromote':{const m=S.manga.find(x=>x.id===+arg);if(!m||!chief())break;if(S.manga.filter(x=>x.isKanban&&x.status!=='gone').length>=3){toast('看板はもう3本です');break;}m.isKanban=true;m.fee=pageFee(m)+Math.round(1500*eraF()/100)*100;say('編集長・'+chief().name,'「'+m.title+'」を看板にします！');(S.popups=S.popups||[]).push({kup:m.id});save();drawSheet();showPop();break;}
@@ -3410,7 +3414,7 @@ function actRest(a,arg,b){
     case 'lvup':{const[id,k]=arg.split(':');const st=staffById(+id);if(st&&st.pts>0&&st[k]<Math.min(99,st.pot+5)){const before=rank(st[k]);st[k]=Math.min(99,st[k]+5);st.pts--;const after=rank(st[k]);toast(st.name+'の'+STATN[k]+'が上がった'+(before!==after?'（'+before+'→'+after+'）':''));save();drawSheet();render();}break;}
     case 'mkeep':case 'mdrop':{const m=S.manga.find(x=>x.id===parseInt(arg));if(m&&m.status==='pending'){if(a==='mkeep'){const t=staffById(m.tantou);if(t&&stockOf(t).length>=3){const t2=byRole('tantou').find(x=>stockOf(x).length<3);if(!t2){toast('持ち駒がいっぱいです（担当1人3人まで）');break;}m.tantou=t2.id;}if(!m.judge&&m.judge!==undefined){toast('手を上げた担当がいません');break;}m.handBy=m.tantou;notif(m,'mochi');m.status='stock';m.exclusive=!String(arg).endsWith(':f');if(m.est)m.revealK=S.y*12+S.m+2;say('社長',m.name+'さんを持ち駒にした。修行させよう。');}else{m.status='gone';say('社長',m.name+'さんには帰ってもらった。');}}save();drawSheet();break;}
     case 'search':if(S.flags.phone<3){toast('電話がないので探せません。「建築」から電話線を引こう');break;}if(chief()){S.searchReq=true;S.searchGenre=arg||null;const c=chief();say('編集長・'+c.name,'わかりました。あちこち電話して、新しい先生を探してみます。');save();drawSheet();}break;
-    case 'rename':{const m=S.manga.find(x=>x.id===+arg);if(!m)break;const n=$('en-'+m.id),t=$('et-'+m.id);if(n&&n.value.trim())m.name=n.value.trim();if(t&&t.value.trim()){const old=m.title;m.title=t.value.trim();for(const c of S.comics)if(c.title===old)c.title=m.title;cserInit();for(const k in S.cser){const e=S.cser[k];if(e.title===old&&k.startsWith(m.id+'|')){e.title=m.title;S.cser[m.id+'|'+m.title]=e;delete S.cser[k];}}for(const c of S.comics)if(c.mid==null&&c.title===m.title)c.mid=m.id;}expand=null;save();drawSheet();toast('名前を変えました');break;}
+    case 'rename':{const m=S.manga.find(x=>x.id===+arg);if(!m)break;const n=$('en-'+m.id),t=$('et-'+m.id);if(n&&n.value.trim()){m.name=n.value.trim().replace(/\u3000/g,' ');if('sei' in m)m.sei=m.name.split(' ')[0];}if(t&&t.value.trim()){const old=m.title;m.title=t.value.trim();for(const c of S.comics)if(c.title===old)c.title=m.title;cserInit();for(const k in S.cser){const e=S.cser[k];if(e.title===old&&k.startsWith(m.id+'|')){e.title=m.title;S.cser[m.id+'|'+m.title]=e;delete S.cser[k];}}for(const c of S.comics)if(c.mid==null&&c.title===m.title)c.mid=m.id;}expand=null;save();drawSheet();toast('名前を変えました');break;}
     case 'settan':{const[mid,tid]=arg.split(':').map(Number);const m=S.manga.find(x=>x.id===mid);const t=staffById(tid);if(m&&t){m.tantou=t.id;say('人事',m.name+'先生の担当を'+t.name+'にしました。');}save();drawSheet();break;}
     case 'start':freshState();S.saved=false;sheet=null;$('sheet').hidden=true;render();startOpening();break;
     case 'opskip':endOpening();break;
@@ -3446,7 +3450,7 @@ const DS=2;let CVH=0;function setCvH(h){if(CVH===h)return;CVH=h;cv.width=OW*DS;c
 // 細かいドット（2倍の細かさ）で描く：座標は 400×320 の世界
 const Q=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x)/2,Math.round(y)/2,w/2,h/2);};
 const QB=(x,y,w,h,f)=>{Q(x,y,w,h,OL);Q(x+1,y+1,w-2,h-2,f);};
-function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;const app=$('app');if(app.classList.contains('one')){app.classList.remove('one');st.style.flex='';}
+function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;{const ae=document.activeElement;if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;}const app=$('app');if(app.classList.contains('one')){app.classList.remove('one');st.style.flex='';}
   const vv=window.visualViewport;let VW=vv?vv.width:innerWidth,VH=vv?vv.height:innerHeight;try{if(screen&&screen.height&&VH>screen.height*1.05)VH=screen.height;if(screen&&screen.width&&VW>Math.max(screen.width,screen.height)*1.05)VW=Math.max(screen.width,screen.height);}catch(e){}
   {const hh=Math.round(VH)+'px';if(app.style.height!==hh)app.style.height=hh;}
   const LAND=!OP&&sheet!=='title'&&(ORIPREF==='land'||(ORIPREF==='auto'&&VW>VH*1.15));app.classList.toggle('land',LAND);if(LAND){const W=app.clientWidth,Hh=app.clientHeight;app.style.setProperty('--stw',Math.floor(Math.min(W*0.64,W-330,Hh*OW/(CVH||OH)))+'px');}
@@ -3460,7 +3464,7 @@ function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;const 
   const tk=$('talk');if(tk){if(zoom){if(tk.parentElement!==app)app.appendChild(tk);const tp=Math.round(st.offsetTop+st.clientHeight*0.32)+'px';if(tk.style.top!==tp)tk.style.top=tp;if(tk.style.width!=='90%')tk.style.width='90%';tk.style.zIndex='4';}else if(tk.parentElement!==w){w.appendChild(tk);tk.style.top='36%';tk.style.width='';tk.style.zIndex='';}}
   const nav=$('onav');if(nav){if(zoom){if(nav.parentElement!==app)app.appendChild(nav);const tp=(st.offsetTop+4)+'px';if(nav.style.top!==tp)nav.style.top=tp;nav.classList.add('fixed');}else if(nav.parentElement!==w){w.appendChild(nav);nav.style.top='';nav.classList.remove('fixed');}}
   const zk=zoom?((S&&S.view)||'')+'|'+ww:'';if(zoom&&layout.zk!==zk){layout.zk=zk;requestAnimationFrame(()=>{st.scrollLeft=(ww-st.clientWidth)/2;});}if(!zoom)layout.zk='';}
-addEventListener('resize',()=>layout());try{window.visualViewport&&window.visualViewport.addEventListener('resize',()=>layout());}catch(e){}
+document.addEventListener('focusin',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))setTimeout(()=>{try{t.scrollIntoView({block:'center'});}catch(_){}},350);});document.addEventListener('focusout',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))setTimeout(()=>{try{window.scrollTo(0,0);}catch(_){}layout();},300);});addEventListener('resize',()=>layout());try{window.visualViewport&&window.visualViewport.addEventListener('resize',()=>layout());}catch(e){}
 const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w,h);};
 const OB=(x,y,w,h,f)=>{P(x,y,w,h,OL);P(x+1,y+1,w-2,h-2,f);};
 function hash(n){return Math.abs(Math.sin(n*99.13)*10000)%1;}
@@ -5259,6 +5263,7 @@ musicUI();
 // ===== はじめ =====
 function migrate(){
  S.placeMode=false;S.placeNew=null;
+ for(const x of [...(S.staff||[]),...(S.manga||[])]){if(x&&x.sei&&x.name&&!String(x.name).startsWith(x.sei))x.sei=String(x.name).split(/[ \u3000]/)[0];}
  for(const m of S.manga||[]){if(m.enshutsu==null)m.enshutsu=Math.round((m.ga+m.kousei)/2);if(m.est&&m.est.enshutsu==null)m.est.enshutsu=Math.round((m.est.ga+m.est.kousei)/2);}
  if(S.desks)for(const k of ['e2','s2','k2'])S.desks[k]=1;
  if(S.staff&&S.staff.length&&S.flags){if((S.flags.phone||0)<3)S.flags.phone=3;S.desks=Object.assign({t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,e2:1,sb:1,s1:1,s2:1,kb:1,k1:1,k2:1},S.desks||{});S.uneiV=1;}
@@ -5275,5 +5280,6 @@ drawOffice();
 cloudInit();
 window.__G={navGrid,route,get S(){return S},ranking,endTurn,launch,hire,offer,setRole,makeReports,halfOk,start,serials,byRole,score,freshState,anAccept,aMul,phase3Tick};
 })();
+
 </script>
 <script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script></body></html>
