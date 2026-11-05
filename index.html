@@ -1621,12 +1621,12 @@ function rivalMonth(){if(S.wallDate>0)S.wallDate--;if(!S.mag||!S.mag.launched)re
 
 // ---------- 桐生 ----------
 function kiryuMonth(sl){const K=S.kiryu=S.kiryu||{};
-  if(K.at==null)K.at=ri(6,12);
+  if(K.at==null)K.at=Math.max(ri(6,12),sl+ri(4,7));// 途中のセーブでも、いきなり辞めないように
   if(!K.done){const k=kiryuStaff();if(!k||k.role==='quit'){K.done=1;K.skip=1;return;}
     k.kiryu=1;
     // 前ぶれ：辞める3か月前と1か月前
-    if(sl===K.at-3&&!K.h1){K.h1=1;rivNews('秘書',pick(['桐生さん、最近よく外で電話をしているみたいです。……誰とでしょう？','桐生さんが、夜遅くに知らない人と会っていたらしいです。','桐生さん、最近ため息が多いですね。何かあったんでしょうか。']));}
-    if(sl===K.at-1&&!K.h2){K.h2=1;rivNews('秘書',pick(['……社長。桐生さんが、何人かの先生と個別に会っているそうです。担当でもないのに。','桐生さんの机、なんだか片付いてきていませんか……？']),true);}
+    if(sl>=K.at-3&&!K.h1){K.h1=1;rivNews('秘書',pick(['桐生さん、最近よく外で電話をしているみたいです。……誰とでしょう？','桐生さんが、夜遅くに知らない人と会っていたらしいです。','桐生さん、最近ため息が多いですね。何かあったんでしょうか。']));}
+    if(sl>=K.at-1&&K.h1&&!K.h2){K.h2=1;rivNews('秘書',pick(['……社長。桐生さんが、何人かの先生と個別に会っているそうです。担当でもないのに。','桐生さんの机、なんだか片付いてきていませんか……？']),true);}
     if(sl>=K.at&&!(S.jihyo&&S.jihyo.length)&&!(S.popups||[]).some(p=>p.news==='kiryu')){kiryuBetray(k);}
     return;}
   // 永遠のライバル：ときどき桐生のひとこと
@@ -1686,7 +1686,7 @@ function kiryuAnim(){const {ease,eo,cl,tx}=a2;const k=kiryuStaff()||KIRYU;const 
 // ---------- 大鷲社（壁） ----------
 const WALL_SNEER=['「新しい雑誌？ ああ、あの吹けば飛ぶようなところね。」','「漫画はね、資本で描くものなんだよ。」','「おたくの先生？ うちの新人のほうが売れますよ。」','「まあ、がんばって。来年まであればだけど。」'];
 function wallMonth(sl){const W=S.wall=S.wall||{beat:{}};if(W.end)return;
-  if(sl===2&&!W.intro){W.intro=1;rivPush({news:'wall',k:'intro'});W.next=S.turns+ri(5,9);return;}
+  if(sl>=2&&!W.intro){W.intro=1;rivPush({news:'wall',k:'intro'});W.next=S.turns+ri(5,9);return;}
   if(!W.intro)return;
   // 見返す：大鷲社の雑誌を抜いた
   const mine=ourSold();for(const r of wallMags()){if(!W.beat[r.name]&&mine>r.sold&&mine>0){W.beat[r.name]=1;rivPush({news:'wall',k:'beat',mag:r.name,big:r.name===wallMags().slice(-1)[0].name});return;}}
@@ -2976,7 +2976,7 @@ function render(){
    $('yearbar').innerHTML='<span>今年 売上<b>'+sh(now)+'</b> 利益<b style="color:'+(pr<0?'#e07a6e':'#8fd18f')+'">'+(pr<0?'−':'')+sh(Math.abs(pr))+'</b></span><span>'+(nt?(nt[0]-now>0?'次の称号まで'+sh(nt[0]-now):'1月に称号アップ！'):'最高の称号')+'</span>';}
   {const C=S.clock||{d:0,t:0.3};const day=Math.min(Math.floor(C.t*30)+1,30);const hh=nowH();const ph=hh<10?'朝':hh<16?'昼':hh<19?'夕方':hh<23?'夜':'深夜';const H=Math.floor(hh)%24,M=Math.floor((hh%1)*6)*10;
    $('date').textContent=era()+S.m+'月'+day+'日';S._clk=ph+' '+H+':'+(M<10?'0':'')+M;
-   const sp=S.speed??1;if((sp===0.7||sp===3)&&!S.paused)S.speed=sp===3?2:1;$('ctl').innerHTML='<button data-act="open" data-arg="build">☎ 電話</button><button data-act="open" data-arg="honsha">本社</button><button data-act="spd" data-arg="0" class="'+(S.paused?'on':'')+'">'+(S.paused?'▶ 再開':'⏸ 停止')+'</button>'+[[1,'×1'],[2,'×2']].map(([v,l])=>'<button data-act="spd" data-arg="'+v+'" class="'+(!S.paused&&sp===v?'on':'')+'">'+l+'</button>').join('');}
+   const sp=S.speed??1;if((sp===0.7||sp===3)&&!S.paused)S.speed=sp===3?2:1;$('ctl').innerHTML='<button data-act="open" data-arg="build">☎ 電話</button><button data-act="open" data-arg="honsha">本社</button><button data-act="spd" data-arg="0" class="'+(S.paused?'on':'')+'">'+(S.paused?'▶ 再開':'⏸ 停止')+'</button>'+[[1,'×1'],[2,'×2']].map(([v,l])=>'<button data-act="spd" data-arg="'+v+'" class="'+(!S.paused&&!S.skip&&sp===v?'on':'')+'">'+l+'</button>').join('')+(skipOK()?'<button data-act="skipev" class="'+(S.skip?'on':'')+'">'+(S.skip?'⏩中…':'⏩飛ばす')+'</button>':'');$('ctl').style.gridTemplateColumns=skipOK()?'repeat(6,1fr)':'';}
   $('money').textContent=yen(S.money);
   const mag=S.mag;
   $('status').innerHTML='<span class="chip">'+esc(TITLES[S.titleIdx][1])+'</span><span class="mag">'+esc(mag.name)+'</span><span class="sub">'+(mag.launched?(mag.issue?'第'+mag.issue+'号まで':'創刊号を制作中')+(S.lastResult?'・前号 '+busu(S.lastResult.sold):''):'創刊準備中')+'</span>';
@@ -2991,7 +2991,7 @@ function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTime
 
 let sheet=null,tab=null,expand=null;
 function openSheet(name,t){sheet=name;tab=t||tab||null;if(name==='report'){const w=repWait();for(const r of S.reports||[])if(repShown(r,w))r.read=true;if(!(S.reports||[]).some(r=>!r.read))S.newRead=true;}drawSheet();render();}
-function closeSheet(){if(S)S.payDraft=null;sheet=null;tab=null;expand=null;$('sheet').hidden=true;render();}
+function closeSheet(){if(S)S.payDraft=null;sheet=null;tab=null;expand=null;$('sheet').hidden=true;render();if(S&&(S.popups||[]).length&&$('pop').hidden)try{showPop();}catch(e){}}
 function head(title){return '<div class="sh-head"><h2>'+title+'</h2><button class="close" data-act="close">閉じる</button></div>';}
 function tabs(list){if(!tab||!list.some(x=>x[0]===tab))tab=list[0][0];return '<div class="tabs" role="tablist">'+list.map(([k,l])=>'<button class="tab'+(k===tab?' on':'')+'" role="tab" aria-selected="'+(k===tab)+'" data-act="tab" data-arg="'+k+'">'+l+'</button>').join('')+'</div>';}
 function lvList(){const st=S.staff.filter(x=>!x.hidden&&x.pts>0);const ms=S.manga.filter(m=>m.pts>0&&!['market','rival','gone'].includes(m.status));return {st,ms};}
@@ -3885,6 +3885,7 @@ function comicAnim(n,exp){clearInterval(comicAnim.h);const c=$('popanim');if(!c)
     const el=$('popcnt');if(el){const k=Math.min(1,f/22);el.textContent=Math.round(n*k*k*(3-2*k)).toLocaleString();}
     if(f===50)animReveal();if(f>120)clearInterval(comicAnim.h);},90);}
 function showPop0(){
+  try{skipPass();}catch(e){}
   {const o=(S.popups||[])[0];if(o&&['anoffer','seiyu','onair','anres','fanletter','sign','top1','deal','call'].includes(o.news)){if(p3Pop(o,$('pop'))!==false)return;}}
   {const q0=(S.popups||[]);if(q0[0]&&q0[0].callok){const el=$('pop');const m=S.manga.find(x=>x.id===q0[0].id);const sc=byRole('zatsumu')[0];
     el.innerHTML='<div class="box" style="border-color:var(--green)"><h3 id="pop-h" style="color:var(--green)">☎ '+(m?esc(m.name):'先生')+'先生から電話</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(sc?'秘書・'+esc(sc.name):'社長')+'</div></div></div><div class="quote">「'+(sc?'社長、'+(m?esc(m.name):'')+'先生からお電話です。お受けいただけるそうです！近いうちに、契約に来社されます。':'よし、'+(m?esc(m.name):'')+'先生がOKしてくれた！近いうちに契約に来てくれるそうだ。')+'」</div><div class="s">'+(q0[0].kanban?'看板として迎える話も、受けてもらえた。':'')+'来社したら、担当を決めて顔合わせをしよう。</div><button class="btn pri" data-act="popok">やった！</button></div>';
@@ -4044,7 +4045,7 @@ function act(b){
     case 'kprint':S.printPlan=+arg;showPop();break;
     case 'kprintd':S.printPlan=Math.max(1000,Math.round(S.printPlan*(1+ +arg)/100)*100);showPop();break;
     case 'secok':{autoDecide();for(const r of S.reports||[])r.read=true;S.repRead=true;S.newRead=true;S.popups=(S.popups||[]).filter(x=>!x.secrep);save();render();toast('今月の報告を、まとめて承認しました');showPop();break;}
-    case 'secopen':{S.popups=(S.popups||[]).filter(x=>!x.secrep);openSheet('report');break;}
+    case 'secopen':{S.popups=(S.popups||[]).filter(x=>!x.secrep);$('pop').hidden=true;openSheet('report');break;}
     case 'jihyo':jihyoAct(arg);break;case 'riv':rivAct(arg);break;
     case 'popok':{const o0=(S.popups||[])[0];if(o0&&o0.contest)for(const h of o0.hands||[]){const m=S.manga.find(x=>x.id===h.id);if(m&&m.status==='pending'&&m.contest){m.status='gone';}}const sh0=(S.popups||[]).shift();save();if(sh0&&sh0.after==='hq'){$('pop').hidden=true;a2Overlay(buildAnim2({co:coName(),snap:buildSnap()}),()=>moveStart());}else showPop();break;}
     case 'ccon':{const [id,c]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m&&m.status==='pending'){if(c==='n'){m.status='gone';}else{m.status='stock';m.exclusive=c==='e';m.revealK=S.y*12+S.m+2;say('社長',m.name+'さんと'+(c==='e'?'専属':'フリー')+'で契約した。担当に任せる。');}}save();showPop();break;}
@@ -4067,7 +4068,7 @@ function doNext(){
       if(S.over){sheet='over';drawSheet();render();return;}
       showPop();
       if(S.halfDue){S.meetS={kind:'serial',d:0,t0:0.62,t1:0.76,mid:1};S.halfMid=1;toast(era()+' '+S.m+'月　今月の午後は'+(S.halfSpecial?'緊急の':'')+'連載会議');}
-      {S.popups=(S.popups||[]).filter(x=>!x.kessai);S.kq=[];S.repRead=false;for(const r of S.reports||[])r.heard=true;const ks=kessaiList();if(ks.length&&R()<0.12){const k=pick(ks);k.n=1;k.of=1;S.kq=[k];}if(S.mag.launched||S.reports.length)(S.popups=S.popups||[]).unshift({secrep:1});}
+      {S.popups=(S.popups||[]).filter(x=>!x.kessai);S.kq=[];S.repRead=false;for(const r of S.reports||[])r.heard=true;const ks=kessaiList();if(ks.length&&R()<0.12){const k=pick(ks);k.n=1;k.of=1;S.kq=[k];}if(S.skipEnd===S.turns){try{autoDecide();}catch(e){}for(const r of S.reports||[])r.read=true;S.repRead=true;S.newRead=true;}else if(S.mag.launched||S.reports.length)(S.popups=S.popups||[]).unshift({secrep:1});}
       if(S.mag.launched)S.meetP={kind:'print',d:0,t0:0.42,t1:0.53};
       {const pend=(S.comics||[]).filter(c=>!c.shown&&!c.mitate&&c.left===3);let X=null;if(pend.length&&(S.chatY!==S.y)){S.chatC={d:0,t0:0.74};S.chatY=S.y;}else{S.chatC=null;mitateSilent(pend);}}
       deferPops();render();toast(era()+' '+S.m+'月');showPop();
@@ -4108,7 +4109,8 @@ function actRest(a,arg,b){
     case 'phoneorder':{const c=1e5*eraF();if(S.money<c||(S.flags.phone||0)>=1)break;S.money-=c;S.feeAcc=(S.feeAcc||0)+c;S.flags.phone=2;say('社長','電話線を申し込んだ。明日には開通するそうだ。');save();drawSheet();render();break;}
     case 'placemode':{S.placeMode=false;break;}
     case 'placeend':{S.placeMode=false;save();render();break;}
-    case 'spd':{if(+arg===0)S.paused=!S.paused;else{S.speed=+arg;S.paused=false;}save();render();break;}
+    case 'spd':{S.skip=false;if(+arg===0)S.paused=!S.paused;else{S.speed=+arg;S.paused=false;}save();render();break;}
+    case 'skipev':{if(S.skip){S.skip=false;}else{S.skip=true;S.paused=false;toast('次のイベントまで、早送り！');}render();break;}
     case 'dayev':{if(arg==='intro'){introNext();break;}
       {const e0=(S.dayq||[])[+arg];if(e0&&e0.o&&e0.o.callok){S.dayq.splice(+arg,1);const o2=Object.assign({},e0.o);delete o2.callok;let d=S.clock.d,t=S.clock.t+0.08;if(t>0.62){if(d===0){d=1;t=0.22;}else t=Math.min(0.97,t);}S.dayq.push({o:o2,d,t,kind:'visit',exp:0,on:false,who:o2.id});const m=S.manga.find(x=>x.id===o2.id);(S.popups=S.popups||[]).unshift({callok:true,id:o2.id,kanban:o2.kanban});save();showPop();break;}}const e=(S.dayq||[])[+arg];if(!e)break;S.dayq.splice(+arg,1);(S.popups=S.popups||[]).unshift(e.o);save();showPop();break;}
     case 'news':{NEWS.h=0;newsTick();break;}
@@ -4517,6 +4519,13 @@ function wkDraw(){if(!STACK)return;const UY=OH+(SH-OH*2);
     if(px!=null)walker(px-7,py-17,w.s,Math.floor(tick/3)%2);}}
 function hyDefault(){return 121;}
 function wkPost(){if(!STACK)return;for(const x of S.staff){if(!HROLE.has(x.role))continue;const o=OSPOT[x.id];if(o&&o[1]<OH&&presence(x)===1&&!REP.has(x.id)&&!WK.hide.has(x.id))WK.seat[x.id]=o;}}
+// 80年代から：次のイベントまで早送り（ふだんの報告はポンで承認、レベルアップや重版などは流す）
+function skipOK(){return !!(S&&S.mag&&S.mag.launched&&S.y>=1980);}
+const SKIP_PASS=['reprint','top1','fanletter','deal','comics','phone'];
+function skipPass(){if(!S.skip)return;let n=0;const Q=()=>(S.popups=S.popups||[]);while(Q().length&&n++<60){const q=Q();const o=q[0];
+  if(o.secrep){try{autoDecide();}catch(e){}for(const r of S.reports||[])r.read=true;S.repRead=true;S.newRead=true;S.popups=Q().filter(x=>!x.secrep);continue;}
+  if(o.lvup||o.mlvup||SKIP_PASS.includes(o.news)){q.shift();continue;}break;}
+  if(Q().length){S.skip=false;S.skipEnd=S.turns;toast('イベントです！');}}
 function seatPerson(s,x,y,back,rowY,opt){if((REP.has(s.id)&&presence(s)===1)||WK.hide.has(s.id))return;const pr=presence(s);if(pr===1){const still=matchMedia('(prefers-reduced-motion: reduce)').matches;const cyc=(tick+s.id*37)%160;const writing=cyc<100;const bob=still?0:writing?((tick+s.id)%6<3?1:0):(cyc%40<20?0:1);chibi(x+(writing&&!still&&(tick+s.id)%12<6?1:0),y+bob,s,back,opt);if(!back&&writing&&!still){const sk=lookCol(s).skin;const hx=x+5+((tick>>1)+s.id)%4;HANDS.push([hx,y+16,sk]);}OSPOT[s.id]=[x+7,y-1];}
   else if(pr&&pr.f!=null)TRANS.push({s,x,y:rowY,f:pr.f,msg:pr.dir<0&&pr.why?(pr.why==='kaishu'?'原稿回収、いってきます！':'打ち合わせ、いってきます！'):null});
   else if(pr&&pr.rep&&s.role==='tantou')TANREP.push({s,why:pr.why});}
@@ -4527,8 +4536,9 @@ function midMonth(){refreshCands();try{if(S.m===12&&S.mag.launched){awardsRun();
   if(S.staff.length<25)say(byRole('zatsumu')[0]?'秘書・'+byRole('zatsumu')[0].name:'社長',pick(['今月の募集に応募が来ています。「人事」の「採用」で面接しましょう。','求人を見た人たちから応募が届いています。','応募の履歴書がたまってきました。面接しますか？']));if(sheet==='staff')drawSheet();showPop();}
 function timeTick(){
   const now=performance.now();const dt=Math.min(500,now-lastT);lastT=now;
+  if(S&&S.skip&&(sheet||!$('pop').hidden||S.over||S.paused||S.intro||S.halfDue||(S.meetS&&S.meetS.on))){S.skip=false;render();}
   if(!S||!S.staff.length||sheet||!$('pop').hidden||S.over||S.paused||S.placeMode||!S.clock||S.intro)return;
-  const sp=S.speed??1;let rate=dt/91600*sp;
+  const sp=S.skip?40:(S.speed??1);let rate=dt/83270*sp;
   const SMm=seatMap();const anyone=[chief(),...Object.values(SMm),...Object.values(uneiMap())].filter(Boolean).some(x=>presence(x)!==0);
   if(!anyone&&(S.clock.t>0.55||S.clock.t<0.03))rate*=8;
   S.clock.t+=rate;kqPrune();
@@ -5582,9 +5592,10 @@ function seatsUnei(){const M={};const L=decorOn;const OU2=hasF('ousetsu2');
     M[p+'b']=Object.assign({},BUCHO,{X0:ix,Y0:y+136,items:[['phone',8,38],['tray',92,20],['pens',50,14],['plate',46,2,nm+'部長']]});
     M[p+'1']={side:'right',X0:ix,Y0:y,ix,y,clean:1};M[p+'2']={side:'left',X0:ix+62,Y0:y,ix,y,clean:1};});
   return M;}
-function sideSit(o){return o.side==='right'?[o.ix-14,o.y+79.5]:[o.ix+121,o.y+60];}
+const SIDE_DX=26;// 右の島の椅子が机にめりこまないよう、外へずらす
+function sideSit(o){return o.side==='right'?[o.ix-14,o.y+79.5]:[o.ix+121+SIDE_DX,o.y+60];}
 function headW(o){const dz=(HEADK-1)*20;if(o.side){const p=sideSit(o);return [p[0],p[1],120+dz];}const w=o.w||120;return [o.X0+w/2,o.Y0+62+14,124+dz];}
-function standPt(o){if(o.side)return o.side==='right'?[o.ix-40,o.y+80]:[o.ix+150,o.y+60];const w=o.w||120;return [o.X0+w/2,o.Y0+62+46];}
+function standPt(o){if(o.side)return o.side==='right'?[o.ix-40,o.y+80]:[o.ix+150+SIDE_DX,o.y+60];const w=o.w||120;return [o.X0+w/2,o.Y0+62+46];}
 function obstOf(o){if(o.side)return o.side==='right'?[[o.ix-50,o.y,112,120]]:[[o.ix+62,o.y,112,120]];const w=o.w||120;const r=[[o.X0-4,o.Y0-2,w+8,66]];const cx=o.X0+w/2;r.push([cx-26,o.Y0+62-20,52,44]);return r;}
 function propObst(p){const a=p.pa||{};const X=p.X0,Y=p.Y0;switch(p.prop){case 'plant':return [[X-14,Y-14,28,28]];case 'sofa':return [[X,Y,a.w||110,40]];case 'table':return [[X,Y,a.w||90,a.d||46]];case 'partX':return [[X,Y,a.len,6]];case 'partY':return [[X,Y,6,a.len]];
   case 'lowcab':return a.side==='B'?[[X,Y,a.len,a.d||40]]:[];case 'cbox':case 'heap':case 'bundle':case 'env':return p.z0?[]:[[p.sx-16,p.sy-14,32,28]];}return [];}
@@ -5724,7 +5735,7 @@ function pushDesk(statics,ents,id,o,st,lk,mode){
     if(o.side==='right'){const it=mode==='h'?(busy?[['files',2,40,10+busy*4],['tower',6,4,2+busy*4]]:[]).concat(PATL[sd]).concat(busy>=3?[['pile',36,6,8]]:[]):[['files',92,40,2],['phone',64,8],['pens',40,44],['cup',30,14]];
       statics.push({key:'c|'+id,X0:ix,Y0:y,rot:1,rev:0,chairOnly:'front',sx:ix-31,sy:y+79});statics.push({key:'d|'+id+'|'+busy,X0:ix,Y0:y,rot:1,rev:0,items:it,sx:ix+31,sy:y+60});}
     else{const it=mode==='h'?(busy?[['files',2,0,10+busy*4],['tower',80,26,2+busy*4]]:[]).concat(PATR[sd]):[['files',92,0,2],['tray',70,30],['phone',10,40],['ruler',40,8]];
-      statics.push({key:'c|'+id,X0:ix+62,Y0:y,rot:1,rev:1,chairOnly:'back',sx:ix+139,sy:y+60});statics.push({key:'d|'+id+'|'+busy,X0:ix+62,Y0:y,rot:1,rev:1,items:it,sx:ix+93,sy:y+60});}
+      statics.push({key:'c|'+id,X0:ix+62+SIDE_DX,Y0:y,rot:1,rev:1,chairOnly:'back',sx:ix+139+SIDE_DX,sy:y+60});statics.push({key:'d|'+id+'|'+busy,X0:ix+62,Y0:y,rot:1,rev:1,items:it,sx:ix+93,sy:y+60});}
     if(lk){const [px,py]=sideSit(o);const fu=lk.feetUp;const AC=st?actOf(st,id,mode,lk):{};if(AC.act&&AC.act!=='wawa'){const dk=o.side==='right'?camD(ix+31,y+60):camD(ix+93,y+60);AC.ovK=dk-0.5;}blitWalker(g,ents,st,lk,px,py,AC.dir||o.side,0,Object.assign({sit:1,feetUp:fu,footF:o.side==='right'?6:-4,fk:o.side==='right'?[ix+40,y+30]:[ix+80,y+30]},AC,{dir:undefined}));}
     return;}
   if(lk&&st&&!lk.feetUp){const FA=window.__FACT?window.__FACT(st,id,mode,{tick}):faceAct(st,id,mode);if(FA&&FA.act){lk=Object.assign({},lk,{act:FA.act,ai:FA.ai});
@@ -6021,7 +6032,7 @@ document.addEventListener('pointerdown',()=>musicPlay(),{once:true});
 musicUI();
 
 // ===== はじめ =====
-function migrate(){
+function migrate(){if(S)S.skip=false;
  S.placeMode=false;S.placeNew=null;
  for(const m of S.manga||[])if(m.legend&&m.oldMaster==null)m.oldMaster=LEGENDS.some(l=>l.n===m.name&&!l.young)?1:0;
  if(S.cumOp==null&&S.records){S.cumOp=0;for(const x of S.records)if(x.launched)S.cumOp+=(x.got??x.inc)-x.out;}
