@@ -1642,17 +1642,16 @@ function kiryuMonth(sl){const K=S.kiryu=S.kiryu||{};
   const ahead=ourSold()>km.sold;if(K.ahead!=null&&ahead!==K.ahead&&ourSold()>0)rivNews('業界ニュース',ahead?'「'+S.mag.name+'」が、桐生の「'+km.name+'」の部数を抜いた！':'桐生の「'+km.name+'」に、部数で抜かれた……。',!ahead);K.ahead=ahead;}
 
 function kiryuBetray(k){const K=S.kiryu;K.done=1;const sl=sinceLaunch();
-  // 先生：フリー（専属・お気に入り以外）を中心に。休刊にならないよう、連載は最低本数を残す
-  const ser=serials();const keep=minSer();let canSer=Math.max(0,ser.length-keep-1);
+  // 連れていくのは9〜12人（先生＋社員）。先生はフリー（専属・お気に入り以外）、連載は休刊にならない最低本数だけ残す
+  const N=ri(9,12);const ser=serials();const keep=minSer();const canSer=Math.max(0,ser.length-keep);
   const sc=m=>(m.tantou===k.id?40:0)+(m.isKanban?25:0)+(m.pop||0)*0.5+R()*20;
-  const pool=ser.filter(m=>!m.exclusive&&!m.fav).sort((a,b)=>sc(b)-sc(a));
-  const arts=[];for(const m of pool){if(arts.length>=Math.min(5,canSer))break;arts.push(m);}
-  {const sk=S.manga.filter(m=>['stock','queue'].includes(m.status)&&!m.exclusive&&!m.fav);for(const m of sk.slice(0,Math.max(0,sk.length-1))){if(arts.length>=6)break;if(R()<0.5)arts.push(m);}}
-  // 社員：副編（2人いれば1人）、担当2人、運営1人 ＝ 先生とあわせて10人くらい
-  const st=[];const vs=byRole('vice').filter(x=>!x.hidden);if(vs.length>=2&&R()<0.6)st.push(vs.sort((a,b)=>a.jonetsu-b.jonetsu)[0]);
-  const want=Math.max(2,10-arts.length-st.length-1);
-  const ts=byRole('tantou').filter(x=>!x.hidden&&!x.founder).sort((a,b)=>(a.jonetsu-b.jonetsu)+(R()-0.5)*30);for(const x of ts){if(st.length>=Math.min(want,4))break;st.push(x);}
-  const ops=S.staff.filter(x=>!x.hidden&&!x.founder&&['eigyo','senden','keiri'].includes(x.role));if(ops.length&&st.length<5)st.push(pick(ops));
+  const arts=[];for(const m of ser.filter(m=>!m.exclusive&&!m.fav).sort((a,b)=>sc(b)-sc(a))){if(arts.length>=Math.min(6,canSer))break;arts.push(m);}
+  {const sk=S.manga.filter(m=>['stock','queue'].includes(m.status)&&!m.exclusive&&!m.fav);for(const m of sk.slice(0,Math.max(0,sk.length-1))){if(arts.length>=7)break;arts.push(m);}}
+  // 社員：副編（2人いれば1人）、担当（1人は残す）、運営部の部員、研修・未配属・倉庫、足りなければ部長も
+  const st=[];const room=()=>N-arts.length-st.length;const ok=x=>x&&!x.hidden&&!x.founder&&x!==k&&!st.includes(x);
+  const vs=byRole('vice').filter(ok);if(vs.length>=2&&room()>0)st.push(vs.sort((a,b)=>a.jonetsu-b.jonetsu)[0]);
+  const ts=byRole('tantou').filter(ok).sort((a,b)=>(a.jonetsu-b.jonetsu)+(R()-0.5)*30);for(const x of ts.slice(0,Math.max(0,ts.length-1))){if(room()<=0||st.filter(y=>y.role==='tantou').length>=4)break;st.push(x);}
+  for(const r of ['eigyo','senden','keiri','kenshu','mi','souko','eibu','senbu','keibu']){for(const x of byRole(r).filter(ok).sort(()=>R()-0.5)){if(room()<=0)break;if(['eibu','senbu','keibu'].includes(r)&&st.some(y=>y.role===r))break;st.push(x);if(['eibu','senbu','keibu'].includes(r))break;}}
   // 桐生の新しい雑誌
   const pre=(S.mag.name||'').startsWith('週刊')?'週刊':(S.mag.name||'').startsWith('隔週')?'隔週':'月刊';
   const taken=new Set([(S.mag.name||'').replace(/\s/g,''),...(S.rivals||[]).map(r=>r.name)]);const nm=['少年ハヤテ','少年イカヅチ','少年ブレイブ','少年ライバル','コミック疾風'].map(b=>pre+b).find(n=>!taken.has(n))||pre+'少年ハヤテ２';const base=Math.max(60000,Math.round(ourSold()*0.55/Math.max(0.5,eraBoom(S.y))));
@@ -1712,6 +1711,7 @@ function wallAnime(win,best){if(!win||!best||!S.wall||S.wall.end)return;const r=
 
 // ---------- ポップアップ ----------
 function rivPop(o,el){
+  if(o.news==='exclres'){el.innerHTML=exclResHTML(o);el.hidden=false;const m=S.manga.find(x=>x.id===o.mid);try{if(m)face32($('popface'),m,{mouth:o.ok?'open':'frown'});}catch(e){}return;}
   if(o.news==='kiryu'){const k=kiryuStaff();const K=S.kiryu||{};
     el.innerHTML='<div class="box" style="border-color:#ff7050"><h3 id="pop-h" style="color:#ff9070">辞表 ── 編集長・桐生</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">桐生 健一</div><div class="s">編集長・創業メンバー</div></div></div>'
       +'<div class="quote">「社長……いや、お前に話がある。<br>俺は、出ていく。自分の会社を作る。<br>……お前のやり方じゃ、てっぺんは取れない。俺がそれを証明する。」</div>'
@@ -1804,6 +1804,23 @@ function rivDataHTML(){const T=[];const km=kiryuMag();if(km&&km.sold>0)T.push({p
       h+='</div>';}
     h+='</div>';}
   return h;}
+
+
+// ===== フリーの先生を専属に誘う（1人1回だけ） =====
+function exclAskOK(m){return !m.exclusive&&!m.exclAsk&&!m.bigOne&&!m.amateur&&['serial','stock','queue'].includes(m.status)&&S.mag&&S.mag.launched;}
+function exclAskP(m){if(tierOf(m)>exclMax()+1)return 0.05;/* うちで描いてくれている縁で、格は1つ上まで届く */const t=staffById(m.tantou);
+  let p=0.4+Math.min(0.2,(m.months||0)*0.01)+(t?((t.jonetsu||50)-50)/250:0)+(exclMax()-tierOf(m))*0.08-(m.isKanban?0.1:0)+(m.fav?0.15:0)+((m.pop||0)>=60?0.05:0);
+  if(m.freeEnd!=null&&m.freeEnd-S.turns<=3)p-=0.1;return clamp(p,0.05,0.85);}
+function exclAsk(id){const m=S.manga.find(x=>x.id===id);if(!m||!exclAskOK(m))return;const fee=senzokuFee(m);
+  const ok=R()<exclAskP(m);const big=tierOf(m)>exclMax()+1;m.exclAsk=ok?1:2;
+  if(ok){m.exclusive=true;m.freeEnd=null;S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'編集部',who:'社長',t:m.name+'先生が専属になってくれた！（専属料 月'+yen(fee)+'）'});}
+  (S.popups=S.popups||[]).unshift({rid:'ex',news:'exclres',mid:m.id,ok,big,fee});closeSheet();save();render();showPop();}
+function exclResHTML(o){const m=S.manga.find(x=>x.id===o.mid)||{name:'',title:''};const t=staffById(m.tantou);
+  const q=o.ok?pick(['……わかりました。ここで、腰をすえて描きます。','実は、待ってたんですよ。その言葉。','ここの編集部となら、やっていける気がします。よろしくお願いします！'])
+    :o.big?pick(['専属？……悪いけど、うちはそこまでの雑誌じゃないだろう。','ありがたい話だけど、いろんなところで描きたいんだ。……格が違うってやつかな。'])
+    :pick(['……すみません。いまは、どこかに決めるつもりはないんです。','少し考えさせて……いや、やっぱりやめておきます。ごめんなさい。','フリーのほうが、性に合ってるんです。']);
+  return '<div class="box" style="border-color:'+(o.ok?'#ffd040':'#9aa0b0')+'"><h3 id="pop-h" style="color:'+(o.ok?'#ffd040':'#c8c8d0')+'">'+(o.ok?'専属契約、成立！':'専属の話は……')+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+esc(m.name)+' 先生</div><div class="s">「'+esc(m.title||'')+'」</div></div></div><div class="quote">「'+esc(q)+'」</div>'
+    +'<div class="s" style="font-size:17px;line-height:1.7;margin:8px 0">'+(o.ok?'専属料 月'+yen(o.fee)+'。もう、ほかの雑誌へは行かない。経験の伸びも専属なみになる。'+(t?'<br>担当・'+esc(t.name)+'「やりましたね、社長！」':''):'断られた。この先生に、もう専属の話はできない。'+(m.freeEnd!=null?'<br>フリーの約束どおり、いずれ去っていく……。':''))+'</div><button class="btn pri" data-act="riv" data-arg="ok">'+(o.ok?'よろしく頼む！':'……しかたない')+'</button></div>';}
 
 // ========== 連載会議（じっくり・せりふで進む） ==========
 // D: {snap, chief, pres, vices:[{lk,name,team}], guest:{lk,role,label}|null, cut:[{title,team,pop}], cands:[{title,name,team,q,genre}], add:[title], votes:[{who,picks}], firsts:[{title,art,tan}]}
@@ -2546,7 +2563,7 @@ function endTurn(){
   if(S.flags.phone>=3&&byRole('tantou').length&&R()<(zm?0.25+(zm.jimu??50)/250:0.15)){
     const room=byRole('tantou').filter(x=>stockOf(x).length<3);const t=room.length?pick(room):pick(byRole('tantou'));
     if(stockOf(t).length<3){const YL=S.y>=1975&&R()<0.08?legendPick(true):null;const n=YL?makeLegend(YL,true):rookieManga(compTier(),{age:ri(17,23)});n.status='pending';n.tantou=t.id;S.manga.push(n);
-      const A=(100-(t.hidden?40:t.bigan))/100*26*(hasF('uchiawase')?0.6:1);const ns=k=>(R()*2-1)*A*k;n.est={story:clamp(Math.round(n.story+ns(0.5)),10,99),idea:clamp(Math.round(n.idea+ns(0.5)),10,99),ga:clamp(Math.round(n.ga+ns(0.5)),10,99),kousei:clamp(Math.round(n.kousei+ns(0.5)),10,99),enshutsu:clamp(Math.round(n.enshutsu+ns(0.5)),10,99),cap:clamp(Math.round(n.cap+ns(1)),20,99)};const ok=n.est.cap>=70;n.judge=ok;
+      const A=(100-(t.hidden?40:t.bigan))/100*26*(hasF('uchiawase')?0.6:1);const ns=k=>(R()*2-1)*A*k;n.est={story:clamp(Math.round(n.story+ns(0.5)),10,99),idea:clamp(Math.round(n.idea+ns(0.5)),10,99),ga:clamp(Math.round(n.ga+ns(0.5)),10,99),kousei:clamp(Math.round(n.kousei+ns(0.5)),10,99),enshutsu:clamp(Math.round(n.enshutsu+ns(0.5)),10,99),cap:clamp(Math.round(n.cap+ns(1)),20,99)};const ok=n.est.cap>=82;n.judge=ok;
       (S.popups=S.popups||[]).push({mochi:n.id});
       /* 持ち込みは報告書に載せない：ピンポーンで会ってから決める */
       S.bubbles.push({kind:'phone'});}
@@ -3245,7 +3262,7 @@ function sheetReport(){
   return h+'</div>';
 }
 function sheetStaff(){
-  const nl=lvCount();let h=head('人事')+tabs([['now','社員'],['lvup','レベルアップ'+(nl?'（'+nl+'）':'')],['hire','採用']])+'<div class="sh-body">';
+  const nl=lvCount();let h=head('人事')+tabs([['lvup','レベルアップ'+(nl?'（'+nl+'）':'')],['now','社員'],['hire','採用']])+'<div class="sh-body">';
   if(tab==='lvup'){h+=lvTab();}
   else if(tab==='now'){
     const SF={'編集部':['chief','vice','tantou'],'秘書':['zatsumu'],'営業部':['eibu','eigyo'],'宣伝部':['senbu','senden'],'経理部':['keibu','keiri'],'研修・未配属':['kenshu','mi'],'倉庫':['souko'],'すべて':null};
@@ -3276,6 +3293,8 @@ function mlvBlock(m){
   if(m.status==='market'||m.status==='rival'||m.lv==null)return '';
   let h='<div class="s">Lv.'+m.lv+'・経験値 '+(m.xp||0)+' / '+(220+m.lv*80)+(m.exclusive?'・専属料 月'+yen(senzokuFee(m)):'・フリー（伸びは専属の半分）')+(m.age>=45?'・<span style="color:var(--red)">年齢で伸びにくい</span>':'')+'</div>';
   if(m.pts>0)h+='<div class="t" style="color:var(--accent)">能力を1つ上げられる（残り'+m.pts+'）</div><div class="row">'+[['ga','絵'],['story','話'],['kousei','構成'],['enshutsu','演出']].map(([k,l])=>'<button class="btn" data-act="mlvup" data-arg="'+m.id+':'+k+'"'+(m[k]>=m.cap?' disabled':'')+'>'+l+(m[k]>=m.cap?'（限界）':' +5')+'</button>').join('')+'</div>';
+  if(exclAskOK(m))h+='<div class="row" style="flex-direction:column;align-items:stretch"><button class="btn pri" data-act="exclask" data-arg="'+m.id+'">専属に誘う（専属料 月'+yen(senzokuFee(m))+'）</button><div class="s">担当の見立て：'+(p=>p>=0.6?'<b style="color:#7ad08a">脈あり</b>':p>=0.4?'<b style="color:#ffd970">五分五分</b>':p>=0.2?'<b style="color:#e8a050">むずかしそう</b>':'<b style="color:#e07a6e">まず無理</b>')(exclAskP(m))+'<br>誘えるのは1回だけ。断られたら、もう誘えない。</div></div>';
+  else if(m.exclAsk===2&&!m.exclusive)h+='<div class="s">専属の話は、一度断られている。</div>';
   if(m.exclusive&&m.status==='stock')h+='<div class="row"><button class="btn danger" data-act="release" data-arg="'+m.id+'">専属を解除して手放す</button></div>';
   return h;
 }
@@ -3894,7 +3913,7 @@ function showPop0(){
     el.innerHTML='<div class="box" style="border-color:var(--red)"><h3 id="pop-h" style="color:#e07a6e">資金繰りの危機！</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(kr?esc(kr.name):'社長')+'</div><div class="s">'+(kr?kr.title:'ひとりごと')+'</div></div></div><div class="quote">「'+(kr?'社長、会社のお金がマイナスです！あと'+(3-o.n)+'か月このままだと、倒産です。':'お金がマイナスだ……。あと'+(3-o.n)+'か月このままだと倒産だ。')+'」</div><div class="line"><span>いまの残高</span><b style="color:#e07a6e">'+yen(S.money)+'</b></div>'+(S.loan?'<div class="line"><span>借金</span><b>'+yen(S.loan)+'</b></div>':'')
      +'<div class="row" style="flex-direction:column;align-items:stretch">'+(canLoan?'<button class="btn pri" data-act="crisis" data-arg="loan">銀行から借りる（'+yen(loanAmt)+'・月0.5%の利息）</button>':'<div class="s">銀行はもう貸してくれない。</div>')+(S.privUsed?'':'<button class="btn" data-act="crisis" data-arg="priv">社長の私財を入れる（'+yen(Math.round(3e7*eraF()/1e6)*1e6)+'・一度だけ）</button>')+'<button class="btn" data-act="crisis" data-arg="cut">給料を下げる（みんなの給料 −15%）</button><button class="btn" data-act="crisis" data-arg="wait">このまま耐える</button></div></div>';
     el.hidden=false;face32($('popface'),kr?kr.lead:PRES,{tie:true,mouth:'frown'});return;}}
-  {const o=(S.popups||[])[0];if(o&&['kiryu','kiryupick','wall'].includes(o.news)){if(rivPop(o,$('pop'))!==false)return;}}
+  {const o=(S.popups||[])[0];if(o&&['kiryu','kiryupick','wall','exclres'].includes(o.news)){if(rivPop(o,$('pop'))!==false)return;}}
   {const q0=(S.popups||[]);const o=q0[0];if(o&&(o.news==='reprint'||o.news==='comics'||o.news==='retire'||o.news==='ownmaster'||o.news==='daikanban'||o.news==='awards'||o.news==='freeleave')){const el=$('pop');
     const tnOf=mid=>{const m=S.manga.find(x=>x.id===mid);const t=m&&staffById(m.tantou);return t||chief()||PRES;};
     if(o.news==='retire'){const m=S.manga.find(x=>x.id===o.rid)||{name:o.name||'',title:''};
@@ -4023,7 +4042,8 @@ function act(b){
   switch(a){
     case 'haizoku':{const[id,r]=arg.split(':');const st=staffById(+id);if(st){if(r!=='mi'){if(byRole(r).length>=capOf(r)){toast(ROLES[r]+'の席がいっぱいです');break;}st.role=r;assignTeam(st);say('人事',st.name+'を'+ROLES[r]+'に配属しました。');}else say('人事',st.name+'は未配属のまま。「人事」からあとで配属できる。');}(S.popups||[]).shift();save();render();showPop();break;}
     case 'mlvup':{const[id,k]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m&&m.pts>0&&m[k]<m.cap){const b=rank(m[k]);m[k]=Math.min(m.cap,m[k]+5);m.pts--;toast(m.name+'先生の'+({story:'話',ga:'絵',kousei:'構成',enshutsu:'演出'})[k]+'が上がった'+(b!==rank(m[k])?'（'+b+'→'+rank(m[k])+'）':''));save();drawSheet();render();}break;}
-    case 'release':{const m=S.manga.find(x=>x.id===+arg);if(m&&m.status==='stock'){m.exclusive=false;m.status='gone';m.wasOurs=true;if(R()<0.4)moveToRival(m,'release');say('社長',m.name+'先生の専属を解除した。');save();drawSheet();}break;}
+    case 'exclask':{exclAsk(+arg);break;}
+case 'release':{const m=S.manga.find(x=>x.id===+arg);if(m&&m.status==='stock'){m.exclusive=false;m.status='gone';m.wasOurs=true;if(R()<0.4)moveToRival(m,'release');say('社長',m.name+'先生の専属を解除した。');save();drawSheet();}break;}
     case 'popmanga':(S.popups||[]).shift();save();$('pop').hidden=true;openSheet('manga',S.manga.find(m=>m.pts>0&&m.status==='serial')?'serial':'stock');break;
     case 'popstaff':(S.popups||[]).shift();save();$('pop').hidden=true;openSheet('staff','now');break;
     case 'pmkeep':case 'pmdrop':{const m=S.manga.find(x=>x.id===parseInt(arg));if(m&&m.status==='pending'){if(a==='pmkeep'){const t=staffById(m.tantou);if(t&&stockOf(t).length>=3){const t2=byRole('tantou').find(x=>stockOf(x).length<3);if(t2)m.tantou=t2.id;}if(!m.judge&&m.judge!==undefined){toast('手を上げた担当がいません');break;}m.handBy=m.tantou;notif(m,'mochi');m.status='stock';m.exclusive=!String(arg).endsWith(':f');if(m.est)m.revealK=S.y*12+S.m+2;say('社長',m.name+'さんを持ち駒にした。修行させよう。');}else{m.status='gone';say('社長',m.name+'さんには帰ってもらった。');}}(S.popups||[]).shift();save();render();showPop();break;}
