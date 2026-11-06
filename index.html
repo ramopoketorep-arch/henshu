@@ -246,7 +246,7 @@ let S=null; let uid=1;
 const nid=()=>uid++;
 function usedNames(){const u=new Set();if(S){for(const m of S.manga||[])u.add(m.name);for(const x of S.staff||[])u.add(x.name);for(const x of (S.cands||[]))u.add(x.name);for(const r of (S.rivals||[]))for(const st of (r.stars||[]))u.add(st.name);}return u;}
 function uniq(gen){const u=usedNames();for(let i=0;i<80;i++){const n=gen();if(!u.has(n))return n;}return gen()+'二世';}
-function priceNow(){let p=150;for(const[y,m,v]of PRICES){if(S.y>y||(S.y===y&&S.m>=m))p=v;}return p;}
+function priceNow(){let p=150;for(const[y,m,v]of PRICES){if(S.y>y||(S.y===y&&S.m>=m))p=v;}if(S&&S.priceUp&&S.turns<S.priceUp)p=Math.round(p*1.1/10)*10;return p;}
 const eraF=()=>priceNow()/150;
 const LAND=[[1970,1],[1973,1.8],[1975,1.7],[1980,2.3],[1985,3.0],[1987,4.5],[1990,7.0],[1991,6.6],[1993,4.6],[1996,3.6],[1999.99,3.1]];
 function landF(t){t=t??(S.y+(S.m-1)/12);for(let i=1;i<LAND.length;i++){if(t<=LAND[i][0]){const[a,va]=LAND[i-1],[b,vb]=LAND[i];return va+(vb-va)*(t-a)/(b-a);}}return LAND[LAND.length-1][1];}
@@ -553,8 +553,8 @@ function score(m){
 function demandFor(list,colorId){const d0=demandFor0(list,colorId);return d0*(1+aDemand(list));}
 function demandFor0(list,colorId){
   let d=0;const parts=[];
-  for(const m of list){const v=2500*Math.pow(Math.max(5,m.pop)/40,2)+Math.min(m.fame,3000)*5;d+=v;parts.push({t:m.title,n:m.name,v,fame:Math.min(m.fame,3000)*5});}
-  const aw=(0.55+S.mag.aware/100);d*=aw;
+  const shojo=S.y>=1976&&S.y<=1979&&S.shojoOn;for(const m of list){const v=(2500*Math.pow(Math.max(5,m.pop)/40,2)+Math.min(m.fame,3000)*5)*(shojo&&m.genre==='恋愛'?1.15:1);d+=v;parts.push({t:m.title,n:m.name,v,fame:Math.min(m.fame,3000)*5});}
+  const aw=(0.55+S.mag.aware/100);d*=aw;if(S.priceUp&&S.turns<S.priceUp)d*=0.94;
   const kb=1+0.06*list.filter(m=>m.isKanban).length+0.06*list.filter(m=>m.daiKanban).length;d*=kb;
   const top=[...list].sort((a,b)=>b.pop-a.pop).slice(0,2).map(m=>m.id);
   const col=colorId&&top.includes(colorId)?1.06:1;d*=col;
@@ -1273,10 +1273,13 @@ function buildAnim2(o){const {ease,eo,cl,rr,tx}=a2;const X=NR.opx;const co=o.co|
 function buildSnap(){try{const v=S.view;S.view='henshu';setCvN(NR.heightL('henshu'));layout();NR.henshu([]);const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;c.getContext('2d').drawImage(cv,0,0);const f=NR.toL(330,975,150);S.view=v;return {img:c,fx:f[0]/OW,fy:f[1]/CVH};}catch(e){return null;}}
 // 全画面で流す（タップでとばす）
 function a2Overlay(A,next){if(S.animOff){next&&next();return;}const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="color:#cfc6ae;font-size:15px">タップでとばす</div>';document.body.appendChild(ov);
-  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const t0=performance.now();let done=false;const fin=()=>{if(done)return;done=true;ov.remove();next&&next();};
-  ov.addEventListener('pointerdown',e=>{e.preventDefault();fin();});
-  const step=()=>{if(done)return;const t=(performance.now()-t0)/1000;g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,Math.min(t,A.dur));g2.restore();if(t>A.dur+0.6){fin();return;}requestAnimationFrame(step);};requestAnimationFrame(step);}
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span style="color:#cfc6ae;font-size:15px">タップでとばす</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button></div>';document.body.appendChild(ov);
+  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false;const fin=()=>{if(done)return;done=true;ov.remove();next&&next();};
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();const k=e.target.closest('[data-k]');if(k&&k.dataset.k==='pause'){k.textContent=CK.toggle()?'▶ 再開':'⏸ 止める';return;}if(CK.paused())return;fin();});
+  const step=()=>{if(done)return;const t=CK.now();g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,Math.min(t,A.dur));g2.restore();if(CK.paused())ovPausedMark(g2);if(t>A.dur+0.6){fin();return;}requestAnimationFrame(step);};requestAnimationFrame(step);}
+/* 長いイベントを一時停止できる時計 */
+function ovClock(){const t0=performance.now();let pz=0,pa=null;return {now:()=>((pa??performance.now())-t0-pz)/1000,toggle:()=>{if(pa==null)pa=performance.now();else{pz+=performance.now()-pa;pa=null;}return pa!=null;},paused:()=>pa!=null};}
+function ovPausedMark(g){g.save();g.setTransform(2,0,0,2,0,0);g.fillStyle='rgba(0,0,0,0.45)';g.fillRect(0,0,360,220);g.fillStyle='#fff';g.font='bold 22px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('⏸ 一時停止中',180,110);g.restore();}
 
 // ========== 引っ越し：社員が段ボールを運ぶ（新しいビル） ==========
 function moveAnim2(o){const {ease,eo,cl,rr,tx}=a2;const ppl=(o.ppl||[]).slice(0,5);const PL=o.pres;
@@ -1457,11 +1460,11 @@ function mitateAnim(X){const {ease,eo,cl,rr,tx}=a2;const SC=mitateScript(X);cons
     auto:now=>{const b=B[st.i];if(!b)return true;if(now-st.t0>dur(b)){st.i++;st.t0=now;}return st.i>=B.length;}};}
 function mitatePlay(next){const X=mitatePrep();if(!X||S.animOff){next&&next();return;}const A=mitateAnim(X);
   const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);height:auto;aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span style="color:#cfc6ae;font-size:15px">タップで次へ</span><button class="btn" data-k="skip" style="font-size:16px">とばす ▶▶</button></div>';document.body.appendChild(ov);
-  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const t0=performance.now();let done=false;const now=()=>(performance.now()-t0)/1000;
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);height:auto;aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span style="color:#cfc6ae;font-size:15px">タップで次へ</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">とばす ▶▶</button></div>';document.body.appendChild(ov);
+  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false;const now=CK.now;
   const fin=()=>{if(done)return;done=true;ov.remove();next&&next();};
-  ov.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const k=e.target.closest('[data-k]');if(k){fin();return;}if(A.next(now()))fin();});
-  const step=()=>{if(done)return;const t=now();if(A.auto(t)){fin();return;}g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,t);g2.restore();requestAnimationFrame(step);};requestAnimationFrame(step);}
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const k=e.target.closest('[data-k]');if(k&&k.dataset.k==='pause'){k.textContent=CK.toggle()?'▶ 再開':'⏸ 止める';return;}if(CK.paused())return;if(k){fin();return;}if(A.next(now()))fin();});
+  const step=()=>{if(done)return;const t=now();if(A.auto(t)){fin();return;}g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,t);g2.restore();if(CK.paused())ovPausedMark(g2);requestAnimationFrame(step);};requestAnimationFrame(step);}
 
 // ========== 創刊：主要メンバーを1人ずつドーン！と紹介（黒バック・後ろで爆発や雷・人物だけ抜き出し） ==========
 function launchIntroData(){const L=[];const lkOf=o=>{try{return NR.lookOf(o);}catch(e){return {};}};
@@ -1728,6 +1731,8 @@ function wallAnime(win,best){if(!win||!best||!S.wall||S.wall.end)return;const r=
 
 // ---------- ポップアップ ----------
 function rivPop(o,el){
+  if(o.news==='era75'||o.news==='paper'){el.innerHTML=o.news==='paper'?paperHTML(o):era75HTML(o);el.hidden=false;try{const f=$('popface');if(f)face32(f,o.gondo?GONDO:o.who==='keiri'?(byRole('keibu')[0]||PRES):PRES,{tie:true,mouth:o.gondo?'smile':'frown'});}catch(e){}return;}
+  if(o.news==='ichipre'||o.news==='ichires'){el.innerHTML=o.news==='ichipre'?ichiPreHTML(o):ichiResHTML(o);el.hidden=false;return;}
   if(o.news==='shinapp'){el.innerHTML='<div class="box" style="border-color:#7ab0e0"><h3 id="pop-h" style="color:#9ac8f0;text-align:center;font-size:24px">🌸 新卒の応募が来た</h3><div class="quote">人事「社長、来年4月入社の新卒の応募が<b>'+o.n+'人</b>来ています！ 「人事」の「採用」→「新卒」で、内定を出す人を選んでください。3月まで選べます。」</div><div class="s" style="font-size:17px">力は研修が終わるまでわからない。面接の印象がヒント。ほとんどは並で、たまに逸材がまじっている。</div><button class="btn pri" data-act="riv" data-arg="ok">見てみる</button></div>';el.hidden=false;return;}
   if(o.news==='shinjoin'){el.innerHTML='<div class="box" style="border-color:#ffb0c8"><h3 id="pop-h" style="color:#ffc0d4;text-align:center;font-size:24px">🌸 '+o.y+'年 入社式 🌸</h3><div class="quote">社長「ようこそ！ 今日からきみたちも、この雑誌の仲間だ！」</div><div style="font-size:18px;line-height:1.7;margin:8px 0">'+(o.names||[]).map(n=>'・'+esc(n)).join('<br>')+'</div><div class="s" style="font-size:17px">新入社員 '+(o.names||[]).length+'人が研修に入った。来月、力がわかる。</div><button class="btn pri" data-act="riv" data-arg="ok">よろしく！</button></div>';el.hidden=false;return;}
   if(o.news==='meetres'){const r=o.res||{};const row=(ic,col,t)=>'<div style="font-size:19px;line-height:1.6;padding:6px 8px;margin:4px 0;border-radius:8px;background:'+col+'">'+ic+' '+t+'</div>';
@@ -1787,7 +1792,9 @@ function rivPop(o,el){
     el.innerHTML='<div class="box" style="border-color:'+col+'"><h3 id="pop-h" style="color:'+col+'">'+h+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+ex+'</div><div class="s">業界トップの出版社</div></div></div><div class="quote">'+q+'</div><div class="s" style="font-size:17px;line-height:1.7;margin:8px 0">'+sub+'</div>'+(extra||'<button class="btn pri" data-act="riv" data-arg="ok">'+btn+'</button>')+'</div>';
     el.hidden=false;try{face32($('popface'),GONDO,{tie:true,mouth:mood});}catch(e){}return;}
   return false;}
-function rivAct(arg){const o=(S.popups||[])[0];if(!o)return;S.popups.shift();$('pop').hidden=true;
+function rivAct(arg){const o=(S.popups||[])[0];if(!o)return;if(arg.startsWith('ichipol:')){ichiPolicy(arg);return;}if(arg.startsWith('ichisel:')){ichiSel(arg);return;}S.popups.shift();$('pop').hidden=true;
+  if(o.news==='ichipre'){ichiSend(arg);save();render();showPop();return;}
+  if(o.news==='paper'){paperChoose(arg);save();render();showPop();return;}
   if(o.news==='kiryu'){save();render();a2Overlay(kiryuAnim(),()=>showPop());return;}
   if(o.news==='kiryuspeech'&&arg==='speech'){const res=unitySpeech();S.popups.unshift({rid:'riv',news:'kiryuspeech2',res});save();render();showPop();return;}
   if(o.news==='kiryupick'&&arg.startsWith('pick:')){const id=+arg.slice(5);for(const x of byRole('chief'))if(x.id!==id)x.role=(o.was&&o.was[x.id])||'vice';const x=staffById(id);if(x){x.role='chief';x.jonetsu=clamp((x.jonetsu||50)+15,0,100);say('社長',x.name+'、今日からお前が編集長だ。……桐生に、目にもの見せてやろう。');toast('新しい編集長：'+x.name);}
@@ -1931,6 +1938,148 @@ function shinHTML(){const L=S.shin||[];const nN=L.filter(c=>c.naitei).length;
   for(const c of vis){const col={'光るものがある':'#ffd970','よさそう':'#7ad08a','ふつう':'#c8c0b0','ぱっとしない':'#9a9088'}[c.imp];
     h+='<div class="card" style="'+(c.naitei?'border:2px solid #ffb0c8':'')+'"><div class="line"><b>'+esc(c.name)+'</b><span class="s">'+c.age+'歳・'+esc(c.uni)+'</span></div><div class="s" style="font-size:17px">面接の印象：<b style="color:'+col+'">'+c.imp+'</b>・やりたいこと：'+STATN[c.likes]+'</div><div class="row"><button class="btn'+(c.naitei?'':' pri')+'" data-act="naitei" data-arg="'+c.id+'">'+(c.naitei?'内定を取り消す':'内定を出す')+'</button></div></div>';}
   return h;}
+
+
+// ===== 同人誌即売会「まんが市」：1975年12月から、夏（8月）と冬（12月）。スカウトと、うちの作品の隠れた人気 =====
+const ICHI='まんが市';
+function ichiScale(){return Math.round(700*Math.pow(1.27,Math.max(0,S.y-1975))/10)*10;}
+function ichiMonth(){if(!S.mag||!S.mag.launched||S.y<1975)return;
+  const pre=(S.m===7||S.m===11)&&!(S.y===1975&&S.m===7);const ev=(S.m===8||S.m===12)&&!(S.y===1975&&S.m===8);
+  if(pre&&S.ichiPre!==S.y*100+S.m){S.ichiPre=S.y*100+S.m;S.ichiSend=null;rivPush({news:'ichipre',n:ichiScale(),first:!S.ichiN});}
+  if(ev&&S.ichiEv!==S.y*100+S.m){S.ichiEv=S.y*100+S.m;S.ichiN=(S.ichiN||0)+1;ichiRun();}}
+function ichiPreHTML(o){const ts=byRole('tantou').filter(t=>!t.hidden);const sel=S.ichiPick||[];const sc=secOf();
+  let h='<div class="box" style="border-color:#e0a0e0"><h3 id="pop-h" style="color:#f0b8f0;text-align:center;font-size:24px">📚 来月、'+ICHI+'</h3>'
+   +'<div class="quote">'+(o.first?'秘書「社長、ちょっと噂を聞いたんです。来月、アマチュアが自分で描いた漫画を売り買いする『'+ICHI+'』という集まりがあるそうです。'+o.n.toLocaleString()+'人くらい集まるとか。……わたしたちで、のぞいてみませんか？」':'秘書「来月は'+ICHI+'です。今回は'+o.n.toLocaleString()+'人くらい集まるそうです。だれと行きましょう？」')+'</div>'
+   +'<div class="s" style="font-size:17px">担当を2人まで選ぶ'+(sc?'（秘書・'+esc(sc.name)+'もいっしょに行く）':'')+'。いい新人かどうかは、行った全員の見る目（審美）で決まる。</div>';
+  for(const t of ts){const on=sel.includes(t.id);h+='<button class="btn'+(on?' pri':'')+'" style="width:100%;margin:4px 0;font-size:18px" data-act="riv" data-arg="ichisel:'+t.id+'">'+(on?'✔ ':'')+esc(t.name)+'（審美'+rank(t.bigan)+'）</button>';}
+  return h+'<div class="row" style="margin-top:6px"><button class="btn pri"'+(sel.length?'':' disabled')+' data-act="riv" data-arg="ichigo">この顔ぶれで行く</button><button class="btn" data-act="riv" data-arg="0">今回は行かない</button></div></div>';}
+function ichiSel(arg){const id=+arg.split(':')[1];const a=S.ichiPick=S.ichiPick||[];const k=a.indexOf(id);if(k>=0)a.splice(k,1);else{if(a.length>=2)a.shift();a.push(id);}save();$('pop').hidden=true;showPop();}
+function ichiSend(arg){const team=arg==='ichigo'?(S.ichiPick||[]).slice():[];S.ichiPick=[];S.ichiSend=team.length?team:null;if(team.length){const fee=Math.round(20000*(team.length+(secOf()?1:0))*eraF()/1000)*1000;S.money-=fee;say('社長',team.map(id=>(staffById(id)||{}).name).join('と')+(secOf()?'、秘書':'')+'を'+ICHI+'に行かせることにした（交通費 '+yen(fee)+'）。');}}
+function ichiRun(){const n=ichiScale();const res={n,y:S.y,m:S.m,enc:[],books:[]};
+  const team=(Array.isArray(S.ichiSend)?S.ichiSend:S.ichiSend?[S.ichiSend]:[]).map(staffById).filter(t=>t&&!t.hidden&&t.role==='tantou');S.ichiSend=null;const sc=secOf();
+  if(team.length){res.team=team.map(t=>t.id);res.sec=sc?sc.id:null;const mem=[...team,...(sc?[sc]:[])];
+    const nEnc=1+(R()<0.6+Math.log10(n/700+1)*0.3?1:0);
+    for(let e=0;e<nEnc;e++){if(e===1&&R()<0.3){res.enc.push({cos:1});continue;}
+      const m=rookieManga(compTier(),{age:ri(18,26)});S.manga=S.manga.filter(x=>x!==m);if(R()<0.35)m.ga=clamp((m.ga||40)+ri(5,15),10,99);
+      const V=mem.map(x=>{const A=(100-(x.bigan||40))/100*28;const v=(m.cap||50)+(R()*2-1)*A;return {id:x.id,v,line:v>=72?pick(['……凄いな。','これは、本物だ。','鳥肌が立った。']):v>=60?pick(['いいね。','光るものがある。','悪くない。']):pick(['ダメだこりゃ。','……うーん。','まだまだだね。'])};});
+      const avg=V.reduce((a,b)=>a+b.v,0)/V.length;const take=avg>=60;const enc={id:m.id,name:m.name,genre:m.genre,V,take};
+      if(take){m.fans=(m.fans||0)+Math.round(n*(0.04+R()*0.08));m.tags=m.tags||[];if(!m.tags.includes('同人出身'))m.tags.push('同人出身');m.doujin=1;
+        const t=team.slice().sort((a,b)=>stockOf(a).length-stockOf(b).length)[0];m.status='stock';m.tantou=t.id;m.handBy=t.id;m.raised=t.id;m.found=S.y;S.manga.push(m);t.jonetsu=clamp((t.jonetsu||50)+5,0,100);enc.by=t.name;}
+      else enc.lk=(()=>{try{return NR.lookOf(m);}catch(e){return {};}})();
+      res.enc.push(enc);}}
+  // うちの作品のファン本（パロディ）
+  const scl=Math.sqrt(n/700);
+  for(const m of serials()){const f=Math.max(0,(m.fans||0));const k=Math.round(Math.pow(f/150,0.6)*scl*(0.6+R()*0.8)*(m.genre==='恋愛'||m.genre==='SF'||m.genre==='バトル'?1.3:1));if(k>0)res.books.push({id:m.id,title:m.title,k,pol:m.ichiPol||''});}
+  res.books.sort((a,b)=>b.k-a.k);res.books=res.books.slice(0,8);
+  for(const b of res.books){const m=S.manga.find(x=>x.id===b.id);if(!m)continue;m.ichiBest=Math.max(m.ichiBest||0,b.k);
+    if(m.ichiPol==='ok'){m.fans=Math.round((m.fans||0)*1.04+b.k*3);S.mag.aware=Math.min(100,(S.mag.aware||0)+0.3);}
+    if(m.ichiPol==='ng'){m.fans=Math.round((m.fans||0)*0.99);}}
+  // アンケートとの差（隠れ人気）
+  const rk=serials().slice().sort((a,b)=>(b.pop||0)-(a.pop||0));if(res.books[0]){const top=res.books[0];const ar=rk.findIndex(x=>x.id===top.id)+1;res.hidden=ar>=3?{title:top.title,ar}:null;}
+  rivPush({news:'ichires',res});}
+function ichiResHTML(o){const r=o.res;const S2=r.books||[];
+  let h='<div class="box" style="border-color:#e0a0e0"><h3 id="pop-h" style="color:#f0b8f0;text-align:center;font-size:24px">📚 '+r.y+'年'+(r.m===8?'夏':'冬')+'の'+ICHI+'</h3><div class="s" style="text-align:center;font-size:17px">参加者 約'+r.n.toLocaleString()+'人</div>';
+  if(r.team){const nm=id=>(staffById(id)||{name:'？'}).name;h+='<div class="s" style="font-size:17px">報告書：'+r.team.map(nm).join('・')+(r.sec?'・秘書':'')+'</div>';
+    for(const e of r.enc){if(e.cos){h+='<div style="font-size:17px;margin:4px 0">・呼び止めたら、コスプレの人だった。</div>';continue;}
+      h+='<div style="font-size:17px;margin:6px 0;padding:8px;border-radius:8px;background:'+(e.take?'rgba(122,208,138,0.15)':'rgba(255,255,255,0.05)')+'">'+(e.take?'🎉 ':'・')+esc(e.name)+'（'+esc(e.genre)+'）<br><span class="s">'+e.V.map(v=>esc(nm(v.id).split(' ')[0])+'「'+esc(v.line)+'」').join(' ')+'</span><br>'+(e.take?'<b>連絡先をもらった！</b> 担当は'+esc(e.by)+'。持ち込みの新人として持ち駒に入った（同人出身：絵がうまくファンがいるが、締め切りに慣れていない）。':'今回は見送った。')+'</div>';}
+    if(!r.enc.length)h+='<div class="s">めぼしい人には会えなかった。</div>';}
+  else h+='<div class="s" style="font-size:17px">今回は、だれも行かなかった。</div>';
+  h+='<div class="s" style="margin-top:8px;font-size:17px">うちの作品のファン本（同人誌）</div>';
+  if(!S2.length)h+='<div class="s" style="font-size:17px">うちの作品の本は、まだ見かけなかった……。</div>';
+  for(const b of S2){const m=S.manga.find(x=>x.id===b.id);const pol=m&&m.ichiPol;
+    h+='<div style="font-size:18px;padding:6px 8px;margin:4px 0;border-radius:8px;background:rgba(255,255,255,0.05)">「'+esc(b.title)+'」 <b style="color:#f0b8f0">'+b.k+'冊</b>'+(pol==='ok'?' <span class="s">（黙認）</span>':pol==='ng'?' <span class="s">（取り締まり中）</span>':(b.k>=3?'<div class="row" style="margin-top:4px"><button class="btn" data-act="riv" data-arg="ichipol:'+b.id+':ok">黙認する</button><button class="btn" data-act="riv" data-arg="ichipol:'+b.id+':ng">取り締まる</button></div>':''))+'</div>';}
+  if(r.hidden)h+='<div class="quote">秘書「「'+esc(r.hidden.title)+'」、アンケートは'+r.hidden.ar+'位なのに、ファン本はいちばん多いんです。……隠れた人気があるのかもしれません。」</div>';
+  if(S2.some(b=>b.k>=3&&!b.pol))h+='<div class="s">黙認：ファンが増えて知名度も上がる。取り締まる：作品のイメージは守れるが、ファンが少し離れる。（あとで変えられない）</div>';
+  return h+'<button class="btn pri" style="margin-top:8px" data-act="riv" data-arg="ok">わかった</button></div>';}
+function ichiPolicy(arg){const [_,id,v]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m&&!m.ichiPol){m.ichiPol=v;if(v==='ok'){m.fans=Math.round((m.fans||0)*1.05);toast('「'+m.title+'」のファン本を黙認した');}else{m.fans=Math.round((m.fans||0)*0.97);toast('「'+m.title+'」のファン本を取り締まることにした');}}save();$('pop').hidden=true;showPop();}
+
+
+// ===== 1975〜80年の出来事：紙不足（陰）・少女漫画の黄金期・ドドン200万部・青年誌の創刊ラッシュ =====
+function eraEvents75(){if(!S.mag||!S.mag.launched)return;const E=S.era75=S.era75||{};const at=(y,m)=>S.y>y||(S.y===y&&S.m>=m);
+  if(!E.shojo&&at(1976,4)&&S.y<=1979){E.shojo=1;S.shojoOn=1;rivPush({news:'era75',k:'shojo'});return;}
+  if(!E.dodon&&at(1978,6)){E.dodon=1;const r=(S.rivals||[]).find(x=>x.name==='週刊少年ドドン');if(r){r.base=Math.round(r.base*1.35);}rivPush({news:'era75',k:'dodon',gondo:!!(S.wall&&S.wall.intro&&!S.wall.end)});return;}
+  if(!E.paper&&at(1979,3)){E.paper=1;rivPush({news:'paper',who:'keiri'});return;}
+  if(!E.seinen1&&at(1979,9)){E.seinen1=1;seinenAdd(['週刊ヤングボルト','コミック紳士']);rivPush({news:'era75',k:'seinen',n:2});return;}
+  if(!E.seinen2&&at(1980,3)){E.seinen2=1;seinenAdd(['劇画ナイト','ビッグパンチ']);rivPush({news:'era75',k:'seinen2',n:2});return;}}
+function seinenAdd(names){S.rivals=S.rivals||[];const used=new Set(S.rivals.map(r=>r.name));for(const n of names){if(used.has(n))continue;const base=ri(150000,320000);S.rivals.push({name:n,from:S.y,base,f:1,sold:Math.round(base*eraBoom(S.y)/100)*100,seinen:1});}}
+function era75HTML(o){const T={
+  shojo:['🌸 少女漫画の黄金期','業界ニュース','少女漫画が、かつてない盛り上がりを見せている。ふわふわの絵だけじゃない。SFも、歴史も、少年愛も描く、新しい世代の女性作家たちが次々と出てきた。','しばらく（1979年まで）、恋愛ものの人気が少し上がる。','いい時代だ'],
+  dodon:['📈 ドドン、200万部突破','業界ニュース',(o.gondo?'権藤「200万部ですよ、200万部。……おたくの何倍でしたっけ？ まあ、桁が違いすぎて計算できないか。」':'大鷲社の「週刊少年ドドン」が、ついに200万部を突破した。業界の誰もが、その数字にため息をついた。'),'壁は、さらに高くなった。……でも、いつか。','……覚えてろ'],
+  seinen:['📰 青年誌の創刊ラッシュ','業界ニュース','よその会社が、大人向けの漫画雑誌を次々と創刊している。「'+'週刊ヤングボルト」「コミック紳士」。少年のころ漫画を読んでいた世代が、大人になったのだ。','営業「社長、うちもいつか、大人向けの雑誌を出してみませんか……？」','考えておこう'],
+  seinen2:['📰 青年誌、さらに創刊','業界ニュース','「劇画ナイト」「ビッグパンチ」も創刊。大人向けの漫画雑誌が、本屋の棚をどんどん広げていく。','漫画は、もう子どもだけのものじゃない。','時代が動いている']}[o.k]||['','','','',''];
+  return '<div class="box" style="border-color:#c8b88a"><h3 id="pop-h" style="color:#ffd970;text-align:center;font-size:24px">'+T[0]+'</h3>'+(o.gondo?'<div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">大鷲社 常務・権藤</div></div></div>':'<div class="s" style="text-align:center">'+T[1]+'</div>')+'<div class="quote" style="font-size:18px;line-height:1.8">'+T[2]+'</div><div class="s" style="font-size:17px;margin:8px 0">'+T[3]+'</div><button class="btn pri" data-act="riv" data-arg="ok">'+T[4]+'</button></div>';}
+function paperHTML(o){const kb=byRole('keibu')[0];return '<div class="box" style="border-color:#8a8478;background:linear-gradient(#24221f,#1a1816)"><h3 id="pop-h" style="color:#c8c0b0;text-align:center;font-size:24px">📉 紙が、足りない</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(kb?'経理部長・'+esc(kb.name):'経理')+'</div><div class="s">1979年</div></div></div>'
+  +'<div class="quote" style="font-size:18px;line-height:1.8">「社長……また石油の値段が跳ね上がりました。紙が足りません。製紙会社から、紙代を3割上げると言われました。……1年は続くそうです。」</div>'
+  +'<div class="row" style="flex-direction:column;align-items:stretch;gap:6px"><button class="btn pri" data-act="riv" data-arg="up">定価を1割上げる（紙代は上がるが売上でおぎなう・部数が少し落ちる・2年）</button><button class="btn" data-act="riv" data-arg="keep">定価はそのまま、がまんする（紙代3割増しを1年）</button><button class="btn" data-act="riv" data-arg="thin">ページを減らす（紙代は1割増しですむが、どの連載も人気が少し落ちる）</button></div></div>';}
+function paperChoose(arg){S.paper={until:S.turns+12,mul:arg==='thin'?1.1:1.3};
+  if(arg==='up'){S.priceUp=S.turns+24;say('社長','定価を1割上げることにした。……読者には申し訳ないが、背に腹はかえられない。');}
+  else if(arg==='thin'){for(const m of serials())m.pop=Math.max(5,(m.pop||0)-3);say('社長','ページを減らすことにした。先生たちには、無理を言った……。');}
+  else say('社長','定価はそのまま。1年、がまんしよう。');
+  (S.pendingEvents=S.pendingEvents||[]).push({dept:'経理',who:'経理',t:'紙不足：紙代が'+(arg==='thin'?'1割':'3割')+'上がります（1年）。'+(arg==='up'?'定価は1割上げました（2年）。':''),warn:true});}
+
+// ===== まんが市の場面：会場へ→探す→「待ってください！」→本を買う→読んで顔を見合わせる→連絡先→また探す→帰路 =====
+function ichiAnim(r){const {eo,cl,tx}=a2;const LKo=o=>{try{return NR.lookOf(o);}catch(e){return {};}};
+  const mem=[...(r.team||[]).map(staffById),...(r.sec?[staffById(r.sec)]:[])].filter(Boolean);const ML=mem.map(LKo);
+  const crowd=[];let sd=7;const rnd=()=>{sd=(sd*9301+49297)%233280;return sd/233280;};const LK=[...S.staff.slice(0,6),...S.manga.slice(0,10)].map(LKo);
+  for(let i=0;i<Math.min(26,8+Math.round(Math.log2(r.n/350)*5));i++)crowd.push({x:rnd()*400-20,y:150+rnd()*60,v:(rnd()-0.5)*18,lk:LK[i%LK.length]||{},d:rnd()});
+  // タイムライン
+  const SC=[];let T=0;const add=(k,d,o)=>{SC.push(Object.assign({k,t0:T,d},o||{}));T+=d;};
+  if(!mem.length){add('none',4);}else{add('arrive',3.2);add('search',2.6);
+    r.enc.forEach((e,i)=>{if(i>0)add('search',2.2,{again:1});if(e.cos){add('wait',1.8,{e});add('cos',2.6,{e});return;}add('wait',1.8,{e});add('buy',2.2,{e});add('read',1.6+e.V.length*1.3,{e});add(e.take?'card':'pass',2.2,{e});});
+    add('home',3.4);}
+  const END=T+0.3;const elk=e=>e.id?(()=>{const m=S.manga.find(x=>x.id===e.id);return m?LKo(m):(e.lk||{});})():{};
+  const hall=(g,t)=>{g.fillStyle='#d8c8a4';g.fillRect(0,0,360,220);g.fillStyle='#efe4cc';g.fillRect(0,0,360,70);g.fillStyle='#b8a47c';g.fillRect(0,68,360,3);
+    g.fillStyle='#fff';g.fillRect(70,10,220,34);g.strokeStyle='#c04040';g.lineWidth=3;g.strokeRect(70,10,220,34);tx(g,'第'+(S.ichiN||1)+'回 '+ICHI,180,27,17,'#c04040',null);tx(g,'参加者 約'+r.n.toLocaleString()+'人',180,58,10,'#6a5a40',null);
+    for(const yy of [96,132]){for(let x=10;x<350;x+=58){g.fillStyle='#8a6a48';g.fillRect(x,yy,50,12);g.fillStyle='#f4f0e4';for(let k=0;k<3;k++)g.fillRect(x+4+k*15,yy-5,11,7);}}
+    for(const c of crowd.slice().sort((a,b)=>a.y-b.y)){const x=((c.x+c.v*t)%400+400)%400-20;a2Person(g,x,c.y,0.42,c.lk,c.v>0?'right':'left',{walk:t*3+c.d*6,arms:'down'});}};
+  const team=(g,x0,y,s,dir,walk,P)=>{ML.forEach((lk,i)=>a2Person(g,x0+(dir==='right'?-1:1)*i*22*s,y,s,lk,dir,Object.assign({walk,arms:'down'},P||{})));};
+  const cap=(g,text,al)=>{g.globalAlpha=al;g.fillStyle='rgba(0,0,0,0.6)';g.fillRect(0,204,360,16);tx(g,text,180,212,11,'#fff',null);g.globalAlpha=1;};
+  const bub=(g,x,y,text,sz)=>{g.font=sz+"px 'Mochiy Pop One',sans-serif";const w=g.measureText(text).width+14;g.fillStyle='#fff';g.strokeStyle='#2a2220';g.lineWidth=1.5;a2.rr(g,x-w/2,y-sz-4,w,sz+10,6,'#fff');g.stroke();g.beginPath();g.moveTo(x-4,y+6);g.lineTo(x+4,y+6);g.lineTo(x,y+12);g.closePath();g.fill();tx(g,text,x,y-sz/2+1,sz,'#2a2220',null);};
+  return {dur:END,draw:(g,t)=>{const sc=SC.find(z=>t>=z.t0&&t<z.t0+z.d)||SC[SC.length-1];const u=t-sc.t0,d=sc.d;const fade=cl(u/0.3,0,1)*cl((d-u)/0.3,0,1);
+    if(sc.k==='none'){hall(g,t);cap(g,S.y+'年'+(r.m===8?'夏':'冬')+'の'+ICHI+'。うちからは、だれも行かなかった。',fade);return;}
+    if(sc.k==='arrive'){g.fillStyle='#9ac8e8';g.fillRect(0,0,360,220);g.fillStyle='#c8c0b0';g.fillRect(40,40,280,140);g.fillStyle='#8a8478';g.fillRect(40,40,280,10);g.fillStyle='#fff';g.fillRect(110,62,140,26);tx(g,ICHI+' 会場',180,75,14,'#c04040',null);g.fillStyle='#4a4038';g.fillRect(160,120,40,60);g.fillStyle='#7a8a60';g.fillRect(0,180,360,40);
+      team(g,-20+u*60,196,0.75,'right',u*4);cap(g,S.y+'年'+(r.m===8?'夏':'冬')+'。噂の会場に、やってきた。',fade);return;}
+    if(sc.k==='search'){hall(g,t);team(g,30+u*40,196,0.6,'right',u*4);cap(g,sc.again?'気をとりなおして、また見て回る。':'いい若手は、いないか……。',fade);return;}
+    if(sc.k==='wait'){const lk=Object.assign({},ML[0]||{},{brow:'angry',mouth:'open',eye:'big'});const sk=u<0.6?(Math.sin(u*97)*4)*(1-u/0.6):0;g.save();g.translate(sk,sk*0.6);g.fillStyle='#000';g.fillRect(-10,-10,380,240);
+      g.strokeStyle='rgba(255,224,64,0.5)';g.lineWidth=2;for(let i=0;i<24;i++){const a=i/24*Math.PI*2;g.beginPath();g.moveTo(180+Math.cos(a)*40,100+Math.sin(a)*40);g.lineTo(180+Math.cos(a)*260,100+Math.sin(a)*260);g.stroke();}
+      const k=eo(cl(u/0.22,0,1)),rr=30+28*k;a2.rr(g,180-rr*1.15,100+rr*0.7,rr*2.3,rr*2.2,rr*0.5,lk.jacket||lk.shirt||'#3a3e48');try{NR.headA(g,180,100,rr,lk,lk.skin||'#f2c9a0',lk.hair||'#2a2220','down',rr/12);}catch(e){}
+      g.restore();if(u<0.12){g.fillStyle='rgba(255,255,255,'+(1-u/0.12)+')';g.fillRect(0,0,360,220);}
+      const s2=u<0.3?1.6-eo(u/0.3)*0.6:1;g.save();g.translate(180,192);g.rotate(-0.05);g.scale(s2,s2);tx(g,'待ってください！！',0,0,28,'#ffe040','#c8302a');g.restore();return;}
+    if(sc.k==='cos'){g.fillStyle='#f4e8f0';g.fillRect(0,0,360,220);const lk=Object.assign({},LK[3]||{},{hair:'#e050a0',shirt:'#3050d0'});a2Person(g,230,190,1.1,lk,'left',{arms:'up',mouth:'open'});
+      g.fillStyle='#d02040';g.beginPath();g.moveTo(205,120);g.lineTo(255,120);g.lineTo(270,195);g.lineTo(190,195);g.closePath();g.globalAlpha=0.7;g.fill();g.globalAlpha=1;g.fillStyle='#ffd040';g.beginPath();g.moveTo(215,58);g.lineTo(230,40);g.lineTo(245,58);g.closePath();g.fill();
+      team(g,110,196,0.75,'right',0,{mouth:'frown'});g.fillStyle='#8ad0ff';g.beginPath();g.ellipse(124,120,4,6,0,0,7);g.fill();cap(g,'……コスプレの人だった。',fade);return;}
+    if(sc.k==='buy'){g.fillStyle='#e8dcc0';g.fillRect(0,0,360,220);g.fillStyle='#8a6a48';g.fillRect(170,150,170,22);const lk=elk(sc.e);a2Person(g,255,150,1.0,lk,'left',{arms:'down',mouth:'smile'});
+      g.fillStyle='#fffdf6';for(let i=0;i<4;i++)g.fillRect(185+i*36,138,26,14);team(g,120,200,0.85,'right',0,{arms:'down'});
+      if(u>1){ML.forEach((_,i)=>{g.fillStyle='#fff';g.fillRect(120-i*22*0.85+6,150,14,10);});}cap(g,'みんなで、その子の本を買った。',fade);return;}
+    if(sc.k==='read'){g.fillStyle='#2a2420';g.fillRect(0,0,360,220);const N=ML.length;ML.forEach((lk0,i)=>{const x=60+i*(240/Math.max(1,N-1||1));const v=sc.e.V[i];const say=u>0.8+i*1.3;const lk=Object.assign({},lk0,{mouth:say?(v&&v.v>=60?'open':'frown'):'smile'});
+      g.fillStyle=lk.jacket||lk.shirt||'#3a3e48';a2.rr(g,x-30,140,60,70,14,g.fillStyle);try{NR.headA(g,x,110,28,lk,lk.skin||'#f2c9a0',lk.hair||'#2a2220','down',28/12);}catch(e){}
+      g.fillStyle='#fffdf6';g.fillRect(x-14,150,28,20);if(say&&v)bub(g,x,62,v.line,12);});cap(g,'……'+(N>=3?N+'人':'ふたり')+'は、顔を見合わせた。',cl(u/0.3,0,1));return;}
+    if(sc.k==='card'||sc.k==='pass'){g.fillStyle='#e8dcc0';g.fillRect(0,0,360,220);const lk=elk(sc.e);a2Person(g,230,195,1.1,lk,'left',{arms:sc.k==='card'?'up':'down',mouth:sc.k==='card'?'open':'smile',bow:sc.k==='card'&&u>0.8&&u<1.6?0.3:0});a2Person(g,130,195,1.1,ML[0]||{},'right',{arms:'down',bow:u>0.6&&u<1.4?0.3:0,mouth:'smile'});
+      if(sc.k==='card'){g.fillStyle='#fff';g.fillRect(170,120,22,14);g.strokeStyle='#888';g.strokeRect(170,120,22,14);a2Spark(g,u,180,90,8,60,30);}
+      cap(g,sc.k==='card'?'連絡先をもらった！「'+sc.e.name+'」':'……本は、そっと閉じた。',fade);return;}
+    if(sc.k==='home'){const gr=g.createLinearGradient(0,0,0,220);gr.addColorStop(0,'#f0a060');gr.addColorStop(1,'#704060');g.fillStyle=gr;g.fillRect(0,0,360,220);g.fillStyle='#ffd080';g.beginPath();g.arc(290,120,26,0,7);g.fill();g.fillStyle='#3a2838';g.fillRect(0,170,360,50);
+      g.save();g.globalAlpha=0.9;team(g,40+u*50,190,0.8,'right',u*3.5);g.restore();cap(g,'諸々あって、帰路についた。',fade);return;}}};}
+// ===== 新人賞の授賞式 =====
+function prizeAnim(o){const {eo,cl,tx}=a2;const W=(o.hands||[]).filter(h=>h.r!=='選外').slice(0,3);const P=W.map(h=>{const m=S.manga.find(x=>x.id===h.id);let lk={};try{lk=NR.lookOf(m||{});}catch(e){}return {h,lk};});let lkP={};try{lkP=NR.lookOf(PRES);}catch(e){}
+  const END=3+W.length*2.2+2.5;
+  return {dur:END,draw:(g,t)=>{g.fillStyle='#1a0f0a';g.fillRect(0,0,360,220);
+    // 幕
+    g.fillStyle='#8a1a1a';for(let i=0;i<8;i++){g.fillRect(i*8,0,6,220);g.fillRect(352-i*8,0,6,220);}g.fillStyle='#c09030';g.fillRect(0,0,360,8);
+    // ステージ
+    g.fillStyle='#5a3a20';g.fillRect(40,170,280,50);g.fillStyle='#7a5030';g.fillRect(40,168,280,4);
+    // 横断幕
+    g.fillStyle='#f4ecd8';g.fillRect(80,16,200,30);tx(g,'新人漫画賞 授賞式',180,31,16,'#8a1a1a',null);
+    // スポットライト
+    const a=cl(t/0.8,0,1);const gr=g.createRadialGradient(180,150,10,180,150,120);gr.addColorStop(0,'rgba(255,240,200,'+(0.35*a)+')');gr.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=gr;g.fillRect(40,40,280,180);
+    // 社長
+    a2Person(g,80,172,0.8,lkP,'right',{arms:'down',mouth:'smile'});
+    // 受賞者（順番に呼ばれる）
+    P.forEach((p,i)=>{const u=t-1.5-i*2.2;if(u<0)return;const x=150+i*60;const al=cl(u/0.5,0,1);g.globalAlpha=al;a2Person(g,x,172,0.8,p.lk,'left',{arms:'down',bow:u>0.8&&u<1.6?0.3:0,mouth:'smile'});
+      tx(g,p.h.r,x,90,u<0.6?10+ (1-eo(cl(u/0.6,0,1)))*10:13,p.h.r==='大賞'?'#ffd040':'#e8e0cc','#000');tx(g,p.h.name.replace(/（.*）/,''),x,106,10,'#fff','#000');g.globalAlpha=1;
+      // フラッシュ
+      if(u>0&&u<1.2&&Math.floor(u*8)%3===0){g.fillStyle='rgba(255,255,255,0.35)';g.fillRect(0,0,360,220);}});
+    if(!W.length)tx(g,'今回は、該当者なし……',180,110,16,'#fff','#000');
+    if(t>END-2.2){const u=t-(END-2.2);g.globalAlpha=cl(u/0.4,0,1)*cl((END-t)/0.4,0,1);tx(g,'応募 '+o.entries+'通',180,200,14,'#ffd970','#000');g.globalAlpha=1;}}};}
 
 // ========== 連載会議（じっくり・せりふで進む） ==========
 // D: {snap, chief, pres, vices:[{lk,name,team}], guest:{lk,role,label}|null, cut:[{title,team,pop}], cands:[{title,name,team,q,genre}], add:[title], votes:[{who,picks}], firsts:[{title,art,tan}]}
@@ -2162,17 +2311,18 @@ function meetData(){const H=S.half||{};const RL=x=>x?NR.roughLook(x,NR.lookOf(x)
 function serialCut(){if(!S.half)buildHalf();const p0=S.paused;S.paused=true;save();
   meetPlay(()=>{S.paused=p0;S.half.played=1;halfOk();},{meddle:()=>{S.paused=p0;S.half.played=1;S.half.meddle=true;save();openSheet('half');}});}
 function meetPlay(next,opt={}){if(S.animOff){next();return;}let D;try{D=meetData();}catch(e){next();return;}const A=meetAnim3(D);const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);height:auto;aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div id="mtbar" style="display:flex;gap:16px;align-items:center"><span style="color:#cfc6ae;font-size:15px">タップで次へ</span><button class="btn" data-k="skip" style="font-size:16px">とばす ▶▶</button></div><div id="mtask" style="display:none;gap:12px"><button class="btn pri" data-k="yes" style="font-size:20px;padding:12px 26px">承認する</button><button class="btn" data-k="no" style="font-size:20px;padding:12px 22px">口を出す</button></div>';document.body.appendChild(ov);
-  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const t0=performance.now();let done=false,asked=false;const now=()=>(performance.now()-t0)/1000;
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);height:auto;aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div id="mtbar" style="display:flex;gap:16px;align-items:center"><span style="color:#cfc6ae;font-size:15px">タップで次へ</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">とばす ▶▶</button></div><div id="mtask" style="display:none;gap:12px"><button class="btn pri" data-k="yes" style="font-size:20px;padding:12px 26px">承認する</button><button class="btn" data-k="no" style="font-size:20px;padding:12px 22px">口を出す</button></div>';document.body.appendChild(ov);
+  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false,asked=false;const now=CK.now;
   const fin=f=>{if(done)return;done=true;ov.remove();(f||next)();};const askI=A.B.findIndex(b=>b.ask);
   const atAsk=()=>!asked&&A.st.i===askI;
   ov.addEventListener('pointerdown',e=>{const k=e.target.closest('[data-k]');e.preventDefault();e.stopPropagation();
+    if(k&&k.dataset.k==='pause'){k.textContent=CK.toggle()?'▶ 再開':'⏸ 止める';return;}if(CK.paused())return;
     if(k&&k.dataset.k==='yes'){asked=true;A.st.i++;A.st.t0=now();return;}
     if(k&&k.dataset.k==='no'){asked=true;fin(opt.meddle||next);return;}
     if(k&&k.dataset.k==='skip'){if(!asked&&askI>=0){A.st.i=askI;A.st.t0=now()-9;}else fin();return;}
     if(atAsk())return;if(A.next(now()))fin();});
   const step=()=>{if(done)return;const t=now();if(A.auto(t)){fin();return;}const ask=atAsk();ov.querySelector('#mtask').style.display=ask?'flex':'none';ov.querySelector('#mtbar').style.display=ask?'none':'flex';
-    g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,t);g2.restore();requestAnimationFrame(step);};requestAnimationFrame(step);}
+    g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,360,220);g2.save();A.draw(g2,t);g2.restore();if(CK.paused())ovPausedMark(g2);requestAnimationFrame(step);};requestAnimationFrame(step);}
 
 const a2Go=A=>a2Run(A.draw,A.dur);
 // その巻の出来：先生の力量（話・アイデア・画・構成）＋担当の編集力＋運
@@ -2529,7 +2679,7 @@ function endTurn(){
     let p=score(m)*0.7+(m.pop||score(m))*0.3+m.arc+(S.kenshoNext?ri(-2,2):ri(-6,6));
       if(m.id===S.colorPick)p+=8;
       if(m.teko&&m.teko.left>0){p+=m.teko.amt;if(!m.teko.told){m.teko.told=1;S.pendingEvents.push({dept:'編集部',who:'担当'+(staffById(m.tantou)?'・'+staffById(m.tantou).name:''),t:m.teko.amt>0?'「'+m.title+'」の'+m.teko.nm+'が大当たり！読者アンケートが急上昇です！':'「'+m.title+'」の'+m.teko.nm+'、空回りでした……'+(m.teko.stretch?'読者に「引きのばし」と言われています。':''),warn:m.teko.amt<0});}m.teko.left--;}
-      let late=((m.tags.includes('遅筆')?0.08:0.01)+(m.tags.includes('元看板')?0.03:0))*1;if(m.prepLeft>0){late=0;m.prepLeft--;}if(m.assisted)late*=0.5;
+      let late=((m.tags.includes('遅筆')?0.08:0.01)+(m.tags.includes('同人出身')?0.04:0)+(m.tags.includes('元看板')?0.03:0))*1;if(m.prepLeft>0){late=0;m.prepLeft--;}if(m.assisted)late*=0.5;
       let note='';
       if(R()<late){
         const sub=stockAll.length?pick(stockAll):null;
@@ -2546,7 +2696,7 @@ function endTurn(){
     }
     const pr=priceNow();
     const print=Math.max(1000,S.printPlan);
-    let unit=pr*0.4*(hasF('shashoku')?0.8:1);if((S.y===1973&&S.m>=11)||(S.y===1974&&S.m<=6))unit*=1.25;
+    let unit=pr*0.4*(hasF('shashoku')?0.8:1);if((S.y===1973&&S.m>=11)||(S.y===1974&&S.m<=6))unit*=1.25;if(S.paper&&S.turns<S.paper.until)unit*=S.paper.mul;
     out+=print*unit;bk.print+=print*unit;
     S.lastColor=S.colorPick;{const cm=S.manga.find(x=>x.id===S.colorPick);if(cm)cm.colorK=S.y*12+S.m;}
     mag.issue++;
@@ -3931,7 +4081,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.231）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   const ok=S.over==='end';
@@ -4035,6 +4185,7 @@ function comicAnim(n,exp){clearInterval(comicAnim.h);const c=$('popanim');if(!c)
     if(f===50)animReveal();if(f>120)clearInterval(comicAnim.h);},90);}
 function showPop0(){
   try{skipPass();}catch(e){}
+  {const o=(S.popups||[])[0];if(o&&(o.contest||o.news==='ichires')&&!o.played&&!S.animOff&&!S.skip){o.played=1;$('pop').hidden=true;try{a2Overlay(o.contest?prizeAnim(o):ichiAnim(o.res),()=>showPop());return;}catch(e){console.error(e);}}}
   {const o=(S.popups||[])[0];if(o&&['anoffer','seiyu','onair','anres','fanletter','sign','top1','deal','call'].includes(o.news)){if(p3Pop(o,$('pop'))!==false)return;}}
   {const q0=(S.popups||[]);if(q0[0]&&q0[0].callok){const el=$('pop');const m=S.manga.find(x=>x.id===q0[0].id);const sc=byRole('zatsumu')[0];
     el.innerHTML='<div class="box" style="border-color:var(--green)"><h3 id="pop-h" style="color:var(--green)">☎ '+(m?esc(m.name):'先生')+'先生から電話</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(sc?'秘書・'+esc(sc.name):'社長')+'</div></div></div><div class="quote">「'+(sc?'社長、'+(m?esc(m.name):'')+'先生からお電話です。お受けいただけるそうです！近いうちに、契約に来社されます。':'よし、'+(m?esc(m.name):'')+'先生がOKしてくれた！近いうちに契約に来てくれるそうだ。')+'」</div><div class="s">'+(q0[0].kanban?'看板として迎える話も、受けてもらえた。':'')+'来社したら、担当を決めて顔合わせをしよう。</div><button class="btn pri" data-act="popok">やった！</button></div>';
@@ -4043,7 +4194,7 @@ function showPop0(){
     el.innerHTML='<div class="box" style="border-color:var(--red)"><h3 id="pop-h" style="color:#e07a6e">資金繰りの危機！</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(kr?esc(kr.name):'社長')+'</div><div class="s">'+(kr?kr.title:'ひとりごと')+'</div></div></div><div class="quote">「'+(kr?'社長、会社のお金がマイナスです！あと'+(3-o.n)+'か月このままだと、倒産です。':'お金がマイナスだ……。あと'+(3-o.n)+'か月このままだと倒産だ。')+'」</div><div class="line"><span>いまの残高</span><b style="color:#e07a6e">'+yen(S.money)+'</b></div>'+(S.loan?'<div class="line"><span>借金</span><b>'+yen(S.loan)+'</b></div>':'')
      +'<div class="row" style="flex-direction:column;align-items:stretch">'+(canLoan?'<button class="btn pri" data-act="crisis" data-arg="loan">銀行から借りる（'+yen(loanAmt)+'・月0.5%の利息）</button>':'<div class="s">銀行はもう貸してくれない。</div>')+(S.privUsed?'':'<button class="btn" data-act="crisis" data-arg="priv">社長の私財を入れる（'+yen(Math.round(3e7*eraF()/1e6)*1e6)+'・一度だけ）</button>')+'<button class="btn" data-act="crisis" data-arg="cut">給料を下げる（みんなの給料 −15%）</button><button class="btn" data-act="crisis" data-arg="wait">このまま耐える</button></div></div>';
     el.hidden=false;face32($('popface'),kr?kr.lead:PRES,{tie:true,mouth:'frown'});return;}}
-  {const o=(S.popups||[])[0];if(o&&['kiryu','kiryupick','wall','exclres','kiryuspeech','kiryuspeech2','kiryuthanks','nextser','meetres','shinapp','shinjoin'].includes(o.news)){if(rivPop(o,$('pop'))!==false)return;}}
+  {const o=(S.popups||[])[0];if(o&&['kiryu','kiryupick','wall','exclres','kiryuspeech','kiryuspeech2','kiryuthanks','nextser','meetres','shinapp','shinjoin','ichipre','ichires','era75','paper'].includes(o.news)){if(rivPop(o,$('pop'))!==false)return;}}
   {const q0=(S.popups||[]);const o=q0[0];if(o&&(o.news==='reprint'||o.news==='comics'||o.news==='retire'||o.news==='ownmaster'||o.news==='daikanban'||o.news==='awards'||o.news==='freeleave')){const el=$('pop');
     const tnOf=mid=>{const m=S.manga.find(x=>x.id===mid);const t=m&&staffById(m.tantou);return t||chief()||PRES;};
     if(o.news==='retire'){const m=S.manga.find(x=>x.id===o.rid)||{name:o.name||'',title:''};
@@ -4683,7 +4834,7 @@ function seatPerson(s,x,y,back,rowY,opt){if((REP.has(s.id)&&presence(s)===1)||WK
   else if(pr&&pr.rep&&s.role==='tantou')TANREP.push({s,why:pr.why});}
 let lastT=performance.now(),lastSave=0,lastRender=0;
 // 月のなかば（昼）：応募がとどく・打診の返事・12月は年間の賞
-function midMonth(){refreshCands();nextSerNotice();try{if(S.m===10)shinGen();}catch(e){}try{shinJoin();}catch(e){}try{if(S.m===12&&S.mag.launched){awardsRun();}}catch(e){}
+function midMonth(){refreshCands();nextSerNotice();try{eraEvents75();}catch(e){console.error(e);}try{ichiMonth();}catch(e){console.error(e);}try{if(S.m===10)shinGen();}catch(e){}try{shinJoin();}catch(e){}try{if(S.m===12&&S.mag.launched){awardsRun();}}catch(e){}
   try{const n0=(S.dayq||[]).length;offerTick(null);deferPops();for(const q of S.dayq.slice(n0)){q.d=0;q.t=Math.min(0.95,Math.max(q.t,S.clock.t+0.06));q.on=false;}}catch(e){}
   if(S.staff.length<25)say(byRole('zatsumu')[0]?'秘書・'+byRole('zatsumu')[0].name:'社長',pick(['今月の募集に応募が来ています。「人事」の「採用」で面接しましょう。','求人を見た人たちから応募が届いています。','応募の履歴書がたまってきました。面接しますか？']));if(sheet==='staff')drawSheet();showPop();}
 function timeTick(){
