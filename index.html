@@ -2859,11 +2859,16 @@ function demoGate(){if(document.getElementById('demogate'))return;const ov=docum
 /* 解任から再出発までをつなぐ */
 function kPub(){return S.kiryuPub||KIRYU_PUB;}
 function oustHTML(){const sc=byRole('zatsumu').find(x=>!x.hidden);return '<div class="box" style="border-color:#ff7050"><h3 id="pop-h" style="color:#ff9070">会議室へ</h3><div class="quote" style="font-size:18px;line-height:1.8">'+(sc?'秘書・'+esc(sc.name)+'「社長……。会議室で、編集長と部長のみなさんがお待ちです。<br>……なんだか、ようすが変です。」':'「社長、会議室へ。幹部全員がお待ちです。」')+'</div><button class="btn pri" data-act="riv" data-arg="oust" style="width:100%;font-size:19px">会議室へ行く</button></div>';}
-function runOust(){const wp=S.paused;S.paused=true;save();/* 謀反の場面〜再出発は、曲を流さない */BGM_HOLD=true;try{$('bgm').pause();}catch(e){}
+let OUSTING=0;
+/* 桐生の乱の途中でアプリを閉じても、開き直したらやり直せるように */
+function oustRecover(){if(!S||OUSTING)return;const K=S.kiryu||{};
+  if(S.prologue&&!S.ousted&&K.done&&!K.skip&&!(S.popups||[]).some(p=>p.news==='oust')){S.paused=false;(S.popups=S.popups||[]).unshift({rid:'riv',news:'oust'});}
+  if(S.ousted&&S.resolvePending){delete S.resolvePending;try{resolveEffects();}catch(e){}S.paused=false;}}
+function runOust(){OUSTING=1;const wp=false;S.paused=true;save();/* 謀反の場面〜再出発は、曲を流さない */BGM_HOLD=true;try{$('bgm').pause();}catch(e){}
   /* 物語の大事な場面なので、アニメオフでも必ず流す（第3引数=1） */
   a2Overlay(fallAnim(1),()=>a2Overlay(fallAnim(2),()=>restartNaming((co,mg)=>{applyRestart(co,mg);save();
-    startOpening(1);OP.onEnd=()=>a2Overlay(resolveAnim(co,mg),()=>{resolveEffects();BGM_HOLD=false;S.paused=wp;musicPlay();save();render();showPop();},1);}),1),1);}
-function applyRestart(co,mg){const oldCo=S.coName||'鷲尾書房',oldMag=S.mag.name||'月刊 少年ハヤテ';
+    startOpening(1);OP.onEnd=()=>a2Overlay(resolveAnim(co,mg),()=>{delete S.resolvePending;resolveEffects();OUSTING=0;BGM_HOLD=false;S.paused=wp;musicPlay();save();render();showPop();},1);}),1),1);}
+function applyRestart(co,mg){S.resolvePending=1;const oldCo=S.coName||'鷲尾書房',oldMag=S.mag.name||'月刊 少年ハヤテ';
   S.ousted=1;S.prologue=0;S.lux=0;for(const k of ['t2b0','t2f0','t2b1','t2f1','t2b2','t2f2','v2'])delete S.desks[k];
   S.kiryuPub=oldCo;S.coName=co;
   /* 叔父の側（用意された社員・桐生）は、もとの会社に残る */
@@ -4904,7 +4909,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.276）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.277）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -7267,7 +7272,7 @@ document.addEventListener('pointerdown',()=>musicPlay(),{once:true});
 musicUI();
 
 // ===== はじめ =====
-function migrate(){if(S)S.skip=false;
+function migrate(){if(S)S.skip=false;try{oustRecover();}catch(e){}
  S.placeMode=false;S.placeNew=null;
  for(const m of S.manga||[])if(m.legend&&m.oldMaster==null)m.oldMaster=LEGENDS.some(l=>l.n===m.name&&!l.young)?1:0;
  if(S.cumOp==null&&S.records){S.cumOp=0;for(const x of S.records)if(x.launched)S.cumOp+=(x.got??x.inc)-x.out;}
