@@ -248,7 +248,7 @@ const TREND=[[1970,['スポーツ','時代劇','社会派','ストーリー']],[
 const TAGS=['気難しい','テレビ好き','職人肌','人懐っこい','夜型','遅筆'];
 const ROLES={chief:'編集長',vice:'副編集長',tantou:'担当',zatsumu:'秘書',eibu:'営業部長',eigyo:'営業',senbu:'宣伝部長',senden:'宣伝',keibu:'経理部長',keiri:'経理',kenshu:'研修中',mi:'未配属',souko:'倉庫番'};
 const DESKS_OF={eibu:['eb'],eigyo:['e1','e2','e3'],senbu:['sb'],senden:['s1','s2','s3'],keibu:['kb'],keiri:['k1','k2','k3'],zatsumu:['sec']};
-function capOf(r){if(S&&S.desks){if(r==='tantou')return Math.min(CAP.tantou,deskCount('t'));if(r==='vice')return Math.min(2,deskCount('v'));if(DESKS_OF[r])return DESKS_OF[r].filter(hasDesk).length;}return (r==='senden'||r==='keiri')&&S&&S.rooms&&S.rooms.gyomu?3:CAP[r];}
+function capOf(r){if(S&&S.desks){if(r==='tantou')return Math.min(S.lux?18:CAP.tantou,deskCount('t'));/* 叔父の広い編集部は、担当18席 */if(r==='vice')return Math.min(2,deskCount('v'));if(DESKS_OF[r])return DESKS_OF[r].filter(hasDesk).length;}return (r==='senden'||r==='keiri')&&S&&S.rooms&&S.rooms.gyomu?3:CAP[r];}
 const CAP={chief:1,vice:2,tantou:9,zatsumu:1,eibu:1,eigyo:3,senbu:1,senden:2,keibu:1,keiri:2,kenshu:99,mi:99,souko:99};
 const PRICES=[[1970,1,150],[1974,4,180],[1979,4,220],[1984,4,250],[1989,4,260],[1993,4,280],[1997,4,300]];
 const FEE={S:15000,A:9000,B:6000,C:4000,D:3000,E:2000,F:1500,G:1000};
@@ -2143,7 +2143,7 @@ function startPrologue(){
   // 編集長・桐生（叔父の手下）
   const k=newStaff({exp:true,base:82,age:34});k.name='桐生 健一';k.sei='桐生';k.fem=false;k.lk=Object.assign({},KIRYU_LK);k.shirt=KIRYU_LK.shirt;k.role='chief';k.kiryu=1;U(k);
   for(let i=0;i<2;i++){const v=newStaff({exp:true,base:ri(72,80)});v.role='vice';v.team=i;U(v);}
-  for(let i=0;i<6;i++){const t=newStaff({exp:true,base:ri(66,78),focus:pick(['henshu','bigan'])});t.role='tantou';t.team=i%2;U(t);}
+  /* 担当は15人まで用意されている。残りの3席は、自分で採用する */for(let i=0;i<15;i++){const t=newStaff({exp:true,base:ri(66,78),focus:pick(['henshu','bigan'])});t.role='tantou';t.team=i%2;U(t);}
   for(const [r,f] of [['eibu','eigyo'],['senbu','kikaku'],['keibu','jimu']]){const h=newStaff({exp:true,base:ri(72,82),focus:f});h.role=r;U(h);}
   for(const [r,f] of [['eigyo','eigyo'],['senden','kikaku'],['keiri','jimu']]){const h=newStaff({exp:true,base:ri(64,74),focus:f});h.role=r;U(h);}
   // 先生：先輩（看板・2年の約束）＋叔父のコネ5人
@@ -2156,7 +2156,7 @@ function startPrologue(){
   S.flags.phone=3;S.desks={t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,e2:1,sb:1,s1:1,s2:1,kb:1,k1:1,k2:1};if(S.lux)Object.assign(S.desks,{t2b0:1,t2f0:1,t2b1:1,t2f1:1,t2b2:1,t2f2:1});S.uneiV=1;S.view='henshu';S.clock={d:0,t:0.02};S.speed=1;S.paused=false;S.dayq=[];
   say('叔父','建物も、部長たちも、販路も、わしが用意した。');
   makeReports();
-  S.introPending=['叔父「ここが、おまえの会社だ。編集部も運営部も、もう人がそろっておる。」','叔父「足りないのは、先生があと3人と、社員が少し。……やり方は、このあと、わしが順に教えてやろう。」','叔父「秘書は、おまえが選んだ者だ。いい秘書は、社長の目と耳になる。大事にしろ。」','叔父「左上のボタンで、編集部と運営部を行き来できる。毎月のようすは「報告書」だ。」','叔父「あわてることはない。社員も先生も、じっくり選べ。」'];S.intro=null;S.newRead=false;
+  S.introPending=['叔父「ここが、おまえの会社だ。編集部も運営部も、もう人がそろっておる。」','叔父「足りないのは、先生があと3人と、担当があと3人。……やり方は、このあと、わしが順に教えてやろう。」','叔父「秘書は、おまえが選んだ者だ。いい秘書は、社長の目と耳になる。大事にしろ。」','叔父「左上のボタンで、編集部と運営部を行き来できる。毎月のようすは「報告書」だ。」','叔父「あわてることはない。社員も先生も、じっくり選べ。」'];S.intro=null;S.newRead=false;
   const st=(who,t,mouth)=>(S.popups=S.popups||[]).push({rid:'st',news:'story',who,t,mouth});
   st('nar',START_Y+'年1月。<br>東京・神田。');st('nar','大手出版社「大鷲社」。その会長である祖父が、病に倒れた。');st('nar','一族のあいだでは、後継の座をめぐる争いが、もう始まっている。');st('pres','（……後継者なんて、柄じゃない。でも、漫画雑誌をつくるのは、子どものころからの夢だった。）');st('pres','（敵だらけの一族の中で、ただひとり、味方をしてくれる人がいる。）');
   st('uncle','よく来たな。……おじいさまの話は、聞いておるな？');
@@ -2191,7 +2191,7 @@ const GUIDE=[
  {t:'上の<b>「採用」</b>タブを押せ。',q:'#sheet [data-act=tab][data-arg=hire]',ok:()=>sheet==='staff'&&tab==='hire'},
  {t:'<b>「経験者」</b>は、すぐに働ける。<b>「新卒」</b>は若くて伸びるが、研修が1か月かかる。<br>候補は毎月入れ替わるぞ。<b>書類選考</b>で「C以上だけ」にすると、できる者だけが残る。',q:'#sheet [data-act=hiretab]'},
  {t:'気になる者の<b>「採用する」</b>を押してみろ。',q:'#sheet [data-act=expand]',ok:()=>expand!=null&&(S.cands||[]).some(c=>c.id===expand)},
- {t:'<b>「向いている役職」</b>を見て、配属先のボタンを押せば採用だ。<br>担当（編集者）が足りないから、<b>「担当」</b>がいいだろう。グレーのボタンは、席がいっぱいだ。',q:()=>document.querySelector('#sheet [data-act=hire][data-arg$=":tantou"]:not([disabled])')||document.querySelector('#sheet [data-act=hire]:not([disabled])'),ok:()=>S.staff.length>(GD.st||0),pre:()=>{GD.st=S.staff.length;}},
+ {t:'<b>「向いている役職」</b>を見て、配属先のボタンを押せば採用だ。<br>編集部の担当の席が、あと3つ空いておる。<b>「担当」</b>がいいだろう。グレーのボタンは、席がいっぱいだ。',q:()=>document.querySelector('#sheet [data-act=hire][data-arg$=":tantou"]:not([disabled])')||document.querySelector('#sheet [data-act=hire]:not([disabled])'),ok:()=>S.staff.length>(GD.st||0),pre:()=>{GD.st=S.staff.length;}},
  {t:'よし、採用できたな。あすから編集部の机に座るはずだ。<br><b>「閉じる」</b>を押せ。',q:'#sheet [data-act=close]',ok:()=>!sheet},
  {t:'ふだんのことも教えておこう。<br>時間は<b>ひとりでに進む</b>。下の<b>「⏸ 停止」</b>で止められるし、<b>「×2」</b>で速くなる。考えたいときは止めればいい。',q:'#ctl'},
  {t:'社員の頭の上に<b>ふきだし</b>が出たら、話があるという合図だ。<b>タップ</b>して聞いてやれ。',q:'#officeWrap'},
@@ -4580,7 +4580,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.256）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.257）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   const ok=S.over==='end';
