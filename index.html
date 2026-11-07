@@ -4580,7 +4580,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.255）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.256）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   const ok=S.over==='end';
@@ -4656,13 +4656,22 @@ function popSpeaker(){const o=(S.popups||[])[0];if(!o)return null;
 function talkAnimate(root,who){
   clearInterval(talkAnimate.h);
   const fem=who&&(who.lk||who.name)?!!look(who).fem:null;
-  const els=[...root.querySelectorAll('.quote,.t')].filter(e=>!e.children.length&&e.textContent.trim().startsWith('「'));
+  /* 太字（<b>）や改行（<br>）が入ったせりふも、1文字ずつ出して音を鳴らす */
+  const okKids=e=>[...e.querySelectorAll('*')].every(c=>['B','BR','SPAN','STRONG','EM','RUBY','RT'].includes(c.tagName));
+  const els=[...root.querySelectorAll('.quote,.t')].filter(e=>okKids(e)&&e.textContent.trim().startsWith('「')&&!els0(e));
+  function els0(e){return !!e.parentElement&&e.parentElement.closest('.quote,.t')&&e.parentElement.closest('.quote,.t')!==e;}
   if(!els.length)return;
-  const texts=els.map(e=>e.textContent);const hs=els.map(e=>e.offsetHeight);els.forEach((e,j)=>{e.style.minHeight=hs[j]+'px';e.textContent='';});
-  let i=0,n=0,wait=0;const fin=()=>{clearInterval(talkAnimate.h);els.forEach((e,j)=>{e.textContent=texts[j];});};
+  /* 同じせりふにもう一度呼ばれても、最初に覚えた全文から出し直す */
+  const nodes=els.map(e=>{if(e._tw)return e._tw;const w=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);const L=[];let n;while((n=w.nextNode()))L.push([n,n.nodeValue]);e._tw=L;return L;});
+  const hs=els.map(e=>e.offsetHeight);els.forEach((e,j)=>{if(!e.style.minHeight)e.style.minHeight=hs[j]+'px';nodes[j].forEach(([n])=>n.nodeValue='');});
+  const texts=nodes.map(L=>L.map(x=>x[1]).join(''));
+  const show=(j,k)=>{let r=k;for(const [n,full] of nodes[j]){const c=Math.max(0,Math.min(full.length,r));n.nodeValue=full.slice(0,c);r-=full.length;}};
+  let i=0,n=0,wait=0;const fin=()=>{clearInterval(talkAnimate.h);els.forEach((e,j)=>show(j,texts[j].length));};
   root.addEventListener('pointerdown',fin,{once:true});
-  talkAnimate.h=setInterval(()=>{if(!document.body.contains(els[0])||i>=els.length){clearInterval(talkAnimate.h);return;}
-    if(wait>0){wait--;return;}const ch=texts[i][n];n++;els[i].textContent=texts[i].slice(0,n);
+  talkAnimate.h=setInterval(()=>{
+    /* 画面から消えたら（別の画面に切りかわったら）、音を止めて全部出す */
+    if(!document.body.contains(els[0])||root.hidden||els[0].offsetParent===null||i>=els.length){fin();return;}
+    if(wait>0){wait--;return;}const ch=texts[i][n];n++;show(i,n);
     if(PUNC.includes(ch))wait=(ch==='、'||ch==='・')?2:4;else voice(fem);
     if(n>=texts[i].length){i++;n=0;wait=5;}},50);
 }
