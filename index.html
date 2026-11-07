@@ -1697,7 +1697,7 @@ function kiryuMonth(sl){const K=S.kiryu=S.kiryu||{};
   if(!K.done){const k=kiryuStaff();if(!k||k.role==='quit'){K.done=1;K.skip=1;return;}
     k.kiryu=1;
     // 前ぶれ：辞める3か月前と1か月前
-    const PRO=S.prologue&&!S.ousted;/* チュートリアル時代は「乗っ取り」の前ぶれ、それ以外は「引き抜いて出ていく」前ぶれ */
+    const PRO=!S.ousted;/* チュートリアル時代は「乗っ取り」の前ぶれ、それ以外は「引き抜いて出ていく」前ぶれ */
     if(sl>=K.at-3&&!K.h1){K.h1=1;rivNews('秘書',pick(PRO?['桐生さん、最近よく会長（叔父さま）の部屋に呼ばれているみたいです。……何の話でしょう？','桐生さんが、夜遅くまで会長と二人で話し込んでいたらしいです。','桐生さん、最近やけに部長たちと飲みに行っていますね。']:['桐生さん、最近よく外で電話をしているみたいです。……誰とでしょう？','桐生さんが、夜遅くに知らない人と会っていたらしいです。','桐生さん、最近ため息が多いですね。何かあったんでしょうか。']));}
     if(sl>=K.at-1&&K.h1&&!K.h2){K.h2=1;rivNews('秘書',pick(PRO?['……社長。桐生さんが、部長たちを一人ずつ呼んで話をしているそうです。社長には内緒で。','会長が、社長ぬきで役員を集めるそうです。……なんだか、いやな感じがします。','桐生さん、最近社長と目を合わせませんね……。何か隠しているような。']:['……社長。桐生さんが、何人かの先生と個別に会っているそうです。担当でもないのに。','桐生さんの机、なんだか片付いてきていませんか……？']),true);}
     if(sl>=K.at&&S.prologue&&!S.ousted){if(!(S.popups||[]).some(p=>p.news==='oust')){K.done=1;rivPush({news:'oust'});}return;}
@@ -4099,7 +4099,7 @@ function render(){if(S&&S.demoDue&&!OP&&sheet!=='title'&&!document.getElementByI
   $('status').innerHTML='<span class="chip">'+esc(TITLES[S.titleIdx][1])+'</span><span class="mag">'+esc(mag.name)+'</span><span class="sub">'+(mag.launched?(mag.issue?'第'+mag.issue+'号まで':'創刊号を制作中')+(S.lastResult?'・前号 '+busu(S.lastResult.sold):''):'創刊準備中')+'</span>';
   const logs=[...(S.reports||[]).filter(r=>!r.type||r.type==='end').slice(0,3).map(r=>({who:r.who,txt:r.t,warn:r.warn})),...S.log.slice(0,4)];
   if(!$('log').hidden)$('log').innerHTML=logs.map(l=>'<div class="msg'+(l.warn?' warn':'')+'"><div class="who">'+esc(l.who)+'</div><div class="txt">'+esc(l.txt)+'</div></div>').join('')||'<div class="msg"><div class="txt">報告書を見て、指示を出そう。</div></div>';
-  S.rooms=S.rooms||{};$('onav').hidden=!!OP||sheet==='title';/* タイトル画面では、時計や部屋の切りかえを出さない（セーブの読みこみやクラウドの同期で、タイトル中に呼ばれることがある） */$('onav').innerHTML='<span style="display:flex;gap:6px;align-items:flex-start"><span class="clk">'+(S._clk||'')+'</span>'+(STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'')+(!STACK?'<button data-act="room">◀ '+(S.view==='sub'?'子会社':S.view==='unei'?'運営部':'編集部')+' ▶'+(S.view!=='unei'&&(S.kq||[]).length?' <b style="color:#b23a2e">！'+(S.kq||[]).length+'</b>':'')+'</button>':'')+'</span>'+(!STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'');
+  S.rooms=S.rooms||{};$('onav').hidden=!!OP||sheet==='title'||sheetCovers();/* タイトル画面では、時計や部屋の切りかえを出さない（セーブの読みこみやクラウドの同期で、タイトル中に呼ばれることがある） */$('onav').innerHTML='<span style="display:flex;gap:6px;align-items:flex-start"><span class="clk">'+(S._clk||'')+'</span>'+(STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'')+(!STACK?'<button data-act="room">◀ '+(S.view==='sub'?'子会社':S.view==='unei'?'運営部':'編集部')+' ▶'+(S.view!=='unei'&&(S.kq||[]).length?' <b style="color:#b23a2e">！'+(S.kq||[]).length+'</b>':'')+'</button>':'')+'</span>'+(!STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'');
   {const sp=$('subpanel');if(sp){const on=S.view==='sub'&&S.sub&&subMag()&&!OP&&sheet!=='title';sp.hidden=!on;if(on){/* 部屋の拡大・横スライドに引きずられないよう、画面に固定して部屋の場所に重ねる */const r=$('stage').getBoundingClientRect();Object.assign(sp.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});const h=subPanelHTML();if(sp._h!==h){sp._h=h;sp.innerHTML=h;}}}}
   const n=(S.reports||[]).filter(r=>!r.read).length;
   $('cmd-report').innerHTML='報告書'+(!S.newRead&&!S.secLater&&n?'<span class="badge">'+n+'</span>':'');
@@ -4109,6 +4109,8 @@ function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTime
 
 let sheet=null,tab=null,expand=null;
 function openSheet(name,t){sheet=name;tab=t||tab||null;if(name==='report'){const w=repWait();for(const r of S.reports||[])if(repShown(r,w))r.read=true;if(!(S.reports||[]).some(r=>!r.read))S.newRead=true;}drawSheet();render();}
+/* 画面いっぱいの報告書などを開いているときは、時計や部屋の切りかえを上に出さない（横並びの広い画面は別） */
+function sheetCovers(){if(!sheet)return false;const e=$('sheet');if(!e||e.hidden)return false;try{return parseFloat(getComputedStyle(e).left)<4;}catch(_){return true;}}
 function closeSheet(){if(S)S.payDraft=null;sheet=null;tab=null;expand=null;$('sheet').hidden=true;render();if(S&&(S.popups||[]).length&&$('pop').hidden)try{showPop();}catch(e){}}
 function head(title){return '<div class="sh-head"><h2>'+title+'</h2><button class="close" data-act="close">閉じる</button></div>';}
 function tabs(list){if(!tab||!list.some(x=>x[0]===tab))tab=list[0][0];return '<div class="tabs" role="tablist">'+list.map(([k,l])=>'<button class="tab'+(k===tab?' on':'')+'" role="tab" aria-selected="'+(k===tab)+'" data-act="tab" data-arg="'+k+'">'+l+'</button>').join('')+'</div>';}
@@ -4149,7 +4151,7 @@ function drawSheet(){
   else if(sheet==='half')h=sheetHalf();
   else if(sheet==='title')h=sheetTitle();
   else if(sheet==='over')h=sheetOver();
-  el.innerHTML=h;drawSheet.k=sheet+'/'+tab;if(sheet==='title'){$('onav').hidden=true;const sp=$('subpanel');if(sp)sp.hidden=true;}
+  el.innerHTML=h;drawSheet.k=sheet+'/'+tab;if(sheetCovers())$('onav').hidden=true;if(sheet==='title'){$('onav').hidden=true;const sp=$('subpanel');if(sp)sp.hidden=true;}
   el.querySelectorAll('canvas[data-face]').forEach(c=>{const [k,id]=c.dataset.face.split(':');const o=k==='s'?staffById(+id):k==='x'?(id==='g'?GONDO:(kiryuStaff()&&kiryuStaff().lk?kiryuStaff():KIRYU)):S.manga.find(m=>m.id===+id);if(o)face48(c,o,{tie:k==='s'&&['chief','vice','eibu','senbu','keibu'].includes(o.role)});});
   el.querySelectorAll('canvas[data-fid]').forEach(c=>{const f=c.dataset.fid;const o=f==='pres'?PRES:(staffById(+f)||S.manga.find(m=>m.id===+f));if(o)face32(c,o,{tie:f==='pres'||['chief','vice','eibu','senbu','keibu'].includes(o.role)});});
   const nb=el.querySelector('.sh-body');if(nb&&keep)nb.scrollTop=keep;
@@ -4945,7 +4947,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.281）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.282）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
