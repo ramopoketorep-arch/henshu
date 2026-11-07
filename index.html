@@ -363,7 +363,7 @@ function newStaff(opts={}){
 const RBAND={G:[20,29],F:[30,39],E:[40,49],D:[50,59],C:[60,69],B:[70,79],A:[80,89],S:[90,97]};
 function wPick(w){let r=R()*w.reduce((a,x)=>a+x[1],0);for(const [k,v] of w){r-=v;if(r<=0)return k;}return w[w.length-1][0];}
 function topRank(s,exp,lift,focus){const K=['henshu','kikaku','bigan','eigyo','jimu'];
-  const rk=wPick(exp?[['D',35],['C',40],['B',20],['A',5]]:[['E',30],['D',40],['C',25],['B',5]]);const [lo,hi]=RBAND[rk];
+  const rk=wPick(exp?[['D',25],['C',40],['B',27],['A',8]]:[['E',20],['D',40],['C',32],['B',8]]);const [lo,hi]=RBAND[rk];
   const tgt=clamp(ri(lo,hi)+Math.floor((lift||0)/3),15,95);
   const top=focus||K.reduce((a,k)=>s[k]>s[a]?k:a,K[0]);const old=s[top];s[top]=tgt;
   for(const k of K){if(k===top)continue;s[k]=clamp(Math.round(s[k]+(tgt-old)*0.5),15,tgt-2);}
@@ -2193,7 +2193,7 @@ function startPrologue(){
   st('uncle','優秀な男だ。右腕に使え。');
   st('uncle','それと秘書。秘書だけは、おまえが自分で選べ。候補を3人、呼んである。');
   {const g3=[true,false,R()<0.5];const ids=[];const LINE=['事務なら、だれにも負けません。','人の顔と名前は、一度で覚えます。','社長のためなら、なんでもやります！','書類の山なら、まかせてください。','電話番は得意です。お客さまの声で、だいたい用件がわかります。'];
-    g3.forEach((fem,i)=>{let c;for(let k=0;k<30;k++){c=newStaff({exp:true,focus:'jimu',age:ri(23,36)});if(c.fem===fem)break;}c.jimu=clamp(Math.max(c.jimu,ri(58,74)),15,95);c.secLine=LINE[(i+ri(0,4))%LINE.length];c.secCand=1;S.cands.push(c);ids.push(c.id);});
+    g3.forEach((fem,i)=>{let c;for(let k=0;k<30;k++){c=newStaff({exp:true,focus:'jimu',age:ri(23,36)});if(c.fem===fem)break;}/* 秘書は、本当はとびきり優秀（事務 A〜S）。手放したくなくなるように */c.jimu=ri(84,95);c.pot=Math.max(c.pot||0,c.jimu+ri(2,4));c.henshu=Math.max(c.henshu,ri(55,68));c.kikaku=Math.max(c.kikaku,ri(55,68));c.secLine=LINE[(i+ri(0,4))%LINE.length];c.secCand=1;S.cands.push(c);ids.push(c.id);});
     S.popups.push({rid:'riv',news:'secpick',ids});}
   closeSheet();save();render();startEnter();musicSync();
 }
@@ -2592,7 +2592,7 @@ function resolveAnim(co,mag){const {eo,cl,rr,tx}=a2;const C=resolveCast();const 
   const wrap=(g,s,x,y,w,lh,sz,col)=>{g.save();g.font=sz+"px 'Mochiy Pop One',sans-serif";g.fillStyle=col;g.textBaseline='top';let line='',yy=y;for(const ch of s){if(g.measureText(line+ch).width>w){g.fillText(line,x,yy);line=ch;yy+=lh;}else line+=ch;}if(line)g.fillText(line,x,yy);g.restore();};
   const room=g=>{g.fillStyle='#ece5d0';g.fillRect(0,0,360,220);g.fillStyle='#e3dbc3';for(let x=0;x<360;x+=14)g.fillRect(x,0,2,120);g.fillStyle='#7d8fa8';g.fillRect(0,104,360,18);
     rr(g,40,18,90,62,3,'#6b4a30');g.fillStyle='#ffe0a0';g.fillRect(45,23,80,52);g.fillStyle='#fff2c8';g.fillRect(45,23,80,16);g.fillStyle='#6b4a30';g.fillRect(84,23,2,52);
-    rr(g,150,14,110,44,2,'#fbf8ef');tx(g,'祝 創刊',205,28,12,'#c8302a',null);tx(g,mag.replace(/^(月刊|週刊)\s*/,''),205,46,10,'#2a2220',null);
+    rr(g,150,14,110,44,2,'#fbf8ef');tx(g,'祝 設立',205,28,12,'#c8302a',null);tx(g,co,205,46,Math.min(10,100/Math.max(5,String(co).length)),'#2a2220',null);
     g.fillStyle='#c9a878';g.fillRect(0,122,360,98);};
   return {dur:T+0.4,steps:B.map(z=>z.t0).concat([T+0.4]),draw:(g,t)=>{const x=B.find(z=>t>=z.t0&&t<z.t0+z.d)||B[B.length-1];const u=t-x.t0;room(g);
     const up=x.cheer||x.who==='sp'||x.who==='sec'||x.who==='end';const jump=x.cheer?Math.abs(Math.sin(u*7))*5:0;
@@ -2886,6 +2886,8 @@ function applyRestart(co,mg){S.resolvePending=1;const oldCo=S.coName||'鷲尾書
   S.rivals.push({name:oldMag,from:S.y,base,f:1,sold:Math.round(base*eraBoom(S.y)/100)*100,pub:oldCo,kiryu:1});
   const K=S.kiryu=S.kiryu||{};K.done=1;K.mag=oldMag;K.y=S.y;K.m=S.m;K.t=S.turns;
   /* うちは、無名の新雑誌から */
+  /* 新しい会社の帳簿は、まっさらから（前の会社の売上・入金予定は持ちこまない） */S.records=[];S.income=[];S.recv=[];S.yearly={};
+  S.staff=S.staff.filter(x=>x.role!=='quit');
   S.mag.name=mg;S.mag.launched=false;S.mag.aware=5;S.money=1e8-2e7;/* 執事長の1億から、マンションと内装で2,000万 */S.ads=[];S.reports=[];S.kq=[];S.jihyo=[];
   {const d=initDist();d.tori=d.tori.map((lv,i)=>i===0?1:0);d.chain=d.chain.map(()=>0);d.conv=0;d.senmon=1;S.mag.stores=distCalc().stores;}
   S.popups=[];}
@@ -4909,7 +4911,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.277）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.278）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
