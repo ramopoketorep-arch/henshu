@@ -1697,8 +1697,9 @@ function kiryuMonth(sl){const K=S.kiryu=S.kiryu||{};
   if(!K.done){const k=kiryuStaff();if(!k||k.role==='quit'){K.done=1;K.skip=1;return;}
     k.kiryu=1;
     // 前ぶれ：辞める3か月前と1か月前
-    if(sl>=K.at-3&&!K.h1){K.h1=1;rivNews('秘書',pick(['桐生さん、最近よく外で電話をしているみたいです。……誰とでしょう？','桐生さんが、夜遅くに知らない人と会っていたらしいです。','桐生さん、最近ため息が多いですね。何かあったんでしょうか。']));}
-    if(sl>=K.at-1&&K.h1&&!K.h2){K.h2=1;rivNews('秘書',pick(['……社長。桐生さんが、何人かの先生と個別に会っているそうです。担当でもないのに。','桐生さんの机、なんだか片付いてきていませんか……？']),true);}
+    const PRO=S.prologue&&!S.ousted;/* チュートリアル時代は「乗っ取り」の前ぶれ、それ以外は「引き抜いて出ていく」前ぶれ */
+    if(sl>=K.at-3&&!K.h1){K.h1=1;rivNews('秘書',pick(PRO?['桐生さん、最近よく会長（叔父さま）の部屋に呼ばれているみたいです。……何の話でしょう？','桐生さんが、夜遅くまで会長と二人で話し込んでいたらしいです。','桐生さん、最近やけに部長たちと飲みに行っていますね。']:['桐生さん、最近よく外で電話をしているみたいです。……誰とでしょう？','桐生さんが、夜遅くに知らない人と会っていたらしいです。','桐生さん、最近ため息が多いですね。何かあったんでしょうか。']));}
+    if(sl>=K.at-1&&K.h1&&!K.h2){K.h2=1;rivNews('秘書',pick(PRO?['……社長。桐生さんが、部長たちを一人ずつ呼んで話をしているそうです。社長には内緒で。','会長が、社長ぬきで役員を集めるそうです。……なんだか、いやな感じがします。','桐生さん、最近社長と目を合わせませんね……。何か隠しているような。']:['……社長。桐生さんが、何人かの先生と個別に会っているそうです。担当でもないのに。','桐生さんの机、なんだか片付いてきていませんか……？']),true);}
     if(sl>=K.at&&S.prologue&&!S.ousted){if(!(S.popups||[]).some(p=>p.news==='oust')){K.done=1;rivPush({news:'oust'});}return;}
     if(sl>=K.at&&!(S.jihyo&&S.jihyo.length)&&!(S.popups||[]).some(p=>p.news==='kiryu')){kiryuBetray(k);}
     return;}
@@ -4944,7 +4945,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.280）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.281）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
