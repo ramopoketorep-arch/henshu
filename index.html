@@ -2899,7 +2899,7 @@ function applyRestart(co,mg){S.resolvePending=1;const oldCo=S.coName||'鷲尾書
   /* うちは、無名の新雑誌から */
   /* 新しい会社の帳簿は、まっさらから（前の会社の売上・入金予定は持ちこまない） */S.records=[];S.income=[];S.recv=[];S.yearly={};
   S.staff=S.staff.filter(x=>x.role!=='quit');
-  S.mag.name=mg;S.mag.launched=false;S.mag.aware=5;S.money=1e8-2e7;/* 執事長の1億から、マンションと内装で2,000万 */S.ads=[];S.reports=[];S.kq=[];S.jihyo=[];
+  S.mag.name=mg;S.mag.launched=false;S.mag.aware=5;/* 雑誌も新しく：連載枠・号数・部数の記録は前の雑誌のものを持ちこまない */S.mag.cap=9;S.mag.issue=0;S.issues=[];S.history=[];S.lastResult=null;S.wh=[];S.whN=0;S.fanStat=null;S.hagaki=[];S.cumOp=0;S.printPlan=0;S.comics=[];S.money=1e8-2e7;/* 執事長の1億から、マンションと内装で2,000万 */S.ads=[];S.reports=[];S.kq=[];S.jihyo=[];
   {const d=initDist();d.tori=d.tori.map((lv,i)=>i===0?1:0);d.chain=d.chain.map(()=>0);d.conv=0;d.senmon=1;S.mag.stores=distCalc().stores;}
   S.popups=[];}
 function resolveEffects(){for(const s of S.staff)if(!['quit','retired'].includes(s.role))s.jonetsu=clamp((s.jonetsu||50)+20,0,100);
@@ -3499,7 +3499,7 @@ function endTurn(){
      (S.wh=S.wh||[]).push({y:prev.y,m:prev.m,print:prev.print,sold,cr:cr<0?null:cr+1,gv});if(S.wh.length>36)S.wh.shift();S.whN=(S.whN||0)+1;kairanCheck();}
     {const hh=S.history;if(hh.length>=2){const a=hh[hh.length-2].sold;const dj=sold>a*1.05?2:sold<a*0.95?-1:0;if(dj)for(const x of S.staff)x.jonetsu=clamp(x.jonetsu+dj,0,100);if(dj>0&&sold>a*1.15)S.pendingEvents.push({dept:'人事',who:'編集部の空気',t:'部数がぐんと伸びて、社内が明るい。「うちの雑誌、面白いですよね！」'});}}
     // 雑誌が厚くなる
-    const newCap=sold>=200000?15:sold>=120000?13:sold>=60000?11:9;
+    const newCap=capFor(sold);
     if(newCap>mag.cap){mag.cap=newCap;S.pendingEvents.push({who:'編集長',t:'売上が伸びてページを増やせます。連載枠が'+newCap+'本になりました。'});}
     {const x3=phase3Tick(ranked,sold);inc+=x3;bk.other+=x3;}
   }
@@ -4999,7 +4999,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.289）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.293）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -7370,7 +7370,12 @@ document.addEventListener('pointerdown',()=>musicPlay(),{once:true});
 musicUI();
 
 // ===== はじめ =====
+/* 連載枠：9本から、部数10万ごとに1本ずつ増える（最大15本） */
+function capFor(sold){return Math.min(15,9+Math.floor((sold||0)/100000));}
 function migrate(){if(S)S.skip=false;try{oustRecover();}catch(e){}
+ /* ver.280より前に独立したセーブ：創業融資の話がまだ来ていないので、ここから1年のあいだ申し込めるようにする */
+ try{if(S.ousted&&S.foundT==null&&!S.kokin){S.foundT=S.turns;const sc=byRole('zatsumu').find(x=>!x.hidden);(S.pendingEvents=S.pendingEvents||[]).push({dept:'経理',who:sc?'秘書・'+sc.name:'秘書',t:'社長、立ち上げたばかりの会社なら、国民金融公庫の創業融資（'+yen(KOKIN_AMT)+'・返済は1年後から）が受けられます。電話の「銀行」から申し込めますよ。1年以内なら、いつでも。'});}}catch(e){}
+ try{if(S.ousted&&S.mag&&S.mag.cap>9&&!S.capFix){S.capFix=1;const K0=S.kiryu||{},t0=(K0.y||0)*12+(K0.m||0);const mx=Math.max(0,...(S.history||[]).filter(h=>(h.y||0)*12+(h.m||0)>t0).map(h=>h.sold||0),((S.wh||[]).slice(-1)[0]||{}).y*12>t0?(S.lastResult||{}).sold||0:0);const want=capFor(mx);if(want<S.mag.cap)S.mag.cap=want;}}catch(e){}
  S.placeMode=false;S.placeNew=null;
  for(const m of S.manga||[])if(m.legend&&m.oldMaster==null)m.oldMaster=LEGENDS.some(l=>l.n===m.name&&!l.young)?1:0;
  if(S.cumOp==null&&S.records){S.cumOp=0;for(const x of S.records)if(x.launched)S.cumOp+=(x.got??x.inc)-x.out;}
