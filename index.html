@@ -4473,7 +4473,7 @@ function mJukuHTML(m){mTraits(m);const W=mWeak(m);if(!W.length&&!m.enjuku){m.enj
   return h;}
 /* 1ポイントで上がる量：上のランクほど上がりにくい（でもAには届くくらいのゆるいカーブ） */
 function ptGain(v){return v<40?10:v<50?7:v<60?5:v<70?4:v<80?3:v<90?2.5:2;}
-const gTxt=v=>'+'+ptGain(v);
+const gTxt=v=>'+'+ptGain(v)+(v>=90?'（Sの中で、99まで）':'');
 /* 漫画家の次のレベルまでの経験値（前より少しゆるく） */
 function mNeed(lv){return 160+lv*50;}
 function sNeed(lv){return 260+lv*50;}
@@ -5018,7 +5018,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.303）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.304）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -5326,7 +5326,7 @@ function doNext(){
       if(S.over){sheet='over';drawSheet();render();return;}
       showPop();
       if(S.halfDue){S.meetS={kind:'serial',d:0,t0:0.62,t1:0.76,mid:1};S.halfMid=1;S.halfGuest=null;if(['keibu','senbu','eibu'].some(r=>byRole(r).some(x=>!x.hidden)))(S.popups=S.popups||[]).push({invite:1});toast(era()+' '+S.m+'月　今月の午後は'+(S.halfSpecial?'緊急の':'')+'連載会議');}
-      {S.popups=(S.popups||[]).filter(x=>!x.kessai);S.kq=[];S.repRead=false;for(const r of S.reports||[])r.heard=true;const ks=kessaiList();if(ks.length&&R()<0.12){const k=pick(ks);k.n=1;k.of=1;S.kq=[k];}if(S.skipEnd===S.turns){try{autoDecide();}catch(e){}for(const r of S.reports||[])r.read=true;S.repRead=true;S.newRead=true;}else if(S.mag.launched||S.reports.length)S.secLater=1;}
+      {S.popups=(S.popups||[]).filter(x=>!x.kessai);S.kq=[];S.repRead=false;for(const r of S.reports||[])r.heard=true;/* 連載会議のあとに、月初の報告をもう一度持ってくることはしない（古い報告に見えるので） */if(S.skipEnd===S.turns){try{autoDecide();}catch(e){}for(const r of S.reports||[])r.read=true;S.repRead=true;S.newRead=true;}else if(S.mag.launched||S.reports.length)S.secLater=1;}
       if(S.mag.launched)S.meetP={kind:'print',d:0,t0:0.42,t1:0.53};
       {const pend=(S.comics||[]).filter(c=>!c.shown&&!c.mitate&&c.left===3);let X=null;if(pend.length&&(S.chatY!==S.y)){S.chatC={d:0,t0:0.74};S.chatY=S.y;}else{S.chatC=null;mitateSilent(pend);}}
       deferPops();render();toast(era()+' '+S.m+'月');showPop();
