@@ -3597,7 +3597,7 @@ function endTurn(){
   if(S.mag.launched&&chief()&&!S.halfDue){const soon=leavingSoon(1).filter(m=>endAt(m)-S.turns===1);
     if(soon.length){const q=S.manga.filter(m=>m.status==='queue').length;const free=S.mag.cap-serials().length-q;const need=soon.length-Math.max(0,q-Math.max(0,S.mag.cap-serials().length));
       if(need>0){const st=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0));
-        if(st.length){S.halfDue=true;S.halfSpecial=1;S.pendingEvents.push({dept:'編集部',who:'編集長・'+chief().name,t:soon.map(m=>m.name+'先生').join('、')+'が来月で抜けます。代わりを決めるため、今月の午後に緊急の連載会議を開きます。',warn:true});}
+        if(st.length){if(S.prologue&&!S.ousted)chiefDecide();else S.halfDue=true,S.halfSpecial=1,S.pendingEvents.push({dept:'編集部',who:'編集長・'+chief().name,t:soon.map(m=>m.name+'先生').join('、')+'が来月で抜けます。代わりを決めるため、今月の午後に緊急の連載会議を開きます。',warn:true});}
         else S.pendingEvents.push({dept:'編集部',who:'編集長・'+chief().name,t:soon.map(m=>m.name+'先生').join('、')+'が来月で抜けるのに、代わりの先生が1人もいません！この1か月で、至急だれかと契約してください！',warn:true});}}}
   // フリーの先生：専属がそろうまでの代打。雑誌に愛着はない。連載が始まって1年半〜2年で、きれいに終わって去る（外から迎えた看板も同じ）
   for(const m of S.manga){if(m.status!=='serial'||m.exclusive||m.amateur||m.bigOne)continue;
@@ -3673,7 +3673,7 @@ function endTurn(){
     const free=mag.cap-serials().length-S.manga.filter(m=>m.status==='queue').length;
     const st=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)).sort((a,b)=>score(b)-score(a));
     if(free>0&&!st.length&&!S.halfDue)S.pendingEvents.push({dept:'編集部',who:'編集長・'+chief().name,t:'連載枠が'+free+'本空いています。代わりの先生が1人もいません！至急、先生と契約してください。このままだと休刊です。',warn:true});
-    if(free>0&&st.length&&!S.halfDue&&!(S.spPost&&S.spPost>S.turns)){S.halfDue=true;S.halfSpecial=1;S.pendingEvents.push({dept:'編集部',who:'編集長・'+chief().name,t:'連載枠が'+free+'本空きました。今月の午後に、緊急の連載会議を開きます。',warn:true});}
+    if(free>0&&st.length&&!S.halfDue&&!(S.spPost&&S.spPost>S.turns)){if(S.prologue&&!S.ousted)chiefDecide();else S.halfDue=true,S.halfSpecial=1,S.pendingEvents.push({dept:'編集部',who:'編集長・'+chief().name,t:'連載枠が'+free+'本空きました。今月の午後に、緊急の連載会議を開きます。',warn:true});}
   }
   if(zm)zm.jimu=Math.min(zm.pot,(zm.jimu??50)+0.03);
   // 新連載のキュー（月に1本）
@@ -3692,7 +3692,7 @@ function endTurn(){
   // コミックス刊行（連載6か月ごと）
   for(const m of serials()){if(m.months>0&&m.months%6===0)publishComic(m);}
   // 半年ごとの会議
-  if(mag.launched){const since=(S.y-mag.launchY)*12+(S.m-mag.launchM);if(since>0&&since%6===5)S.halfDue=true;}
+  if(mag.launched){const since=(S.y-mag.launchY)*12+(S.m-mag.launchM);if(since>0&&since%6===5){if(S.prologue&&!S.ousted)chiefDecide();else S.halfDue=true;}}
   // 市場と候補
   if(S.searchReq){
     S.searchReq=false;const c=chief();
@@ -4849,6 +4849,15 @@ function screenHTML(){
   return h;
 }
 const avgH=m=>m.hist&&m.hist.length?m.hist.reduce((a,b)=>a+b,0)/m.hist.length:m.pop;
+
+/* 序章（叔父の会社）では連載会議はない。編集長・桐生が独断で決める。連載会議は、自分の会社になってからのもの */
+function chiefDecide(){const c=chief();if(!S.mag||!S.mag.launched)return;
+  const free=S.mag.cap-serials().length-S.manga.filter(m=>m.status==='queue').length;if(free<=0)return;
+  const st=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)).sort((a,b)=>score(b)-score(a)).slice(0,free);if(!st.length)return;
+  let ord=Date.now();for(const m of st){m.status='queue';m.qOrder=ord++;if(!m.meetT||!m.title)pickWork(m);m.meetT=0;if(!staffById(m.tantou))assignTantou(m);}
+  const q=S.manga.filter(m=>m.status==='queue').sort((a,b)=>a.qOrder-b.qOrder);
+  if(q.length&&serials().length<S.mag.cap){const m=q[0];m.status='serial';m.months=0;m.pop=score(m);contractFee(m);notif(m,'start');workStart(m);}
+  (S.pendingEvents=S.pendingEvents||[]).push({dept:'編集部',who:'編集長'+(c?'・'+c.name:''),t:'次の連載は、俺のほうで決めておきました。'+st.map(m=>m.name+'先生').join('、')+'でいきます。……社長は、どんと構えていてください。'});}
 function halfOk(){
   const c=chief();
   {const since=(S.y-S.mag.launchY)*12+(S.m-S.mag.launchM);
@@ -4890,7 +4899,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.274）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.275）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
