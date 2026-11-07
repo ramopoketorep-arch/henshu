@@ -2324,6 +2324,11 @@ function fallScript(C,part){const B=[];const b=(bg,who,t,o)=>B.push(Object.assig
     b('sunrise','pres','……やるか！',{zoom:'pres',big:1,d:7,sun:[1,1]});
   }
   return B;}
+
+/* 絵の中で文字が1文字ずつ出るとき、せりふの音（プルプル）を鳴らす。地の文（nar）は鳴らさない */
+const SCV={b:null,n:0};
+function sceneVoice(x,n){if(!x||!x.t||x.who==='nar'||x.big||x.cheer){SCV.b=x;SCV.n=n;return;}if(SCV.b!==x||n<SCV.n){SCV.b=x;SCV.n=0;}
+  if(n>SCV.n){const ch=x.t[Math.min(n,x.t.length)-1];const jump=n-SCV.n>3;SCV.n=n;if(!jump&&ch&&!PUNC.includes(ch)&&n<=x.t.length){const fem=x.who==='pres'?!!(PRES.lk&&PRES.lk.fem):x.who==='sec'?null:false;voice(fem);}}}
 function fallAnim(part){part=part||1;const {eo,cl,tx,rr}=a2;const C=fallCast();const B=fallScript(C,part);
   const NAME={nar:'',mc:'司会',pres:'社長',uncle:'叔父・権藤',gondo:'叔父・権藤',kiryu:'編集長・桐生',sp:C.spN+'（先輩）',butler:'執事長',sec:'秘書・'+C.secN};C.exN.forEach((n,i)=>NAME['e'+i]=n);C.folN.forEach((n,i)=>NAME['f'+i]=n);
   const LK={pres:C.pres,uncle:C.uncle,gondo:C.gondo,kiryu:C.kiryu,sp:C.sp,butler:C.butler,sec:C.sec||{}};C.ex.forEach((l,i)=>LK['e'+i]=l);C.fol.forEach((l,i)=>LK['f'+i]=l);
@@ -2390,7 +2395,7 @@ function fallAnim(part){part=part||1;const {eo,cl,tx,rr}=a2;const C=fallCast();c
     g.restore();
     if(!x.t)return;
     if(x.big){if(u>0.8){g.globalAlpha=cl((u-0.8)/0.5,0,1);tx(g,x.t,180,192,30,'#fff','#000');g.globalAlpha=1;}return;}
-    const n=Math.floor(Math.max(0,u-0.3)*CPS);const s=x.t.slice(0,n);const nm=NAME[x.who]||'';
+    const n=Math.floor(Math.max(0,u-0.3)*CPS);sceneVoice(x,n);const s=x.t.slice(0,n);const nm=NAME[x.who]||'';
     if(x.who==='nar'){g.fillStyle='rgba(0,0,0,0.6)';g.fillRect(0,168,360,52);wrap(g,s,16,178,328,17,12.5,'#f4f0e4');return;}
     g.fillStyle='rgba(20,16,12,0.88)';rr(g,6,156,348,60,8,'rgba(20,16,12,0.88)');g.strokeStyle=x.inner?'#7a90c0':'#c9a24a';g.lineWidth=1.5;g.stroke();
     if(nm){rr(g,14,148,Math.min(170,nm.length*11+16),16,4,x.inner?'#506080':'#c9a24a');tx(g,nm,22,156,10,'#1a1410',null,'left');}
@@ -2597,7 +2602,7 @@ function resolveAnim(co,mag){const {eo,cl,rr,tx}=a2;const C=resolveCast();const 
     a2Person(g,180,158,1.05,Object.assign({},C.pres,{mouth:x.who==='pres'||x.cheer?'open':'smile',brow:x.who==='pres'&&/創刊/.test(x.t)?'angry':undefined}),'up',{arms:x.cheer||x.who==='end'?'up':'down'});
     if(x.who==='end'){const k=eo(cl(u/0.8,0,1));g.fillStyle='rgba(0,0,0,'+(0.5*k)+')';g.fillRect(0,0,360,220);g.save();g.globalAlpha=k;tx(g,co,180,92,26,'#ffe9a0','#2a1a08');tx(g,'誕　生',180,132,22,'#ffffff','#a01818');g.restore();return;}
     if(x.cheer){if(u>0.2){g.save();g.globalAlpha=cl((u-0.2)/0.3,0,1);tx(g,x.t,180,44,34,'#fff','#c8302a');g.restore();}return;}
-    if(!x.t)return;const nn=Math.floor(Math.max(0,u-0.3)*CPS);const s=x.t.slice(0,nn);
+    if(!x.t)return;const nn=Math.floor(Math.max(0,u-0.3)*CPS);sceneVoice(x,nn);const s=x.t.slice(0,nn);
     if(x.who==='nar'){g.fillStyle='rgba(0,0,0,0.6)';g.fillRect(0,168,360,52);wrap(g,s,16,178,328,17,12.5,'#f4f0e4');return;}
     rr(g,6,156,348,60,8,'rgba(20,16,12,0.88)');g.strokeStyle='#c9a24a';g.lineWidth=1.5;g.stroke();const nm=NAME[x.who]||'';
     if(nm){rr(g,14,148,Math.min(170,nm.length*11+16),16,4,'#c9a24a');tx(g,nm,22,156,10,'#1a1410',null,'left');}
@@ -4899,7 +4904,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.275）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.276）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
