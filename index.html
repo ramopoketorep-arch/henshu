@@ -1801,6 +1801,7 @@ function rivPop(o,el){
   if(o.news==='oust'){el.innerHTML=oustHTML();el.hidden=false;return;}
   if(o.news==='story'){el.innerHTML=storyHTML(o);el.hidden=false;try{const f=$('popface');if(f)face32(f,storyWho(o.who),{tie:true,mouth:o.mouth||'smile'});}catch(e){}return;}
   if(o.news==='era75'||o.news==='paper'){el.innerHTML=o.news==='paper'?paperHTML(o):era75HTML(o);el.hidden=false;try{const f=$('popface');if(f)face32(f,o.gondo?GONDO:o.who==='keiri'?(byRole('keibu')[0]||PRES):PRES,{tie:true,mouth:o.gondo?'smile':'frown'});}catch(e){}return;}
+  if(o.news==='draft'){el.innerHTML=draftHTML();el.hidden=false;return;}
   if(o.news==='ichipre'||o.news==='ichires'){el.innerHTML=o.news==='ichipre'?ichiPreHTML(o):ichiResHTML(o);el.hidden=false;return;}
   if(o.news==='shinapp'){el.innerHTML='<div class="box" style="border-color:#7ab0e0"><h3 id="pop-h" style="color:#9ac8f0;text-align:center;font-size:24px">🌸 新卒の応募が来た</h3><div class="quote">人事「社長、来年4月入社の新卒の応募が<b>'+o.n+'人</b>来ています！ 「人事」の「採用」→「新卒」で、内定を出す人を選んでください。3月まで選べます。」</div><div class="s" style="font-size:17px">力は研修が終わるまでわからない。面接の印象がヒント。ほとんどは並で、たまに逸材がまじっている。</div><button class="btn pri" data-act="riv" data-arg="ok">見てみる</button></div>';el.hidden=false;return;}
   if(o.news==='shinjoin'){el.innerHTML='<div class="box" style="border-color:#ffb0c8"><h3 id="pop-h" style="color:#ffc0d4;text-align:center;font-size:24px">🌸 '+o.y+'年 入社式 🌸</h3><div class="quote">社長「ようこそ！ 今日からきみたちも、この雑誌の仲間だ！」</div><div style="font-size:18px;line-height:1.7;margin:8px 0">'+(o.names||[]).map(n=>'・'+esc(n)).join('<br>')+'</div><div class="s" style="font-size:17px">新入社員 '+(o.names||[]).length+'人が研修に入った。来月、力がわかる。</div><button class="btn pri" data-act="riv" data-arg="ok">よろしく！</button></div>';el.hidden=false;return;}
@@ -1861,7 +1862,7 @@ function rivPop(o,el){
     el.innerHTML='<div class="box" style="border-color:'+col+'"><h3 id="pop-h" style="color:'+col+'">'+h+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+ex+'</div><div class="s">業界トップの出版社</div></div></div><div class="quote">'+q+'</div><div class="s" style="font-size:17px;line-height:1.7;margin:8px 0">'+sub+'</div>'+(extra||'<button class="btn pri" data-act="riv" data-arg="ok">'+btn+'</button>')+'</div>';
     el.hidden=false;try{face32($('popface'),GONDO,{tie:true,mouth:mood});}catch(e){}return;}
   return false;}
-function rivAct(arg){const o=(S.popups||[])[0];if(!o)return;if(o.news==='secpick'){if(!arg.startsWith('sec:'))return;const id=+arg.slice(4);const ph=S.flags.phone;S.flags.phone=3;hire(id,'zatsumu');S.flags.phone=ph;S.cands=S.cands.filter(c=>!c.secCand);S.popups.shift();$('pop').hidden=true;const c=byRole('zatsumu').find(x=>x.id===id);if(c)say('人事','秘書に '+c.name+' を選んだ。');if(!S.popups.some(x=>x.news==='story'||x.news==='secpick')&&S.introPending){S.intro=S.introPending;S.introI=0;delete S.introPending;}save();render();showPop();return;}if(o.news==='story'){S.popups.shift();$('pop').hidden=true;if(!S.popups.some(x=>x.news==='story'||x.news==='secpick')&&S.introPending){S.intro=S.introPending;S.introI=0;delete S.introPending;}save();render();showPop();return;}if(arg.startsWith('ichipol:')){ichiPolicy(arg);return;}if(arg.startsWith('ichisel:')){ichiSel(arg);return;}if(arg==='ichibooth'){S.ichiBoothNext=!S.ichiBoothNext;save();$('pop').hidden=true;showPop();return;}S.popups.shift();$('pop').hidden=true;
+function rivAct(arg){const o=(S.popups||[])[0];if(!o)return;if(o.news==='secpick'){if(!arg.startsWith('sec:'))return;const id=+arg.slice(4);const ph=S.flags.phone;S.flags.phone=3;hire(id,'zatsumu');S.flags.phone=ph;S.cands=S.cands.filter(c=>!c.secCand);S.popups.shift();$('pop').hidden=true;const c=byRole('zatsumu').find(x=>x.id===id);if(c)say('人事','秘書に '+c.name+' を選んだ。');if(!S.popups.some(x=>x.news==='story'||x.news==='secpick')&&S.introPending){S.intro=S.introPending;S.introI=0;delete S.introPending;}save();render();showPop();return;}if(o.news==='story'){S.popups.shift();$('pop').hidden=true;if(!S.popups.some(x=>x.news==='story'||x.news==='secpick')&&S.introPending){S.intro=S.introPending;S.introI=0;delete S.introPending;}save();render();showPop();return;}if(arg.startsWith('ichipol:')){ichiPolicy(arg);return;}if(arg.startsWith('draft:')){draftPick(arg);return;}if(arg.startsWith('ichisel:')){ichiSel(arg);return;}if(arg==='ichibooth'){S.ichiBoothNext=!S.ichiBoothNext;save();$('pop').hidden=true;showPop();return;}S.popups.shift();$('pop').hidden=true;
   if(o.news==='ichipre'){ichiSend(arg);save();render();showPop();return;}
   if(o.news==='paper'){paperChoose(arg);save();render();showPop();return;}
   if(o.news==='kiryu'){save();render();a2Overlay(kiryuAnim(),()=>showPop());return;}
@@ -2027,6 +2028,21 @@ function ichiPreHTML(o){const ts=byRole('tantou').filter(t=>!t.hidden);const sel
   {const bf=boothFee();h+='<button class="btn'+(S.ichiBoothNext?' pri':'')+'" style="width:100%;margin:10px 0 4px;font-size:18px" data-act="riv" data-arg="ichibooth">'+(S.ichiBoothNext?'✔ ':'')+'🏷 うちもブースを出す（出店料 '+yen(bf)+'）</button><div class="s" style="font-size:16px">会社の名前が知られているほど、人が集まる。グッズが売れて、少しだけもうかる。</div>';}
   return h+'<div class="row" style="margin-top:6px"><button class="btn pri"'+(sel.length||S.ichiBoothNext?'':' disabled')+' data-act="riv" data-arg="ichigo">この顔ぶれで行く</button><button class="btn" data-act="riv" data-arg="0">今回は行かない</button></div></div>';}
 function ichiSel(arg){const id=+arg.split(':')[1];const a=S.ichiPick=S.ichiPick||[];const k=a.indexOf(id);if(k>=0)a.splice(k,1);else{if(a.length>=2)a.shift();a.push(id);}save();$('pop').hidden=true;showPop();}
+/* ===== 年末の新人ドラフト：その年のコミケで見つけた有望な新人から、1人と契約するか、見送るか ===== */
+function draftHTML(){const D=S.draft||[];const nm=id=>(staffById(id)||{name:'？'}).name;
+  let h='<div class="box" style="border-color:#e0a0e0"><h3 id="pop-h" style="color:#f0b8f0;text-align:center;font-size:24px">🎓 '+S.y+'年 新人ドラフト</h3>'
+   +'<div class="quote">秘書「今年の'+ICHI+'で見つけた、有望な新人さんたちです。誰と契約しますか？（1人まで）」</div>';
+  if(S.draftMsg)h+='<div class="quote" style="border-color:var(--red)">'+S.draftMsg+'</div>';
+  for(const m of D){h+='<div style="font-size:17px;margin:6px 0;padding:8px;border-radius:8px;background:'+(m.dNo?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.07)')+(m.dNo?';opacity:.5':'')+'"><b style="font-size:19px">'+esc(m.name)+'</b>（'+m.age+'歳・'+esc(m.genre)+'）'+(m.dWhen===8?'<span class="s">夏</span>':'<span class="s">冬</span>')
+    +'<br><span class="s">'+(m.dV||[]).map(v=>esc(nm(v.id).split(' ')[0])+'「'+esc(v.line)+'」').join(' ')+'</span><br>見立て：だいたい <b>'+rank(m.dAvg||50)+'</b>'+(m.dNo?'　<b style="color:var(--red)">断られた</b>':'<div class="row" style="margin-top:4px"><button class="btn pri" data-act="riv" data-arg="draft:'+m.id+'">この人と契約する</button></div>')+'</div>';}
+  return h+'<button class="btn" style="margin-top:8px" data-act="riv" data-arg="draft:none">今年は見送る</button></div>';}
+function draftPick(arg){const v=arg.split(':')[1];const D=S.draft||[];
+  if(v==='none'){S.draft=[];S.draftMsg='';(S.popups||[]).shift();say('社長','今年のドラフトは見送った。');save();$('pop').hidden=true;render();showPop();return;}
+  const m=D.find(x=>x.id===+v);if(!m||m.dNo)return;
+  /* 実力のある人ほど、ほかの出版社からも声がかかっていて断られやすい。会社の格が上がると来てくれやすい */
+  if(R()<clamp((mLevel(m)-48)/40-compTier()*0.08,0,0.7)){m.dNo=1;S.draftMsg=esc(m.name)+'さん「ありがたいんですけど……ほかの出版社さんからも声をかけてもらってて」<br>……<b>断られた</b>。ほかの人にする？';save();showPop();return;}
+  const t=staffById(m.dScout)||byRole('tantou').find(x=>!x.hidden);m.status='stock';m.tantou=t?t.id:null;m.handBy=m.tantou;m.raised=m.tantou;m.found=S.y;m.exclusive=true;['dScout','dAvg','dV','dWhen','dNo'].forEach(k=>delete m[k]);S.manga.push(m);if(t)t.jonetsu=clamp((t.jonetsu||50)+5,0,100);
+  S.draft=[];S.draftMsg='';(S.popups||[]).shift();S.popups.unshift({rid:'st',news:'story',who:'nar',t:'🎉 新人ドラフトで、<b>'+esc(m.name)+'</b>さんと<b>専属契約</b>した！<br>担当は'+(t?esc(t.name):'未定')+'。持ち駒に入った。<br><span class="s">同人出身：絵がうまくファンがいるが、最初の1年は締め切りに慣れていない。</span>'});save();$('pop').hidden=true;render();showPop();}
 function boothFee(){return Math.round(30000*eraF()/1000)*1000;}
 function ichiSend(arg){if(arg==='ichigo'&&S.ichiBoothNext){S.ichiBooth=1;const bf=boothFee();S.money-=bf;say('社長',ICHI+'に、うちのブースを出すことにした（出店料 '+yen(bf)+'）。');}S.ichiBoothNext=false;const team=arg==='ichigo'?(S.ichiPick||[]).slice():[];S.ichiPick=[];S.ichiSend=team.length?team:null;if(team.length){const fee=Math.round(20000*(team.length+(secOf()?1:0))*eraF()/1000)*1000;S.money-=fee;say('社長',team.map(id=>(staffById(id)||{}).name).join('と')+(secOf()?'、秘書':'')+'を'+ICHI+'に行かせることにした（交通費 '+yen(fee)+'）。');}}
 function ichiRun(){const n=ichiScale();const res={n,y:S.y,m:S.m,enc:[],books:[]};
@@ -2036,10 +2052,11 @@ function ichiRun(){const n=ichiScale();const res={n,y:S.y,m:S.m,enc:[],books:[]}
     for(let e=0;e<nEnc;e++){if(e===1&&R()<0.3){res.enc.push({cos:1});continue;}
       const m=rookieManga(compTier(),{age:ri(18,26)});S.manga=S.manga.filter(x=>x!==m);if(R()<0.35)m.ga=clamp((m.ga||40)+ri(5,15),10,99);
       const V=mem.map(x=>{const A=(100-(x.bigan||40))/100*28;const v=(m.cap||50)+(R()*2-1)*A;return {id:x.id,v,line:v>=72?pick(['……凄いな。','これは、本物だ。','鳥肌が立った。']):v>=60?pick(['いいね。','光るものがある。','悪くない。']):pick(['ダメだこりゃ。','……うーん。','まだまだだね。'])};});
-      const avg=V.reduce((a,b)=>a+b.v,0)/V.length;let take=avg>=60;let dec=0;/* 実力のある人ほど、ほかの出版社からも声がかかっていて断られやすい。会社の格が上がると来てくれやすい */if(take&&R()<clamp((mLevel(m)-48)/40-compTier()*0.08,0,0.7)){take=false;dec=1;}const enc={id:m.id,name:m.name,genre:m.genre,V,take,dec};
+      const avg=V.reduce((a,b)=>a+b.v,0)/V.length;const take=avg>=60;const enc={id:m.id,name:m.name,genre:m.genre,V,take};
+      /* 有望な人は、年末の「新人ドラフト」の候補に入れる（その場では契約しない） */
       if(take){m.fans=(m.fans||0)+Math.round(n*(0.04+R()*0.08));m.tags=m.tags||[];if(!m.tags.includes('同人出身'))m.tags.push('同人出身');m.doujin=1;
-        const t=team.slice().sort((a,b)=>stockOf(a).length-stockOf(b).length)[0];m.status='stock';m.tantou=t.id;m.handBy=t.id;m.raised=t.id;m.found=S.y;/* コミケで声をかけて受けてくれた＝専属契約 */m.exclusive=true;S.manga.push(m);t.jonetsu=clamp((t.jonetsu||50)+5,0,100);enc.by=t.name;}
-      else enc.lk=(()=>{try{return NR.lookOf(m);}catch(e){return {};}})();
+        const t=team.slice().sort((a,b)=>stockOf(a).length-stockOf(b).length)[0];m.dScout=t.id;m.dAvg=Math.round(avg);m.dV=V.map(v=>({id:v.id,line:v.line}));m.dWhen=S.m;(S.draft=S.draft||[]).push(m);enc.by=t.name;}
+      enc.lk=(()=>{try{return NR.lookOf(m);}catch(e){return {};}})();
       res.enc.push(enc);}}
   /* うちのブース：会社の人気（部数・称号・アニメ・知名度）に比例して人が来る。グッズで少しもうかる */
   if(S.ichiBooth){S.ichiBooth=0;const an=S.manga.filter(m=>m.anime&&m.status!=='gone').length;
@@ -2059,12 +2076,13 @@ function ichiRun(){const n=ichiScale();const res={n,y:S.y,m:S.m,enc:[],books:[]}
     m.fans=Math.round((m.fans||0)*1.04+b.k*3);S.mag.aware=Math.min(100,(S.mag.aware||0)+0.3);}
   // アンケートとの差（隠れ人気）
   const rk=serials().slice().sort((a,b)=>(b.pop||0)-(a.pop||0));if(res.books[0]){const top=res.books[0];const ar=rk.findIndex(x=>x.id===top.id)+1;res.hidden=ar>=3?{title:top.title,ar}:null;}
-  rivPush({news:'ichires',res});}
+  rivPush({news:'ichires',res});
+  if(S.m===12&&(S.draft||[]).length){S.draftMsg='';rivPush({news:'draft'});}}
 function ichiResHTML(o){const r=o.res;const S2=r.books||[];
   let h='<div class="box" style="border-color:#e0a0e0"><h3 id="pop-h" style="color:#f0b8f0;text-align:center;font-size:24px">📚 '+r.y+'年'+(r.m===8?'夏':'冬')+'の'+ICHI+'</h3><div class="s" style="text-align:center;font-size:17px">参加者 約'+r.n.toLocaleString()+'人</div>';
   if(r.team){const nm=id=>(staffById(id)||{name:'？'}).name;h+='<div class="s" style="font-size:17px">報告書：'+r.team.map(nm).join('・')+(r.sec?'・秘書':'')+'</div>';
     for(const e of r.enc){if(e.cos){h+='<div style="font-size:17px;margin:4px 0">・呼び止めたら、コスプレの人だった。</div>';continue;}
-      h+='<div style="font-size:17px;margin:6px 0;padding:8px;border-radius:8px;background:'+(e.take?'rgba(122,208,138,0.15)':'rgba(255,255,255,0.05)')+'">'+(e.take?'🎉 ':'・')+esc(e.name)+'（'+esc(e.genre)+'）<br><span class="s">'+e.V.map(v=>esc(nm(v.id).split(' ')[0])+'「'+esc(v.line)+'」').join(' ')+'</span><br>'+(e.take?'<b>連絡先をもらった！</b> 担当は'+esc(e.by)+'。<b>専属</b>で契約して、持ち駒に入った（同人出身：絵がうまくファンがいるが、締め切りに慣れていない）。':e.dec?'声をかけたが、「ありがたいんですけど……ほかの出版社さんからも声をかけてもらってて」と<b>断られた</b>。うちの格が上がれば、来てくれるかもしれない。':'今回は見送った。')+'</div>';}
+      h+='<div style="font-size:17px;margin:6px 0;padding:8px;border-radius:8px;background:'+(e.take?'rgba(122,208,138,0.15)':'rgba(255,255,255,0.05)')+'">'+(e.take?'🎉 ':'・')+esc(e.name)+'（'+esc(e.genre)+'）<br><span class="s">'+e.V.map(v=>esc(nm(v.id).split(' ')[0])+'「'+esc(v.line)+'」').join(' ')+'</span><br>'+(e.take?'<b>有望！</b> 連絡先をもらって、<b>年末の新人ドラフト</b>の候補に入れた（見つけたのは'+esc(e.by)+'）。':e.wait?'光るものはあったが、前に迎えた新人の育成でまだ手一杯。今回は名刺を渡すだけにした。（コミケから新人を迎えられるのは2年に1人まで）':e.dec?'声をかけたが、「ありがたいんですけど……ほかの出版社さんからも声をかけてもらってて」と<b>断られた</b>。うちの格が上がれば、来てくれるかもしれない。':'今回は見送った。')+'</div>';}
     if(!r.enc.length)h+='<div class="s">めぼしい人には会えなかった。</div>';}
   else h+='<div class="s" style="font-size:17px">今回は、だれも行かなかった。</div>';
   if(r.booth){const b=r.booth;h+='<div style="font-size:18px;margin:8px 0;padding:8px;border-radius:8px;background:rgba(240,184,240,0.12)">🏷 うちのブース：<b>'+b.v.toLocaleString()+'人</b>が来てくれた。<br><span class="s" style="font-size:16px">グッズの売上 '+yen(b.rev)+'・もうけ '+yen(b.prof)+'</span></div>';}
@@ -5031,7 +5049,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.308）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.310）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
