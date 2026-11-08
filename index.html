@@ -3613,6 +3613,7 @@ function endTurn(){
   }
   try{deshiMonth();}catch(e){console.error(e);}
   try{poachMonth();}catch(e){console.error(e);}
+  try{if(S.m===6||S.m===12)kanbanReview();}catch(e){console.error(e);}
   // (3) コミックス
   const cp=Math.round(priceNow()*1.6);cserInit();S.cmon={y:S.y,m:S.m,list:[]};const newC=[];
   for(const c of S.comics){
@@ -4600,13 +4601,12 @@ function sheetManga(){
     const ks=S.manga.filter(m=>m.isKanban&&['serial','stock','queue'].includes(m.status));
     const ext=ks.find(m=>!m.amateur);
     h+='<div class="card"><div class="who">看板（'+ks.length+' / 3本）</div><div class="t">雑誌の顔になる作品。外から迎える看板はひとりだけで、フリー（1年半〜2年で去っていく代打）。本当の看板は、うちで育った生え抜きだけ。生え抜きの作品は、中堅でも雑誌を支えていれば実力で看板に上がれる（全部で3本まで）。生え抜きの看板が固定ファン70万人に届くと「大看板」になる（看板2本分の力）。看板が多いほど雑誌が売れる。'+(chief()?'':'編集長がいないと決められない。')+'</div></div>';
-    if(ks.length){h+='<div class="sec">いまの看板</div>';for(const m of ks)h+=mangaCard(m,'<div class="s">'+(m.amateur?(m.daiKanban?'👑 大看板（生え抜き）':'生え抜きの看板・固定ファン '+Math.round((m.fans||0)/10000).toLocaleString()+'万人／大看板まで70万人'):'外から迎えた看板（フリー）'+(m.freeEnd!=null&&m.status==='serial'?'・あと'+Math.max(0,m.freeEnd-S.turns)+'か月ほどで去る':''))+'</div>');}
+    if(ks.length){h+='<div class="sec">いまの看板</div>';for(const m of ks)h+=mangaCard(m,'<div class="s">'+(m.amateur?(m.daiKanban?'👑 大看板（生え抜き）':'生え抜きの看板・固定ファン '+Math.round((m.fans||0)/10000).toLocaleString()+'万人／大看板まで70万人'):'外から迎えた看板（フリー）'+(m.freeEnd!=null&&m.status==='serial'?'・あと'+Math.max(0,m.freeEnd-S.turns)+'か月ほどで去る':''))+'</div>'+(m.amateur&&!m.senpai?'<div class="s">最近の順位：'+((m.rkh||[]).slice(-6).join('・')||'―')+'位（平均 '+(kAvg(m)??'―')+'位）</div>':''));}
     if(S.mag.launched){
-      const cand=serials().filter(m=>m.amateur&&!m.isKanban&&(m.rkh||[]).filter(r=>r<=3).length>=3);
-      h+='<div class="sec">生え抜きを看板に上げる</div><div class="card"><div class="s">持ち駒からうちで連載を始めた先生の作品で、最近6号のうち3号以上、人気投票で3位以内に入った作品が候補。看板になると原稿料が1ページ'+yen(Math.round(1500*eraF()/100)*100)+'上がる。</div></div>';
-      if(ks.length>=3)h+='<div class="card"><div class="s">看板はもう3本。これ以上は増やせない。</div></div>';
-      else if(!cand.length)h+='<div class="card"><div class="s">いま看板に上げられる作品はない。</div></div>';
-      else for(const m of cand)h+=mangaCard(m,'<div class="s">最近の順位：'+(m.rkh||[]).join('・')+'位</div><div class="row"><button class="btn pri" data-act="kpromote" data-arg="'+m.id+'"'+(chief()?'':' disabled')+'>看板に上げる</button></div>');
+      const nx=S.m<6?6:S.m<12?12:6;
+      h+='<div class="sec">看板の決まり方</div><div class="card"><div class="s">生え抜きの看板は、読者が決める。半年に1回（6月と12月）、最近6号の人気投票の平均順位がよい作品から、自然と看板になる（平均4位以内・連載4号以上）。固定ファンが多い作品は有利で、10万人ごとに平均順位を1位分よく見てもらえる（最大3位分）。基準に届く作品がなければ、看板なしの号もある。外れた作品は、看板からはずれる。看板になると原稿料が1ページ'+yen(Math.round(1500*eraF()/100)*100)+'上がる。大看板は、平均8位以内なら看板に残る。<br><b>次の見直しは'+nx+'月。</b></div></div>';
+      const near=serials().filter(m=>m.amateur&&!m.isKanban&&!m.senpai&&kScore(m)!=null).sort((a,b)=>kScore(a)-kScore(b)).slice(0,3);
+      if(near.length){h+='<div class="sec">看板に近い作品</div>';for(const m of near)h+=mangaCard(m,'<div class="s">最近の順位：'+(m.rkh||[]).slice(-6).join('・')+'位（平均 '+kAvg(m)+'位'+(kFanB(m)?'・固定ファン '+Math.round((m.fans||0)/10000)+'万人で −'+kFanB(m):'')+' → <b>'+kScore(m)+'</b>）'+(kScore(m)<=4?'・<b style="color:var(--green)">次の見直しで看板になれそう</b>':'・平均4位以内で看板')+'</div>');}
     }
     if(!ext&&ks.length<3){
       h+='<div class="sec">外から看板を迎える</div>';
@@ -5095,7 +5095,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.321）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.324）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -5439,6 +5439,7 @@ function actRest(a,arg,b){
     case 'hiretab':S.hireTab=arg;expand=null;drawSheet();break;
     case 'hirebar':S.hireBar=+arg;expand=null;save();drawSheet();break;
     case 'sfilter':S.staffFilter=arg;expand=null;drawSheet();const sb=document.querySelector('.sh-body');if(sb)sb.scrollTop=0;break;
+    case 'kdemote':{const m=S.manga.find(x=>x.id===+arg);if(!m||!m.isKanban||!chief())break;if(!m.kdSure){m.kdSure=1;toast('もう一度押すと、看板からはずします（先生と担当はがっかりします）');drawSheet();break;}delete m.kdSure;m.isKanban=false;if(m.fee)m.fee=Math.max(100,m.fee-Math.round(1500*eraF()/100)*100);m.fame=Math.max(0,(m.fame||0)-20);const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)-6,0,100);say('編集長・'+chief().name,'「'+(m.title||m.name)+'」は、看板からはずします。……先生には、また上がってきてほしい。');S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'編集部',who:'編集長',t:m.name+'先生の「'+(m.title||'')+'」を看板からはずしました。先生も担当も、肩を落としています。これからは連載会議で入れかえの対象にもなります。',warn:true});save();drawSheet();render();break;}
     case 'kpromote':{const m=S.manga.find(x=>x.id===+arg);if(!m||!chief())break;if(S.manga.filter(x=>x.isKanban&&x.status!=='gone').length>=3){toast('看板はもう3本です');break;}m.isKanban=true;m.fee=pageFee(m)+Math.round(1500*eraF()/100)*100;say('編集長・'+chief().name,'「'+m.title+'」を看板にします！');(S.popups=S.popups||[]).push({kup:m.id});save();drawSheet();showPop();break;}
     case 'ikpick':S.ikPick=+arg||null;drawSheet();break;
     case 'ikstart':{const[id,plan,tg]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m){m.ik={plan,target:tg?+tg:null,ok:false,n:0};S.ikPick=null;say('担当',m.name+'さんの育成を始めます（'+IKP[plan]+'）。');save();drawSheet();}break;}
@@ -7470,6 +7471,19 @@ musicUI();
 /* 連載枠：9本から、部数10万ごとに1本ずつ増える（最大15本） */
 function awF(a){return (a||0)<60?1:(a||0)<80?0.5:0.25;}
 function awAdd(x){const a=S.mag.aware||0;return Math.min(100,a+(x>0?x*awF(a):x));}
+/* ===== 看板は読者が決める：半年に1回、人気投票の平均順位で生え抜きの看板を見直す ===== */
+function kAvg(m){const r=(m.rkh||[]).slice(-6);if(r.length<4)return null;return Math.round(r.reduce((a,b)=>a+b,0)/r.length*10)/10;}
+/* 看板の評価：人気投票の平均順位から、固定ファンの多さを差し引く（10万人ごとに1位分よく見る。最大3位分） */
+function kFanB(m){return Math.min(3,Math.floor((m.fans||0)/100000));}
+function kScore(m){const a=kAvg(m);return a==null?null:Math.round((a-kFanB(m))*10)/10;}
+function kanbanReview(){if(!S.mag.launched||S.prologue)return;const kf=Math.round(1500*eraF()/100)*100;
+  const keep=S.manga.filter(m=>m.isKanban&&['serial','stock','queue'].includes(m.status)&&(!m.amateur||m.senpai||(m.daiKanban&&(kScore(m)??99)<=8)));
+  const pool=serials().filter(m=>m.amateur&&!m.senpai&&!keep.includes(m)&&kScore(m)!=null&&kScore(m)<=4).sort((a,b)=>kScore(a)-kScore(b));
+  const pick3=pool.slice(0,Math.max(0,3-keep.length));const ins=[],outs=[];
+  for(const m of S.manga){if(!m.isKanban||!m.amateur||m.senpai||keep.includes(m))continue;if(!pick3.includes(m)){m.isKanban=false;if(m.fee)m.fee=Math.max(100,m.fee-kf);const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)-4,0,100);outs.push(m);}}
+  for(const m of pick3){if(m.isKanban)continue;m.isKanban=true;m.fee=pageFee(m)+kf;const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)+6,0,100);ins.push(m);}
+  if(!ins.length&&!outs.length)return;const ks=S.manga.filter(m=>m.isKanban&&['serial','stock','queue'].includes(m.status));
+  (S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'📣 '+S.y+'年'+S.m+'月　今期の看板が決まった（読者の人気投票より）<br>'+ks.map(m=>'「<b>'+esc(m.title||'')+'</b>」').join('　')+(ins.length?'<br><span style="color:var(--green)">新しく看板に：'+ins.map(m=>esc(m.name)+'先生').join('、')+'</span>':'')+(outs.length?'<br><span style="color:var(--red)">看板からはずれた：'+outs.map(m=>esc(m.name)+'先生').join('、')+'</span>':'')});}
 function capFor(sold){return Math.min(15,9+Math.floor((sold||0)/100000));}
 function migrate(){if(S)S.skip=false;
  try{if(S&&S.mag&&S.mag.launched&&S.titleBy!=='busu'){const mx=Math.max(0,...(S.history||[]).map(h=>h.sold||0));let idx=1;for(let i=2;i<TITLES.length-1;i++)if(mx>=TITLES[i][0])idx=i;S.titleIdx=Math.min(S.titleIdx||1,idx);S.titleBy='busu';S.lastYearSales=null;}}catch(e){}try{oustRecover();}catch(e){}
