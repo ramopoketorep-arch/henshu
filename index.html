@@ -258,7 +258,8 @@ function capOf(r){if(S&&S.desks){if(r==='tantou')return Math.min(S.lux?18:CAP.ta
 const CAP={chief:1,vice:2,tantou:9,zatsumu:1,eibu:1,eigyo:3,senbu:1,senden:2,keibu:1,keiri:2,kenshu:99,mi:99,souko:99};
 const PRICES=[[1970,1,150],[1974,4,180],[1979,4,220],[1984,4,250],[1989,4,260],[1993,4,280],[1997,4,300]];
 const FEE={S:15000,A:9000,B:6000,C:4000,D:3000,E:2000,F:1500,G:1000};
-const TITLES=[[0,'名もなき雑誌社'],[1,'ガリ版の夢'],[5e7,'町の雑誌社'],[1e8,'駆け出しの出版社'],[2e8,'書店で見かける雑誌'],[35e7,'中堅出版社'],[5e8,'業界の注目株'],[7e8,'大手の仲間入り'],[10e8,'業界の雄'],[15e8,'日本イチの漫画雑誌']];
+/* 称号は、去年1年間の雑誌の平均部数で決まる（日本イチは雑誌ランキング1位） */
+const TITLES=[[0,'名もなき雑誌社'],[1,'ガリ版の夢'],[1e4,'町の雑誌社'],[5e4,'駆け出しの出版社'],[10e4,'書店で見かける雑誌'],[20e4,'中堅出版社'],[35e4,'業界の注目株'],[60e4,'大手の仲間入り'],[100e4,'業界の雄'],[1e12,'日本イチの漫画雑誌']];
 const KEY={chief:['henshu','bigan'],vice:['henshu'],tantou:['henshu','bigan'],zatsumu:['jimu'],eibu:['eigyo','jimu'],eigyo:['eigyo'],senbu:['kikaku','eigyo'],senden:['kikaku','eigyo'],keibu:['jimu','eigyo'],keiri:['jimu']};
 const STATN={henshu:'編集',kikaku:'企画',bigan:'審美',eigyo:'営業',jimu:'事務',jonetsu:'情熱'};
 const keyVal=(s,k)=>k.length===2?(s[k[0]]*0.65+s[k[1]]*0.35):s[k[0]];
@@ -706,7 +707,7 @@ function hasGroup(){return !!(S.sub&&S.sub.staff&&(S.rivals||[]).some(r=>r.sub))
 function pubRanking(){
   if(!S.rivals||S.rivals.length<20)rivalsTick();
   const pr=priceNow();const M={};
-  let subS=0;for(const r of S.rivals){if(r.sold<=0)continue;const iss=r.name.startsWith('週刊')?48:r.name.startsWith('隔週')?24:12;if(r.sub){subS+=r.sold*pr*0.7*iss*1.6;continue;}const p=pubOf(r);M[p]=M[p]||{name:p,sales:0,mags:0};M[p].sales+=r.sold*pr*0.7*iss*1.6;M[p].mags++;}
+  let subS=0;for(const r of S.rivals){if(r.sold<=0)continue;const iss=r.name.startsWith('週刊')?48:r.name.startsWith('隔週')?24:12;if(r.sub){subS+=r.sold*pr*0.7*iss*1.6;continue;}const p=pubOf(r);M[p]=M[p]||{name:p,sales:0,mags:0};/* 雑誌の売上＋コミックスの売上（作品ごとの実績があればそれを使う） */let cm;if(r.roster&&r.roster.length){const cp=Math.round(pr*1.6);cm=r.roster.reduce((a,e)=>a+Math.max(e.py||0,(e.ys||0)*12/Math.max(1,S.m)),0)*cp*0.7;}else cm=r.sold*pr*0.7*iss*0.6;M[p].sales+=r.sold*pr*0.7*iss+cm;M[p].mags++;}
   const list=Object.values(M);const me={name:subS?groupName():coName(),sales:annSales()+subS,mags:(S.mag.launched?1:0)+(subS?1:0),me:true};
   list.push(me);return list.sort((a,b)=>b.sales-a.sales);
 }
@@ -4020,14 +4021,15 @@ function growMonth(){
   if(S.mlvups&&S.mlvups.length){(S.popups=S.popups||[]).push({mlvup:[...new Set(S.mlvups)]});S.mlvups=[];}
 }
 function updateTitle(){
-  // 称号は1年に1回、1月に「去年1年間の売上」で決まる
+  // 称号は1年に1回、1月に「去年1年間の雑誌の平均部数」で決まる
   if(S.m!==1||!S.mag.launched)return;
-  const py=S.y-1;const recs=(S.records||[]).filter(r=>r.y===py);
-  const ann=recs.reduce((a,x)=>a+x.inc,0);
-  let idx=1;for(let i=2;i<TITLES.length;i++)if(ann>=TITLES[i][0])idx=i;
-  S.lastYearSales=ann;
-  if(idx>S.titleIdx){S.titleIdx=idx;S.pendingEvents.push({dept:'経理',who:'称号',t:py+'年の売上は'+yen(ann)+'。「'+TITLES[idx][1]+'」になりました！'});}
-  else S.pendingEvents.push({dept:'経理',who:'称号',t:py+'年の売上は'+yen(ann)+'。'+(S.titleIdx<TITLES.length-1?'次の「'+TITLES[S.titleIdx+1][1]+'」には、1年で'+yen(TITLES[S.titleIdx+1][0])+'が必要です。':'')});
+  const py=S.y-1;const hs=(S.history||[]).filter(r=>r.y===py&&r.sold>0);if(!hs.length)return;
+  const avg=Math.round(hs.reduce((a,x)=>a+x.sold,0)/hs.length);
+  let idx=1;for(let i=2;i<TITLES.length;i++)if(avg>=TITLES[i][0])idx=i;
+  try{const rk=ranking();if(rk[0]&&rk[0].me)idx=TITLES.length-1;}catch(e){}
+  S.lastYearSales=avg;S.titleBy='busu';
+  if(idx>S.titleIdx){S.titleIdx=idx;S.pendingEvents.push({dept:'経理',who:'称号',t:py+'年の平均部数は'+busu(avg)+'。「'+TITLES[idx][1]+'」になりました！'});}
+  else S.pendingEvents.push({dept:'経理',who:'称号',t:py+'年の平均部数は'+busu(avg)+'。'+(S.titleIdx<TITLES.length-2?'次の「'+TITLES[S.titleIdx+1][1]+'」は、平均'+busu(TITLES[S.titleIdx+1][0])+'。':S.titleIdx===TITLES.length-2?'次は、雑誌ランキング1位で「日本イチの漫画雑誌」。':'')});
 }
 
 // ===== 操作 =====
@@ -4155,7 +4157,7 @@ function render(){if(S&&S.demoDue&&!OP&&sheet!=='title'&&!document.getElementByI
   {const now=yearlyOf(S.y),last=yearlyOf(S.y-1);const nt=nextTitle();
    const sh=v=>v>=1e8?(v/1e8).toFixed(2)+'億':Math.round(v/1e4).toLocaleString()+'万';
    const pr=(S.records||[]).filter(r=>r.y===S.y).reduce((a,x)=>a+x.inc-x.out,0);
-   $('yearbar').innerHTML='<span>今年 売上<b>'+sh(now)+'</b> 利益<b style="color:'+(pr<0?'#e07a6e':'#8fd18f')+'">'+(pr<0?'−':'')+sh(Math.abs(pr))+'</b></span><span>'+(nt?(nt[0]-now>0?'次の称号まで'+sh(nt[0]-now):'1月に称号アップ！'):'最高の称号')+'</span>';}
+   $('yearbar').innerHTML='<span>今年 売上<b>'+sh(now)+'</b> 利益<b style="color:'+(pr<0?'#e07a6e':'#8fd18f')+'">'+(pr<0?'−':'')+sh(Math.abs(pr))+'</b></span><span>'+(()=>{if(!nt)return '最高の称号';if(nt[0]>=1e12)return '次の称号：雑誌1位';const hs=(S.history||[]).filter(h=>h.y===S.y&&h.sold>0);const av=hs.length?hs.reduce((x,h)=>x+h.sold,0)/hs.length:0;return av>=nt[0]?'1月に称号アップ！':'次の称号まで平均'+busu(Math.ceil((nt[0]-av)/100)*100);})()+'</span>';}
   {const C=S.clock||{d:0,t:0.3};const day=Math.min(Math.floor(C.t*30)+1,30);const hh=nowH();const ph=hh<10?'朝':hh<16?'昼':hh<19?'夕方':hh<23?'夜':'深夜';const H=Math.floor(hh)%24,M=Math.floor((hh%1)*6)*10;
    $('date').textContent=era()+S.m+'月'+day+'日';S._clk=ph+' '+H+':'+(M<10?'0':'')+M;
    const sp=S.speed??1;if((sp===0.7||sp===3)&&!S.paused)S.speed=sp===3?2:1;$('ctl').innerHTML='<button data-act="open" data-arg="build">☎ 電話</button><button data-act="open" data-arg="honsha">本社</button><button data-act="spd" data-arg="0" class="'+(S.paused?'on':'')+'">'+(S.paused?'▶ 再開':'⏸ 停止')+'</button>'+[[1,'×1'],[2,'×2']].map(([v,l])=>'<button data-act="spd" data-arg="'+v+'" class="'+(!S.paused&&!S.skip&&sp===v?'on':'')+'">'+l+'</button>').join('')+(skipOK()?'<button data-act="skipev" class="'+(S.skip?'on':'')+'">'+(S.skip?'⏩中…':'⏩飛ばす')+'</button>':'');$('ctl').style.gridTemplateColumns=skipOK()?'repeat(6,1fr)':'';}
@@ -4731,7 +4733,7 @@ function sheetMag(){
     h+=distCard();
   } else {
     const ann=S.income.reduce((a,x)=>a+x.inc,0);
-    h+='<div class="card"><div class="line"><b>'+esc(mag.name)+'</b><span class="chip">'+esc(TITLES[S.titleIdx][1])+'</span></div><div class="s">'+esc(mag.policy)+'・月刊・定価'+priceNow()+'円・第'+mag.issue+'号まで</div><div class="line"><span>書店 <b>'+mag.stores+'店</b></span><span>知名度 <b>'+Math.round(mag.aware)+'</b></span><span>連載枠 <b>'+mag.cap+'本</b></span></div><div class="line"><span>年間の売上</span><span class="big">'+yen(ann)+'</span></div>'+(S.titleIdx<TITLES.length-1?'<div class="s">称号は毎年1月に、去年1年間の売上で決まる。'+(S.lastYearSales!=null?'去年は'+yen(S.lastYearSales)+'。':'')+'次の「'+TITLES[S.titleIdx+1][1]+'」は1年で '+yen(TITLES[S.titleIdx+1][0])+'</div>':'')+'</div>';
+    h+='<div class="card"><div class="line"><b>'+esc(mag.name)+'</b><span class="chip">'+esc(TITLES[S.titleIdx][1])+'</span></div><div class="s">'+esc(mag.policy)+'・月刊・定価'+priceNow()+'円・第'+mag.issue+'号まで</div><div class="line"><span>書店 <b>'+mag.stores+'店</b></span><span>知名度 <b>'+Math.round(mag.aware)+'</b></span><span>連載枠 <b>'+mag.cap+'本</b></span></div><div class="line"><span>年間の売上</span><span class="big">'+yen(ann)+'</span></div>'+(S.titleIdx<TITLES.length-1?'<div class="s">称号は毎年1月に、去年1年間の雑誌の平均部数で決まる。'+(S.lastYearSales!=null&&S.titleBy==='busu'?'去年は平均'+busu(S.lastYearSales)+'。':'')+'次の「'+TITLES[S.titleIdx+1][1]+'」は'+(S.titleIdx+1===TITLES.length-1?'雑誌ランキング1位':'平均 '+busu(TITLES[S.titleIdx+1][0]))+'</div>':'')+'</div>';
     h+=distCard();
     h+=fanCard();
     h+=voteCard();
@@ -4866,7 +4868,7 @@ function sheetData(){
       h+='<div class="sec">毎月の差し引き（入金−支出）</div><div class="card">'+g+'<div class="s">緑が黒字の月、赤が赤字の月。最近'+rr.length+'か月で黒字は'+nb+'か月。</div></div>';}}
     if((S.keiriLog||[]).length)h+='<div class="sec">経理の日誌</div><div class="card">'+S.keiriLog.slice(-12).reverse().map(e=>'<div class="line" style="align-items:flex-start"><span class="s" style="flex:0 0 auto;margin-right:8px">'+(e.y%100)+'/'+e.m+'</span><span style="flex:1;color:'+(e.c==='r'?'var(--red)':e.c==='g'?'var(--green)':'var(--fg)')+'">'+esc(e.t)+'</span></div>').join('')+'</div>';
     {const ys=Object.keys(S.yearly||{}).map(Number).sort((a,b)=>b-a);
-     h+='<div class="sec">年間の売上と称号</div><div class="card"><div class="s">称号は毎年1月、去年1年間の売上で決まる。今の称号「'+esc(TITLES[S.titleIdx][1])+'」。'+(nextTitle()?'次は「'+esc(nextTitle()[1])+'」（年間'+yen(nextTitle()[0])+'）。':'')+'</div></div>';
+     h+='<div class="sec">年間の売上と称号</div><div class="card"><div class="s">称号は毎年1月、去年1年間の雑誌の平均部数で決まる。今の称号「'+esc(TITLES[S.titleIdx][1])+'」。'+(nextTitle()?'次は「'+esc(nextTitle()[1])+'」（'+(nextTitle()[0]>=1e12?'雑誌ランキング1位':'平均'+busu(nextTitle()[0]))+'）。':'')+'</div></div>';
      if(ys.length)h+=tbl(['年','売上（万円）','前の年と比べて'],ys.map(y=>{const v=yearlyOf(y),pv=S.yearly[y-1];return '<tr><td>'+y+(y===S.y?'（途中）':'')+'</td><td>'+man(v)+'</td><td class="'+(pv&&v<pv&&y!==S.y?'neg':'')+'">'+(pv&&y!==S.y?(v>=pv?'+':'')+Math.round((v/pv-1)*100)+'%':'—')+'</td></tr>';}));}
     h+='<div class="sec">毎月</div>';
     h+='<div class="card"><div class="s">毎月の収支（単位：万円）。最近24か月。売上は3か月後に入金される。差し引き＝入金−支出。</div>'+(byRole('keibu').some(x=>!x.hidden)?'<div class="row"><button class="btn" data-act="open" data-arg="pay">給与の規程を見る</button></div>':'')+'</div>';
@@ -5060,7 +5062,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.311）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.313）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -7434,7 +7436,8 @@ musicUI();
 // ===== はじめ =====
 /* 連載枠：9本から、部数10万ごとに1本ずつ増える（最大15本） */
 function capFor(sold){return Math.min(15,9+Math.floor((sold||0)/100000));}
-function migrate(){if(S)S.skip=false;try{oustRecover();}catch(e){}
+function migrate(){if(S)S.skip=false;
+ try{if(S&&S.mag&&S.mag.launched&&S.titleBy!=='busu'){const mx=Math.max(0,...(S.history||[]).map(h=>h.sold||0));let idx=1;for(let i=2;i<TITLES.length-1;i++)if(mx>=TITLES[i][0])idx=i;S.titleIdx=Math.min(S.titleIdx||1,idx);S.titleBy='busu';S.lastYearSales=null;}}catch(e){}try{oustRecover();}catch(e){}
  /* ver.280より前に独立したセーブ：創業融資の話がまだ来ていないので、ここから1年のあいだ申し込めるようにする */
  try{if(S.ousted&&S.foundT==null&&!S.kokin){S.foundT=S.turns;const sc=byRole('zatsumu').find(x=>!x.hidden);(S.pendingEvents=S.pendingEvents||[]).push({dept:'経理',who:sc?'秘書・'+sc.name:'秘書',t:'社長、立ち上げたばかりの会社なら、国民金融公庫の創業融資（'+yen(KOKIN_AMT)+'・返済は1年後から）が受けられます。電話の「銀行」から申し込めますよ。1年以内なら、いつでも。'});}}catch(e){}
  try{if(S.ousted&&S.mag&&S.mag.cap>9&&!S.capFix){S.capFix=1;const K0=S.kiryu||{},t0=(K0.y||0)*12+(K0.m||0);const mx=Math.max(0,...(S.history||[]).filter(h=>(h.y||0)*12+(h.m||0)>t0).map(h=>h.sold||0),((S.wh||[]).slice(-1)[0]||{}).y*12>t0?(S.lastResult||{}).sold||0:0);const want=capFor(mx);if(want<S.mag.cap)S.mag.cap=want;}}catch(e){}
