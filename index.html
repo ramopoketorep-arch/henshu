@@ -3323,7 +3323,7 @@ function execPop(){const el=$('pop');const st=S.execPick||(S.execPick={});const 
   const yrs=x=>x.joinY?Math.max(0,S.y-x.joinY)+'年（'+x.joinY+'年入社'+(x.founder?'・創業メンバー':x.launchMem?'・創刊メンバー':'')+'）':Math.max(0,S.y-START_Y)+'年（創業メンバー）';
   const nm=id=>{const x=staffById(id);return x?esc(x.name):'—';};
   if(st.ask){const [role,id]=st.ask;const x=staffById(id);const RN=role==='hon'?'本部長':'副社長';
-    el.innerHTML='<div class="box"><h3 id="pop-h">最終確認</h3><div class="t" style="font-size:20px;text-align:center;margin:10px 0">'+RN+'は<br><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b><br>で決定でいいですか？</div><div class="row"><button class="btn pri" data-act="execyes">決定</button><button class="btn" data-act="execno">やめる</button></div></div>';el.hidden=false;return;}
+    el.innerHTML='<div class="box"><h3 id="pop-h">最終確認</h3><div class="t" style="font-size:20px;text-align:center;margin:10px 0">'+RN+'は<br><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b><br>で決定でいいですか？</div><div class="row" style="justify-content:center"><button class="btn pri" data-act="execyes">決定</button><button class="btn" data-act="execno">やめる</button></div></div>';el.hidden=false;return;}
   el.innerHTML='<div class="box"><h3 id="pop-h">引っ越しの最中……</h3><div class="t">社長は、こっそり<b>本部長</b>と<b>副社長</b>を決めることにした。</div>'
     +'<div class="s"><b>本部長</b>：1冊目の雑誌を引きつぐ。三誌同時発売の編成会議では、1冊目の人材と先生を守る側にまわる。</div>'
     +'<div class="s"><b>副社長</b>：2冊目の雑誌を立ち上げる。編成会議では、社長より先に人材と先生を指名できる。強い人を選ぶほど、2冊目も強くなる……。</div>'
@@ -3339,7 +3339,7 @@ function execPick(arg){const st=S.execPick||(S.execPick={});const [role,id]=Stri
 function execAnswer(yes){const st=S.execPick||{};if(yes&&st.ask){st[st.ask[0]]=st.ask[1];}st.ask=null;save();if(st.hon&&(st.fuku||execCands().length<2&&st.fuku===-1))execDone();else execPop();}
 function execDone(){const st=S.execPick;S.exec={hon:st.hon,fuku:st.fuku>0?st.fuku:st.hon,dairi:!(st.fuku>0),open:false};save();$('pop').hidden=true;const a=staffById(st.hon),b=st.fuku>0?staffById(st.fuku):null;
   const L=x=>Object.assign(['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x)),{sei:x.sei||String(x.name).split(' ')[0]});
-  const fin=()=>{say('社長','本部長は'+a.name+(b?'、副社長は'+b.name:'')+'。……発表は、編成会議のあとだ。');save();const el=$('pop');el.innerHTML='<div class="box" style="border-color:#c8302a"><h3 id="pop-h" style="color:#e07a6e">㊙ 極秘</h3><div class="t">本部長・'+esc(a.name)+(b?'<br>副社長・'+esc(b.name):'')+'</div><div class="s">まだ社員には知らせていない。今夜、役員会議室で「三誌同時発売」の編成会議を開く。</div><div class="row"><button class="btn pri" data-act="execok">よし</button></div></div>';el.hidden=false;};
+  const fin=()=>{say('社長','本部長は'+a.name+(b?'、副社長は'+b.name:'')+'。……発表は、編成会議のあとだ。');save();const el=$('pop');el.innerHTML='<div class="box" style="border-color:#c8302a"><h3 id="pop-h" style="color:#e07a6e;text-align:center">㊙ 極秘</h3><div class="t">本部長・'+esc(a.name)+(b?'<br>副社長・'+esc(b.name):'')+'</div><div class="s">まだ社員には知らせていない。今夜、役員会議室で「三誌同時発売」の編成会議を開く。</div><div class="row" style="justify-content:center"><button class="btn pri" data-act="execok" style="min-width:120px">よし</button></div></div>';el.hidden=false;};
   if(b)a2Overlay(whisperAnim2({pres:NR.lookOf(PRES),a:L(a),b:L(b)}),fin);else fin();}
 // ===== 極秘 編成会議（三誌同時発売）=====
 // 本部長＝1冊目を守る／副社長＝2冊目／社長＝3冊目（プレイヤー）。秘書が議事録
@@ -5095,7 +5095,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.328）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.329）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
