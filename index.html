@@ -673,7 +673,7 @@ function distCard(){const d=initDist();const c=distCalc();const row=(nm,sub,lv)=
   return h+'</div>';}
 
 const reach=()=>distCalc().copies;
-const FAC=[['ousetsu2','応接室②',300,'運営部に2つめの応接室をつくる。会議中でも、先生の来社や顔合わせを応接室②で受けられる'],['uchiawase','打ち合わせ室',200,'ネームや持ち込みの相談をじっくりできる（ネーム修行・連載準備が進みやすく、経験値も多め。持ち込みの見立てが正確に）'],['shiryo','資料室',300,'持ち駒の修行・育成の伸びが3割アップ'],['truck','配送トラック',400,'取次や書店との取引が深まりやすくなる（3割アップ）'],['souko','自社倉庫',500,'売れ残った返本の損が減る'],['label','コミックスのレーベル',800,'コミックスの売上3割アップ。キャラグッズも作れる'],['shashoku','写植機・自社印刷',1500,'雑誌とコミックスの印刷代が2割安くなる']];
+const FAC=[['ousetsu2','応接室②',3000,'運営部に2つめの応接室をつくる。会議中でも、先生の来社や顔合わせを応接室②で受けられる'],['uchiawase','打ち合わせ室',2000,'ネームや持ち込みの相談をじっくりできる（ネーム修行・連載準備が進みやすく、経験値も多め。持ち込みの見立てが正確に）'],['shiryo','資料室',3000,'持ち駒の修行・育成の伸びが3割アップ'],['truck','配送トラック',4000,'取次や書店との取引が深まりやすくなる（3割アップ）'],['souko','自社倉庫',5000,'売れ残った返本の損が減る'],['label','コミックスのレーベル',8000,'コミックスの売上3割アップ。キャラグッズも作れる'],['shashoku','写植機・自社印刷',15000,'雑誌とコミックスの印刷代が2割安くなる']];
 const hasF=k=>!!(S.fac&&S.fac[k]);
 
 // ===== ライバル誌 =====
@@ -2917,10 +2917,10 @@ function wbuyWin(wp){const B=S.wbuy;B.won=1;S.won={y:S.y,m:S.m};const W=S.wall=S
 
 
 // ========== 無料版の区切り（1985年12月まで）。テスト版では「続きを遊ぶ」で先へ進める ==========
-const FREE_END_Y=1983,DEMO_TEST=true,DEMO_PRICE='800円';
+const FREE_END_Y=1982,DEMO_TEST=true,DEMO_PRICE='800円';
 /* 無料版のおわり：桐生からの電話（引き）→ 体験版の画面。後半テスト用に、ここのデータを別に保存しておく */
 function demoSnap(){try{const c=JSON.parse(JSON.stringify(S));c.demoSeen=1;c.demoDue=0;c.paused=false;c.skip=false;LS.set(SAVEKEY+'-sdemo',JSON.stringify({S:c,uid,meta:(FREE_END_Y+1)+'年1月・'+(S.mag&&S.mag.name||'')+'・'+yen(S.money)}));}catch(e){}}
-function demoScene(cb){const L=[['nar',FREE_END_Y+'年12月31日。年の瀬の編集部に、電話が鳴った。'],['kiryu','……俺だ。桐生だ。'],['kiryu','3年、もったか。正直、半年でつぶれると思っていた。'],['pres','桐生……。何の用だ。'],
+function demoScene(cb){const L=[['nar',FREE_END_Y+'年12月31日。年の瀬の編集部に、電話が鳴った。'],['kiryu','……俺だ。桐生だ。'],['kiryu',(FREE_END_Y-1980)+'年、もったか。正直、半年でつぶれると思っていた。'],['pres','桐生……。何の用だ。'],
     ['kiryu','忠告だ。叔父さんが、お前のことを気にしはじめた。'],['kiryu','大鷲社は、目ざわりなものを放っておかない。……覚えておけ。'],['kiryu','俺も、手加減はしない。来年からが、本当の勝負だ。'],['nar','電話は、そこで切れた。'],['nar','窓の外に、'+(FREE_END_Y+1)+'年の雪が降りはじめていた。']];
   const NM={kiryu:'桐生',pres:presName(),nar:''};
   const ov=document.createElement('div');ov.id='demogate';ov.style.cssText='position:fixed;inset:0;z-index:9200;background:linear-gradient(#141018,#2a1c14);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px 40px';
@@ -3069,7 +3069,7 @@ function meetScript(D){const B=[];const q=s=>'「'+s+'」';const P=a=>a[Math.flo
   B.push({who:'narr',text:'…………',cam:'pres',fixed:1.8,tag:'採決',tense:1,onTable:99});
   say('pres','……うむ。承認する。',{cam:'pres',tag:'採決',approve:1,onTable:99,fixed:3.2});
   // 6. 初連載の先生は、担当と抱き合う
-  for(const f of D.firsts.slice(0,2)){say('tan','先生！'+q(f.title)+'、連載が決まりました！',{scene:'hug',f,hug:0});say('art','ほ、ほんとですか！？',{scene:'hug',f,hug:0});B.push({who:'art',text:'やったーーー！！',scene:'hug',f,hug:1,fixed:2.6});}
+  for(const f of D.firsts.slice(0,2)){say('tan',(f.sei?f.sei+'先生':'先生')+'！'+q(f.title)+'、連載が決まりました！',{scene:'hug',f,hug:0});say('art','ほ、ほんとですか！？',{scene:'hug',f,hug:0});B.push({who:'art',text:'やったーーー！！',scene:'hug',f,hug:1,fixed:2.6});}
   B.push({who:'narr',text:'',end:1,fixed:2.4});
   for(const b of B)if(b.who==='chief'&&(b.stampCut||b.stampAdd||b.shout||/始めます|次は新連載|それぞれ推す|ご承認|今回、打ち切りは/.test(b.text)))b.stand=1;
   return B;}
@@ -3165,7 +3165,7 @@ function meetAnim3(D){const {ease,eo,cl,rr,tx}=a2;const B=meetScript(D);
     // 文字
     const s2=T<0.3?1.6-eo(T/0.3)*0.6:1+Math.sin(T*10)*0.02;g.save();g.translate(180,192);g.rotate(-0.05);g.scale(s2,s2);tx(g,'待ってください！！',0,0,30,'#ffe040','#c8302a');g.restore();};
   // せりふの箱
-  const box=(g,b,shown)=>{if(!b.text)return;const nm=NAME[b.who];g.fillStyle='rgba(20,16,12,0.86)';rr(g,6,164,348,50,8,'rgba(20,16,12,0.86)');g.strokeStyle='#c9a24a';g.lineWidth=1.5;g.stroke();
+  const box=(g,b,shown)=>{if(!b.text)return;const nm=b.f&&b.who==='art'&&b.f.sei?b.f.sei+'先生':b.f&&b.who==='tan'&&b.f.tsei?b.f.tsei+'（担当）':NAME[b.who];g.fillStyle='rgba(20,16,12,0.86)';rr(g,6,164,348,50,8,'rgba(20,16,12,0.86)');g.strokeStyle='#c9a24a';g.lineWidth=1.5;g.stroke();
     if(nm){rr(g,14,156,Math.max(48,nm.length*10+14),16,4,'#c9a24a');tx(g,nm,14+Math.max(48,nm.length*10+14)/2,164.5,9.5,'#2a2220');}
     g.save();g.font="12px 'Mochiy Pop One',sans-serif";g.textBaseline='top';g.fillStyle='#fffdf6';const s=[...b.text].slice(0,shown).join('');let line='',y=176;for(const ch of s){if(g.measureText(line+ch).width>326){g.fillText(line,16,y);line='';y+=16;}line+=ch;}g.fillText(line,16,y);g.restore();};
   const draw=(g,now)=>{const b=B[st.i];if(!b)return true;const T=now-st.t0;const n=[...b.text].length;st.typed=Math.min(n,Math.floor(T*10));
@@ -3206,7 +3206,7 @@ function meetData(){const H=S.half||{};const RL=x=>x?NR.roughLook(x,NR.lookOf(x)
   if(cands.length){vs.forEach((v,i)=>{let p=tl(HV['t'+v.team]);if(!p.length){const own=[...cands].sort((a,b)=>((b.team===v.team)*30+b.sc)-((a.team===v.team)*30+a.sc));p=pick2(own);}votes.push({who:'v'+i,picks:p});});
     if(gs){let p=tl(HV.guest);if(!p.length&&H.guestPick)p=tl([H.guestPick]);votes.push({who:'guest',picks:p});}
     if(c)votes.push({who:'chief',picks:tl(HV.chief||H.chiefAdd||H.add).slice(0,2)});}
-  const firsts=(H.add||[]).map(M).filter(m=>m&&!m.debuted).map(m=>({title:ttl(m),art:NR.lookOf(m),tan:staffById(m.tantou)?RL(staffById(m.tantou)):NR.lookOf(PRES)}));
+  const firsts=(H.add||[]).map(M).filter(m=>m&&!m.debuted).map(m=>({title:ttl(m),sei:(m.sei&&String(m.name||'').startsWith(m.sei))?m.sei:String(m.name||'').split(/[ 　]/)[0],tsei:(t=>t?(t.sei&&String(t.name).startsWith(t.sei)?t.sei:String(t.name||'').split(/[ 　]/)[0]):'')(staffById(m.tantou)),art:NR.lookOf(m),tan:staffById(m.tantou)?RL(staffById(m.tantou)):NR.lookOf(PRES)}));
   const cutM=(H.cut||[]).map(M).filter(Boolean);let objIdx=-1,summon=null;
   {const vt=new Set(vs.map(v=>v.team));const ok=cutM.map((m,i)=>vt.has(tmOf(m))?i:-1).filter(i=>i>=0);
     if(ok.length&&Math.random()<0.3){objIdx=ok[0];const m=cutM[objIdx];const t=staffById(m.tantou);
@@ -3392,15 +3392,23 @@ function orgDraw(g,T){const {rr,tx}=a2;
     g.save();rr(g,4,4,Math.max(60,orgName(who).length*9+12),16,4,'#c9a24a');tx(g,orgName(who),4+Math.max(60,orgName(who).length*9+12)/2,12.5,8,'#2a2220');g.restore();}}
 // 画面の下：選ぶところ
 function orgUI(){const el=$('orgui');if(!el)return;const o=O();let h='';
-  if(o.cur==='name'){h='<div class="card"><div class="t">社長の新しい雑誌の名前は？</div><input type="text" id="orgname3" value="'+esc(o.namePend)+'" maxlength="14" style="font-size:18px;width:100%"><button class="btn pri" style="margin-top:8px" data-act="orgname3">この名前にする</button></div>';}
+  if(o.cur==='conf'){const st=o.confK==='s';const x=st?staffById(o.confId):S.manga.find(m=>m.id===o.confId);
+    const L=(k,v)=>'<div class="line" style="font-size:19px"><span>'+k+'</span><b>'+v+'</b></div>';
+    h='<div class="card" style="border:2px solid #c9a24a"><div class="who" style="align-items:center"><canvas id="orgcface" width="32" height="32" style="width:96px;height:96px;image-rendering:pixelated"></canvas><div style="min-width:0;margin-left:10px"><div style="font-size:22px"><b>'+esc(x.name)+'</b></div><div class="s" style="font-size:17px">'
+      +(st?esc(ROLES[x.role]||'')+'・'+x.age+'歳・Lv.'+(x.lv||1):esc(bestGenre(x))+'・'+x.age+'歳・Lv.'+mLevel(x)+'・総合 '+mRank(x))+'</div></div></div>'
+      +(st?L('編集',rank(x.henshu))+L('企画',rank(x.kikaku))+L('審美眼',rank(x.bigan))+L('営業',rank(x.eigyo))+L('事務',rank(x.jimu))+L('情熱',rank(x.jonetsu))+L('信頼',Math.round(x.trust||50))
+         :L('アイデア',rank(x.idea))+L('絵',rank(x.ga))+L('話',rank(x.story))+L('構成',rank(x.kousei))+L('演出',rank(x.enshutsu))+L('固定ファン',Math.round(x.fans||0).toLocaleString()+'人')+(x.status==='serial'?L('連載','「'+esc(x.title||'')+'」'):''))
+      +'<div class="t" style="margin-top:10px;font-size:19px">'+(st?'この人を指名する？':'この先生を指名する？')+'</div><div class="row"><button class="btn pri" style="font-size:19px" data-act="orgconfok">OK</button><button class="btn" style="font-size:19px" data-act="orgconfback">戻る</button></div></div>';}
+  else if(o.cur==='name'){h='<div class="card"><div class="t">社長の新しい雑誌の名前は？</div><input type="text" id="orgname3" value="'+esc(o.namePend)+'" maxlength="14" style="font-size:18px;width:100%"><button class="btn pri" style="margin-top:8px" data-act="orgname3">この名前にする</button></div>';}
   else if(o.phase==='genre'){const left=Object.keys(POLICY).filter(k=>k!==o.g.hon&&k!==o.g.fuku);h='<div class="card"><div class="t">社長の3冊目は、残ったジャンルから選ぶ。</div>'+left.map(k=>'<button class="btn" style="margin:4px" data-act="orggenre" data-arg="'+k+'">'+k+'<br><span class="s">'+POLICY[k].join('・')+'</span></button>').join('')+'</div>';}
-  else if(o.phase==='staff'&&o.cur==='pres'){const P2=orgPool().sort((a,b)=>orgV(b)-orgV(a));h='<div class="card"><div class="t">第'+o.round+'巡（全7巡）：社長の指名。ほしい人を1人。</div>'+P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgpick" data-arg="'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・企画 '+rank(x.kikaku)+'・審美 '+rank(x.bigan)+'・営業 '+rank(x.eigyo)+'・事務 '+rank(x.jimu)+'・信頼 '+Math.round(x.trust||50)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgpick" data-arg="0">この巡は見送る</button></div>';}
+  else if(o.phase==='staff'&&o.cur==='pres'){const P2=orgPool().sort((a,b)=>orgV(b)-orgV(a));h='<div class="card"><div class="t">第'+o.round+'巡（全7巡）：社長の指名。ほしい人を1人。</div>'+P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgconf" data-arg="s'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・企画 '+rank(x.kikaku)+'・審美 '+rank(x.bigan)+'・営業 '+rank(x.eigyo)+'・事務 '+rank(x.jimu)+'・信頼 '+Math.round(x.trust||50)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgpick" data-arg="0">この巡は見送る</button></div>';}
   else if(o.cur==='role'){const x=staffById(o.pend);h='<div class="card"><div class="t"><b>'+esc(x.name)+'</b>（いまは'+esc(ROLES[x.role]||'')+'）を、3冊目の何にする？</div><div class="s">いまより上の役職で声をかけると、受けてもらいやすい。</div>'+ORG_ROLES.map(r=>{const full=['chief','eibu','senbu','keibu','zatsumu'].includes(r)&&o.st.pres.some(id=>(o.roles||{})[id]===r);return '<button class="btn" style="margin:4px" data-act="orgrole" data-arg="'+r+'"'+(full?' disabled':'')+'>'+(r==='later'?'あとで決める':ROLES[r])+(full?'（決まり）':'')+'</button>';}).join('')+'</div>';}
-  else if(o.phase==='art'&&o.cur==='pres'){const P2=orgArtPool().sort((a,b)=>mLevel(b)-mLevel(a));h='<div class="card"><div class="t">漫画家 第'+o.round+'巡（全9巡）：社長の指名。</div>'+P2.map(m=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgart" data-arg="'+m.id+'"><b>'+esc(m.name)+'</b>（'+esc(bestGenre(m))+'）　<span class="s">総合 '+mRank(m)+'・アイデア '+rank(m.idea)+'・話 '+rank(m.story)+'・画 '+rank(m.ga)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgart" data-arg="0">この巡は見送る</button></div>';}
+  else if(o.phase==='art'&&o.cur==='pres'){const P2=orgArtPool().sort((a,b)=>mLevel(b)-mLevel(a));h='<div class="card"><div class="t">漫画家 第'+o.round+'巡（全9巡）：社長の指名。</div>'+P2.map(m=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgconf" data-arg="a'+m.id+'"><b>'+esc(m.name)+'</b>（'+esc(bestGenre(m))+'）　<span class="s">総合 '+mRank(m)+'・アイデア '+rank(m.idea)+'・話 '+rank(m.story)+'・画 '+rank(m.ga)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgart" data-arg="0">この巡は見送る</button></div>';}
   else if(o.phase==='chiefpick'){const P2=o.st.pres.map(staffById).filter(x=>x&&['tantou','vice'].includes(x.role));h='<div class="card"><div class="t">最後に、3冊目の編集長を決める。社長が取った担当・副編集長の中から。</div>'+(P2.length?P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgchief" data-arg="'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・審美 '+rank(x.bigan)+'・情熱 '+Math.round(x.jonetsu||0)+'</span></button>').join(''):'<div class="s">担当も副編集長も取れなかった……。編集長は、あとで外から探すしかない。</div><button class="btn" data-act="orgchief" data-arg="0">しかたない</button>')+'</div>';}
   else if(o.phase==='done'){h='<div class="card"><div class="t">編成会議、終了。発表は、あすの朝。</div><button class="btn pri" data-act="orgend">閉じる</button></div>';}
   else h='<div class="card"><div class="s">……</div></div>';
-  el.innerHTML=h;}
+  el.innerHTML=h;
+  if(o.cur==='conf'){try{const st=o.confK==='s';const x=st?staffById(o.confId):S.manga.find(m=>m.id===o.confId);face32($('orgcface'),x,st?{tie:['chief','vice','eibu','senbu','keibu'].includes(x.role)}:{});}catch(e){}}}
 function orgRefuse(x,by,art,up){const tr=art?50:(x.trust||50);let p=0.16+(tr<40?0.1:0)-(by==='pres'&&tr>=70?0.08:0)-(up?0.1:0);if(art&&(x.fav||x.exclusive))p+=0.15;if(!art&&x.founder&&by!=='pres')p+=0.1;return Math.random()<p;}
 function orgSec(text,next){orgSay('sec',text,next);}
 // 人材：本部長がプロテクト → 副社長 → 社長
@@ -4833,7 +4841,7 @@ function prizePanel(){
   return h;
 }
 function editBlock(m){
-  if(expand!==m.id)return '<div class="row"><button class="btn" data-act="expand" data-arg="'+m.id+'">名前・タイトル・担当を変える</button></div>';
+  if(expand!==m.id)return '<div class="row"><button class="btn" data-act="expand" data-arg="'+m.id+'">'+(m.status!=='stock'?'名前・タイトル・担当を変える':'名前・担当を変える')+'</button></div>';
   const ts=byRole('tantou');
   return '<label class="s" for="en-'+m.id+'">ペンネーム</label><input type="text" id="en-'+m.id+'" value="'+esc(m.name)+'" maxlength="12">'+(m.status!=='stock'?'<label class="s" for="et-'+m.id+'">作品のタイトル</label><input type="text" id="et-'+m.id+'" value="'+esc(m.title)+'" maxlength="16">':'')+'<div class="row"><button class="btn pri" data-act="rename" data-arg="'+m.id+'">名前を決定</button><button class="btn" data-act="expand" data-arg="'+m.id+'">やめる</button></div><div class="s">担当を替える（1人2本まで）</div><div class="row">'+(ts.length?ts.map(t=>'<button class="btn'+(m.tantou===t.id?' sel':'')+'" data-act="settan" data-arg="'+m.id+':'+t.id+'"'+(m.tantou!==t.id&&(m.status==='stock'?stockOf(t).length>=2:loadOf(t)>=2)?' disabled':'')+'>'+esc(t.name)+'</button>').join(''):'<span class="s">担当がいません</span>')+'</div>';
 }
@@ -5112,7 +5120,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.335）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+'<div class="s">試作版（ver.340）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -5483,6 +5491,9 @@ function actRest(a,arg,b){
       case 'execok':$('pop').hidden=true;orgStart();break;
       case 'orggenre':orgGenre(arg);break;
       case 'orgpick':orgPick(+arg);break;
+      case 'orgconf':{const o=O();o.confK=arg[0];o.confId=+arg.slice(1);o.cur='conf';orgUI();break;}
+      case 'orgconfok':{const o=O();const k=o.confK,id=o.confId;o.confK=null;o.cur='pres';if(k==='s')orgPick(id);else orgArt(id);break;}
+      case 'orgconfback':{const o=O();o.confK=null;o.cur='pres';orgUI();break;}
       case 'orgart':orgArt(+arg);break;
       case 'orgchief':orgChief(+arg);break;
       case 'orgrole':orgPickRole(arg);break;
