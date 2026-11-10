@@ -4774,7 +4774,7 @@ function mangaCard0(m,extra){
   return '<div class="card"><div class="line"><b>'+(m.title?'「'+esc(m.title)+'」':esc(m.name))+'</b><span class="s">'+tierChip(m)+(m.daiKanban?'<span class="chip" style="background:#ffd040;color:#2a2220;font-weight:900">👑大看板</span> ':m.isKanban?'<span class="chip">看板</span> ':'')+(m.exclusive&&m.status!=='market'?'<span class="chip" style="background:var(--blue)">専属</span> ':'')+(m.recharge&&m.status==='stock'?'<span class="chip" style="background:var(--green)">充電中</span> ':'')+(m.an&&m.an.st==='air'?'<span class="chip" style="background:#6a5acd">アニメ放送中</span> ':m.an&&m.an.st==='prod'?'<span class="chip" style="background:#6a5acd">アニメ制作中</span> ':'')+(m.phenom?'<span class="chip" style="background:#e05a3a">社会現象</span> ':m.anime?'<span class="chip" style="background:#6a5acd">アニメ化</span> ':'')+(m.fav&&m.status!=='market'?'<span class="chip" style="background:var(--red)">社長のご愛顧</span> ':'')+(m.handBy&&m.handBy===m.tantou&&m.status!=='market'?'<span class="chip" style="background:var(--blue)">担当が発掘</span> ':'')+esc(m.title&&(m.status==='serial'||m.status==='queue')?m.genre+'（得意：'+gtxt(m)+'）':'得意：'+gtxt(m))+(m.amateur?'・新人':'')+'</span></div><div class="s">'+(m.title?esc(m.name)+'・':'')+m.age+'歳'+(m.status!=='market'?(t?'・<b style="color:var(--accent)">担当 '+esc(t.name)+'</b>':'・<b style="color:var(--red)">担当なし</b>'):'')+(m.status==='serial'?'・連載'+m.months+'か月・人気'+Math.round(m.pop):'')+((m.status==='serial'||m.status==='rest')?'・<b style="color:#f0b8f0">面白さ'+funOf(m)+'</b>':m.status==='stock'?'・面白さの見込み 約'+funOf(m):'')+(m.tags.length&&!m.tags.every(x=>x==='遅筆')?'・'+m.tags.filter(x=>x!=='遅筆').join('・'):'')+'</div>'+mks(m)+((m.fans||0)>=50&&m.status!=='market'?'<div class="s">固定ファン 約'+fanTxt(m.fans)+(m.letters?'・ファンレター 月'+m.letters.toLocaleString()+'通':'')+'</div>':'')+(m.status==='serial'?'<div class="s">原稿料 1ページ'+yen(pageFee(m))+' × '+PAGES+'ページ ＝ 月'+yen(pageFee(m)*PAGES)+(m.late?'・<span style="color:var(--red)">遅れ '+m.late+'/3回</span>':'')+'</div>':'')+mlvBlock(m)+(extra||'')+'</div>';
 }
 function sheetManga(){
-  let h=head('漫画家')+tabs([['serial','連載陣'],['stock','持ち駒'],['market','探す'],['kanban','看板'],['ikusei','育成']])+'<div class="sh-body">'+(tab==='market'||tab==='stock'?kHintCard():'');
+  let h=head('漫画家')+tabs([['serial','連載陣'],['stock','フリー'],['ikusei','専属'],['market','探す'],['kanban','看板']])+'<div class="sh-body">'+(tab==='market'||tab==='stock'?kHintCard():'');
   if(tab==='serial'){
     const list=serials().sort((a,b)=>b.pop-a.pop);
     /* 今月のアンケート順位（先月とくらべて↑↓） */
@@ -4788,15 +4788,15 @@ function sheetManga(){
     if(q.length){h+='<div class="sec">連載待ち</div>';q.forEach(m=>h+=mangaCard(m,editBlock(m)));}
     {const rs=S.manga.filter(m=>m.status==='rest');if(rs.length){h+='<div class="sec">休載中（体調）</div>';rs.forEach(m=>h+=mangaCard(m,'<div class="s">「'+esc(m.title||'')+'」休載中・あと'+(m.restLeft||0)+'か月ほど'+(m.restTop?'・治ったら優先して連載に戻す':'・戻れるかは分からない')+'</div>'));}}
   } else if(tab==='stock'){
-    h+='<div class="card"><div class="s">担当がためている漫画家。原稿が落ちたときの代原にもなる。担当が発掘した専属の新人（金の卵）は「育成」タブにいる。<br>フリーの先生は1本勝負：担当と連載用のネームを打ち合わせて、固まったら連載会議へ。会議で落ちたら、粘らずに去っていく。</div>'+(S.mag.launched?'':'<div class="t">創刊には、持ち駒と育成あわせて、看板1人を含む9人が必要。</div>')+'</div>';
-    const st=S.manga.filter(m=>m.status==='stock'&&!isEgg(m));
+    h+='<div class="card"><div class="s">担当がためている漫画家。原稿が落ちたときの代原にもなる。専属の先生は「専属」タブにいる。<br>フリーの先生は1本勝負：担当と連載用のネームを打ち合わせて、固まったら連載会議へ。会議で落ちたら、粘らずに去っていく。</div>'+(S.mag.launched?'':'<div class="t">創刊には、持ち駒と育成あわせて、看板1人を含む9人が必要。</div>')+'</div>';
+    const st=S.manga.filter(m=>m.status==='stock'&&!m.exclusive);
     if(!st.length)h+='<div class="card"><div class="s">まだいません。「探す」で先生に連載を打診しよう。</div></div>';
     h+='<div class="card"><div class="s">担当1人につき、育成できる先生は1人。方針を選ぶと、毎月自動で進んで報告が来る。</div></div>';
     st.forEach(m=>h+=mangaCard(m,freeBlock(m)+ikBlock(m)+editBlock(m)));
   } else if(tab==='ikusei'){
-    h+='<div class="card"><div class="who">金の卵</div><div class="s">担当が発掘して専属で契約した新人。育成枠に入れておくだけで、自宅修練（ネーム修行の自主練）で少しずつ経験値が入る。担当がつきっきりで見られるのは1人だけ。アシスタント派遣・ネーム修行・連載準備は、自宅修練よりぐっと伸びる。育ってくると、担当が「そろそろ連載の時期かと」と報告してくる。</div></div>'+prizePanel();
-    const eg=S.manga.filter(isEgg);
-    if(!eg.length)h+='<div class="card"><div class="s">まだ金の卵はいない。持ち込みや新人賞で、担当が手を上げた子と専属で契約しよう。</div></div>';
+    h+='<div class="card"><div class="who">専属の先生（育成中）</div><div class="s">うちと専属契約している、連載待ちの先生。育成枠に入れておくだけで、自宅修練（ネーム修行の自主練）で少しずつ経験値が入る。担当がつきっきりで見られるのは1人だけ。アシスタント派遣・ネーム修行・連載準備は、自宅修練よりぐっと伸びる。育ってくると、担当が「そろそろ連載の時期かと」と報告してくる。</div></div>'+prizePanel();
+    const eg=S.manga.filter(m=>m.status==='stock'&&m.exclusive);
+    if(!eg.length)h+='<div class="card"><div class="s">まだ専属の先生はいない。持ち込みや新人賞で、担当が手を上げた子と専属で契約しよう。</div></div>';
     eg.forEach(m=>h+=mangaCard(m,(m.soroso?'<div class="tan" style="color:var(--green)">担当「そろそろ連載の時期かと」</div>':'<div class="s">自宅修練中・Lv.'+(m.lv||1)+'</div>')+ikBlock(m)+editBlock(m)));
   } else if(tab==='kanban'){
     const ks=S.manga.filter(m=>m.isKanban&&['serial','stock','queue'].includes(m.status));
@@ -4993,7 +4993,7 @@ function tanList(t){
   const st=stockOf(t);
   return '<div class="tan">担当：'+(ser.length?ser.map(m=>'「'+esc(m.title)+'」'+esc(m.name)).join('、'):'なし')+'<br>持ち駒：'+(st.length?st.map(m=>esc(m.name)).join('、'):'なし')+'</div>';
 }
-function isEgg(m){return m.status==='stock'&&m.amateur&&m.exclusive;}
+function isEgg(m){return m.status==="stock"&&m.exclusive;}
 function freeBlock(m){if(m.exclusive||m.fav||m.status!=='stock')return '';return '<div class="tan"><b>'+(kari(m)?'仮契約の新人':'1本勝負（フリー）')+'</b>・'+(m.ready?'<span style="color:var(--green)">連載用ネームが固まった。次の連載会議へ（落ちたら去る）</span>':'連載用ネームの打ち合わせ '+(m.nameN||0)+'/3')+'</div>';}
 function ikBlock(m){
   const t=staffById(m.tantou);
@@ -5299,7 +5299,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.357）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.358）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
