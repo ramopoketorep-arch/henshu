@@ -3647,6 +3647,32 @@ function triMeet(arg){const o=(S.popups||[])[0];if(!o||o.news!=='trimeet')return
   if(arg.startsWith('new:')){const id=+arg.slice(4);let X=M.staff.find(s=>s.id===id);if(!X){X=S.staff.find(s=>s.id===id);if(!X)return;S.staff=S.staff.filter(s=>s!==X);M.staff.push(X);for(const m of S.manga)if(m.tantou===X.id)m.tantou=null;}
     triDemote(old);M.boss=X.id;if(o.k===1)S.exec.hon=X.id;else S.exec.fuku=X.id;M.warned=0;X.jonetsu=Math.min(100,(X.jonetsu||50)+10);
     return done(T+'・'+esc(old?old.name:'')+'は降格になった。<br>新しい'+T+'は、'+esc(X.name)+'。「……やらせていただきます！」'+(old?'<br><span class="s">'+esc(old.name)+'の信頼が大きく下がった。よそからの引き抜きに、応じやすくなっている。</span>':''));}}
+
+/* ===== 増刊号：持ち駒・育成中の先生が6人以上いたら、読み切りをまとめて年2回まで出せる =====
+   連載あつかいにはならない。でも載った先生は、連載なしの期間（専属の満了まで）が少しのびる。上位は次の連載会議で通りやすい */
+function zkPool(){return S.manga.filter(m=>m.status==='stock'&&!m.senpai);}
+function zkCan(){const n=(S.zkLog||[]).filter(z=>z.y===S.y).length;return S.mag.launched&&zkPool().length>=6&&n<2&&!(S.zkLog||[]).some(z=>z.t===S.turns);}
+function zkBonus(m){const z=m.zk;if(!z||S.turns-z.t>12)return 0;return z.r===1?12:z.r===2?9:z.r===3?6:2;}
+function zkCard(){if(!S.mag.launched)return '';const P=zkPool();const n=(S.zkLog||[]).filter(z=>z.y===S.y).length;const last=(S.zkLog||[]).slice(-1)[0];
+  let h='<div class="card"><div class="who" style="font-size:19px">増刊号（新人の読み切り）</div><div class="s">持ち駒・育成中の先生が6人以上いれば、年2回まで出せる（今年あと'+Math.max(0,2-n)+'回）。連載あつかいにはならないけど、載った先生は専属の満了までが少しのびる。上位の先生は、次の連載会議で通りやすくなる。</div>';
+  if(last)h+='<div class="s" style="margin-top:4px">前回（'+last.y+'年'+last.m+'月）の1位：<b>'+esc(last.top)+'</b></div>';
+  if(!zkCan()){h+='<div class="s" style="margin-top:6px;color:var(--accent)">'+(P.length<6?'いまの持ち駒は'+P.length+'人。6人そろうと出せる。':n>=2?'今年はもう2回出した。':'今月は出したばかり。')+'</div></div>';return h;}
+  S.zkSel=(S.zkSel||[]).filter(id=>P.some(m=>m.id===id));if(!S.zkSel.length)S.zkSel=P.slice().sort((a,b)=>{try{return funOf(b)-funOf(a);}catch(e){return 0;}}).slice(0,10).map(m=>m.id);
+  h+='<div class="sec" style="margin-top:8px">載せる先生（最大10人・いま'+S.zkSel.length+'人）</div>'+P.map(m=>{const on=S.zkSel.includes(m.id);return '<button class="btn'+(on?' sel':'')+'" style="margin:3px;width:auto;display:inline-block;font-size:17px" data-act="zksel" data-arg="'+m.id+'">'+(on?'✓ ':'')+esc(m.name)+'</button>';}).join('');
+  const est=zkCost();h+='<div class="line" style="margin-top:6px"><span>かかるお金（原稿料と印刷代）</span><b>約'+yen(est.cost)+'</b></div><div class="line"><span>部数の見こみ</span><b>約'+est.print.toLocaleString()+'部</b></div>';
+  h+='<button class="btn pri" style="margin-top:6px;font-size:18px" data-act="zkgo"'+(S.zkSel.length>=3?'':' disabled')+'>増刊号を出す</button></div>';return h;}
+function zkCost(){const L=S.zkSel||[];const pr=priceNow();const iss=[...(S.issues||[])].reverse().find(x=>x.sold>0);const base=iss?iss.sold:10000;
+  const print=Math.max(2000,Math.round(base*0.3/100)*100);const fees=L.reduce((a,id)=>{const m=S.manga.find(x=>x.id===id);return a+(m?feeQuote(m)*24:0);},0);
+  return {print,cost:Math.round(fees+print*pr*printK()*keiriPrintF()),pr,base};}
+function zkGo(){if(!zkCan())return;const L=(S.zkSel||[]).map(id=>S.manga.find(x=>x.id===id)).filter(Boolean).slice(0,10);if(L.length<3)return;const E=zkCost();
+  const res=L.map(m=>{let f=40;try{f=funOf(m);}catch(e){}return {m,v:f+(R()*2-1)*12};}).sort((a,b)=>b.v-a.v);
+  const avg=res.reduce((a,x)=>a+x.v,0)/res.length;const sold=Math.round(Math.min(E.print,E.print*(0.55+avg/120)));const rev=sold*E.pr*0.7;
+  S.money+=rev-E.cost;
+  res.forEach((x,i)=>{const m=x.m,r=i+1;m.zk={t:S.turns,r};m.noSer=Math.max(0,(m.noSer||0)-(r<=3?12:6));m.fans=(m.fans||0)+Math.round((11-r)*150*(0.5+avg/100));try{bonusXP(m,r<=3?60:30,10,null);}catch(e){}if(r===1)m.zkWin=(m.zkWin||0)+1;});
+  (S.zkLog=S.zkLog||[]).push({y:S.y,m:S.m,t:S.turns,top:res[0].m.name,sold,profit:Math.round(rev-E.cost)});S.zkSel=[];
+  const sg=v=>(v<0?'−':'+')+yen(Math.abs(Math.round(v)));
+  (S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'📕 増刊号のアンケート結果<br>'+res.map((x,i)=>(i+1)+'位　'+esc(x.m.name)+'先生'+(i===0?'　👑':'')).join('<br>')+'<br><span class="s">売れたのは '+sold.toLocaleString()+'部／'+E.print.toLocaleString()+'部・収支 '+sg(rev-E.cost)+'<br>上位の先生は、次の連載会議で通りやすい。載った先生は、専属の満了までがのびた。</span>'});
+  save();showPop();}
 function triBoss(M){return M.staff.find(x=>x.id===M.boss)||null;}
 function triTick(pay,cost){if(!S.tri||!S.tri.mags)return;const F=eraF();const pr=priceNow();
   for(const k of [1,2]){const M=S.tri.mags[k];if(!M)continue;M.news=[];const boss=triBoss(M);const bn=boss?boss.name:(k===1?'本部長':'副社長');
@@ -4942,6 +4968,7 @@ function sheetMag(){
     h+='<div class="card"><div class="who">創刊の準備</div><label class="s" for="magname">雑誌の名前</label><input type="text" id="magname" value="'+esc(mag.name)+'" maxlength="16"><div class="sec">雑誌の方針（社長が決める）</div><div class="row">'+Object.keys(POLICY).map(p=>'<button class="btn'+(mag.policy===p?' sel':'')+'" data-act="policy" data-arg="'+p+'">'+p+'</button>').join('')+'</div><div class="s">得意ジャンルが方針と合う漫画家は面白さが上がる：'+POLICY[mag.policy].join('・')+'</div>'+checks.map(([l,ok])=>'<div class="line"><span>'+l+'</span><b style="color:'+(ok?'var(--green)':'var(--red)')+'">'+(ok?'OK':'まだ')+'</b></div>').join('')+'<button class="btn pri" data-act="launch"'+(checks.every(c=>c[1])?'':' disabled')+'>創刊する</button></div>';
     h+=distCard();
   } else {
+    h+=zkCard();
     const ann=S.income.reduce((a,x)=>a+x.inc,0);
     h+='<div class="card"><div class="line"><b>'+esc(mag.name)+'</b><span class="chip">'+esc(TITLES[S.titleIdx][1])+'</span></div><div class="s">'+esc(mag.policy)+'・月刊・定価'+priceNow()+'円・第'+mag.issue+'号まで</div><div class="line"><span>書店 <b>'+mag.stores+'店</b></span><span>知名度 <b>'+Math.round(mag.aware)+'</b></span><span>連載枠 <b>'+mag.cap+'本</b></span></div><div class="line"><span>年間の売上</span><span class="big">'+yen(ann)+'</span></div>'+(S.titleIdx<TITLES.length-1?'<div class="s">称号は毎年1月に、去年1年間の雑誌の平均部数で決まる。'+(S.lastYearSales!=null&&S.titleBy==='busu'?'去年は平均'+busu(S.lastYearSales)+'。':'')+'次の「'+TITLES[S.titleIdx+1][1]+'」は'+(S.titleIdx+1===TITLES.length-1?'雑誌ランキング1位':'平均 '+busu(TITLES[S.titleIdx+1][0]))+'</div>':'')+'</div>';
     h+=distCard();
@@ -5149,7 +5176,7 @@ function buildHalf(){
     const pass=[],rej=[];
     for(const tm of [0,1]){
       const v=byRole('vice').find(x=>x.team===tm);const sc=v||c;const ey=sc?(sc.hidden?40:sc.bigan):40;
-      const mine=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)&&(SP||m.exclusive||m.fav||m.ready)&&((staffById(m.tantou)||{}).team||0)===tm).map(m=>({m,v:score(m)+(m.ready?8:0)+(R()*2-1)*(100-ey)/4*1.3})).sort((a,b)=>b.v-a.v);
+      const mine=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)&&(SP||m.exclusive||m.fav||m.ready)&&((staffById(m.tantou)||{}).team||0)===tm).map(m=>({m,v:score(m)+(m.ready?8:0)+zkBonus(m)+(R()*2-1)*(100-ey)/4*1.3})).sort((a,b)=>b.v-a.v);
       mine.slice(0,3).forEach(x=>pass.push(x.m.id));mine.slice(3).forEach(x=>rej.push({id:x.m.id,by:sc?sc.id:null,vice:!!v,tm}));
     }
     const G0=S.halfGuest&&GUEST[S.halfGuest]&&byRole(S.halfGuest)[0]?S.halfGuest:null;let gp=null;
@@ -5157,7 +5184,7 @@ function buildHalf(){
     const eyeOf=x=>x?(x.hidden?40:(x.bigan||40)):40;const blur=x=>(R()*2-1)*(100-eyeOf(x))/4*1.6;
     const gs0=G0?byRole(G0)[0]:null;
     if(G0){const cand=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:GUEST[G0][2](m)+blur(gs0)}));cand.sort((a,b)=>b.v-a.v);gp=cand[0]?cand[0].m.id:null;}
-    const st=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(m.ready?8:0)+noise()*1.6+(m.id===gp?10:0)})).sort((a,b)=>b.v-a.v);
+    const st=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(m.ready?8:0)+zkBonus(m)+noise()*1.6+(m.id===gp?10:0)})).sort((a,b)=>b.v-a.v);
     let add=st.slice(0,Math.max(0,free0)).map(x=>x.m.id);let post=[];if(SP){post=add.filter(id=>{const m=S.manga.find(x=>x.id===id);return m&&score(m)<22;});add=add.filter(id=>!post.includes(id));if(!add.length)S.spPost=S.turns+1;}
     const nV=Math.max(1,Math.min(2,add.length||1));const votes={chief:add.slice(0,2)};
     for(const tm of [0,1]){const v=byRole('vice').find(x=>x.team===tm);if(!v)continue;votes['t'+tm]=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(((staffById(m.tantou)||{}).team||0)===tm?12:0)+blur(v)})).sort((a,b)=>b.v-a.v).slice(0,nV).map(x=>x.m.id);}
@@ -5178,7 +5205,7 @@ function sheetHalf(){
     const pass=[],rej=[];
     for(const tm of [0,1]){
       const v=byRole('vice').find(x=>x.team===tm);const sc=v||c;const ey=sc?(sc.hidden?40:sc.bigan):40;
-      const mine=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)&&(SP||m.exclusive||m.fav||m.ready)&&((staffById(m.tantou)||{}).team||0)===tm).map(m=>({m,v:score(m)+(m.ready?8:0)+(R()*2-1)*(100-ey)/4*1.3})).sort((a,b)=>b.v-a.v);
+      const mine=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)&&(SP||m.exclusive||m.fav||m.ready)&&((staffById(m.tantou)||{}).team||0)===tm).map(m=>({m,v:score(m)+(m.ready?8:0)+zkBonus(m)+(R()*2-1)*(100-ey)/4*1.3})).sort((a,b)=>b.v-a.v);
       mine.slice(0,3).forEach(x=>pass.push(x.m.id));mine.slice(3).forEach(x=>rej.push({id:x.m.id,by:sc?sc.id:null,vice:!!v,tm}));
     }
     const st=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(m.ready?8:0)+noise()*1.3})).sort((a,b)=>b.v-a.v);
@@ -5272,7 +5299,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.356）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.357）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -5706,6 +5733,8 @@ function actRest(a,arg,b){
     case 'devgo':{S.demoSeen=1;S.demoDue=0;S.paused=false;save();sheet=null;closeSheet();render();showPop();break;}
     case 'trisend':{const [a,b]=arg.split(':').map(Number);if(confirm(k2n(b)+'に回しますか？'))triSend(a,b);drawSheet();break;}
     case 'trimeet':triMeet(arg);break;
+    case 'zksel':{const id=+arg;S.zkSel=S.zkSel||[];if(S.zkSel.includes(id))S.zkSel=S.zkSel.filter(x=>x!==id);else if(S.zkSel.length<10)S.zkSel.push(id);else toast('10人まで');drawSheet();break;}
+    case 'zkgo':{if(confirm('増刊号を出しますか？'))zkGo();drawSheet();break;}
     case 'triask':{const [a,b]=arg.split(':').map(Number);triAsk(a,b);drawSheet();break;}
     case 'loaddemo':{if(!confirm('無料版のおわりのデータから始めますか？いまのデータは上書きされます。'))break;try{const d=LS.get(SAVEKEY+'-sdemo');if(d){LS.set(SAVEKEY,d);if(load()){migrate();S.saved=true;sheet=null;closeSheet();render();toast('無料版のおわりから再開しました');setTimeout(showPop,50);}}}catch(e){toast('読みこめませんでした');}break;}
     case 'loadslot':{try{const d=LS.get(SAVEKEY+'-s'+arg);if(d){LS.set(SAVEKEY,d);if(load()){migrate();S.saved=true;sheet=null;closeSheet();render();toast('スロット'+arg+'を読みこみました');setTimeout(showPop,50);}}}catch(e){toast('読みこめませんでした');}break;}
