@@ -1616,6 +1616,7 @@ const MEDIA_ALL=new Set();{const _play=HTMLMediaElement.prototype.play;HTMLMedia
 function bgPauseAll(){for(const el of [...MEDIA_ALL,...document.querySelectorAll('audio')]){try{if(!el.paused){el._bgWant=true;el.pause();}}catch(e){}}try{if(typeof actx!=='undefined'&&actx&&actx.state==='running')actx.suspend();}catch(e){}}
 function bgResumeAll(){for(const el of [...MEDIA_ALL,...document.querySelectorAll('audio')]){try{if(el._bgWant){el._bgWant=false;const p=el.play();if(p&&p.catch)p.catch(()=>{});}}catch(e){}}try{if(typeof actx!=='undefined'&&actx&&actx.state==='suspended')actx.resume();}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')bgPauseAll();else bgResumeAll();});
+document.addEventListener('pointerdown',()=>{try{if(typeof actx!=='undefined'&&actx&&actx.state!=='running'&&actx.state!=='closed')actx.resume();}catch(e){}},true);
 addEventListener('pagehide',bgPauseAll);addEventListener('pageshow',e=>{if(document.visibilityState==='visible')bgResumeAll();});
 const opMusic={au:null,start(){if(!musicOn||this.au)return;try{const bg=$('bgm');bg&&bg.pause();const a=new Audio(OP_BGM);a.volume=0.6;this.au=a;const p=a.play();if(p&&p.catch)p.catch(()=>{});a.onended=()=>{if(this.au===a){this.au=null;musicPlay();}};}catch(e){this.au=null;}},
   stop(){const a=this.au;if(!a)return;this.au=null;let v=a.volume;const iv=setInterval(()=>{v-=0.04;if(v<=0){clearInterval(iv);a.pause();musicPlay();}else a.volume=v;},90);}};
@@ -3185,6 +3186,7 @@ function meetAnim3(D){const {ease,eo,cl,rr,tx}=a2;const B=meetScript(D);
     if(nm){rr(g,14,156,Math.max(48,nm.length*10+14),16,4,'#c9a24a');tx(g,nm,14+Math.max(48,nm.length*10+14)/2,164.5,9.5,'#2a2220');}
     g.save();g.font="12px 'Mochiy Pop One',sans-serif";g.textBaseline='top';g.fillStyle='#fffdf6';const s=[...b.text].slice(0,shown).join('');let line='',y=176;for(const ch of s){if(g.measureText(line+ch).width>326){g.fillText(line,16,y);line='';y+=16;}line+=ch;}g.fillText(line,16,y);g.restore();};
   const draw=(g,now)=>{const b=B[st.i];if(!b)return true;const T=now-st.t0;const n=[...b.text].length;st.typed=Math.min(n,Math.floor(T*10));
+    /* 会議のせりふにも、しゃべる音（プルプル） */if(b.text){if(!b.t)b.t=b.text;if(b.fem==null&&b.f){const L=b.who==='art'?b.f.art:b.who==='tan'?b.f.tan:null;if(L&&L.fem!=null)b.fem=L.fem;}try{if(b.who==='nar'||b.big||b.cheer)sceneVoice(b,st.typed);else if(st.typed>(b._vn||0)){const ch=[...b.text][st.typed-1];const jump=st.typed-(b._vn||0)>3;b._vn=st.typed;if(!jump&&ch&&!PUNC.includes(ch))voice(b.who==='pres'?!!(PRES.lk&&PRES.lk.fem):b.who==='sec'?null:(b.fem!=null?!!b.fem:false));}}catch(e){}}
     // カメラ
     const want=b.cam==='snap'?null:(b.who==='chief'&&b.stand?POS.chiefUp:b.who&&POS[b.who]&&!b.summon?POS[b.who]:b.who==='tan'?POS.tan:(POS[b.cam]||POS.wide));if(want&&(st.to!==want)){st.from=st.cam.slice();st.to=want;st.ct=now;}if(want){const k=ease((now-st.ct)/1.1);st.cam=clampC([0,1,2].map(i=>st.from[i]+(want[i]-st.from[i])*k));}
     if(b.cam==='snap'){const S0=D.snap;g.fillStyle='#1a1410';g.fillRect(0,0,360,220);if(S0){const iw=S0.img.width,ih=S0.img.height;const u=ease(T/2.6);const fx=S0.fx*iw,fy=S0.fy*ih;const w=iw+(iw*0.36-iw)*u,h=w*220/360;const cx=iw/2+(fx-iw/2)*u,cy=ih/2+(fy-ih/2)*u;g.drawImage(S0.img,cx-w/2,cy-h/2,w,h,0,0,360,220);}
@@ -4791,10 +4793,10 @@ function sheetManga(){
     h+='<div class="card"><div class="s">担当がためている漫画家。原稿が落ちたときの代原にもなる。専属の先生は「専属」タブにいる。<br>フリーの先生は1本勝負：担当と連載用のネームを打ち合わせて、固まったら連載会議へ。会議で落ちたら、粘らずに去っていく。</div>'+(S.mag.launched?'':'<div class="t">創刊には、持ち駒と育成あわせて、看板1人を含む9人が必要。</div>')+'</div>';
     const st=S.manga.filter(m=>m.status==='stock'&&!m.exclusive);
     if(!st.length)h+='<div class="card"><div class="s">まだいません。「探す」で先生に連載を打診しよう。</div></div>';
-    h+='<div class="card"><div class="s">担当1人につき、育成できる先生は1人。方針を選ぶと、毎月自動で進んで報告が来る。</div></div>';
+    h+='<div class="card"><div class="s">担当1人につき、育成できる先生は2人まで。方針を選ぶと、毎月自動で進んで報告が来る。</div></div>';
     st.forEach(m=>h+=mangaCard(m,freeBlock(m)+ikBlock(m)+editBlock(m)));
   } else if(tab==='ikusei'){
-    h+='<div class="card"><div class="who">専属の先生（育成中）</div><div class="s">うちと専属契約している、連載待ちの先生。育成枠に入れておくだけで、自宅修練（ネーム修行の自主練）で少しずつ経験値が入る。担当がつきっきりで見られるのは1人だけ。アシスタント派遣・ネーム修行・連載準備は、自宅修練よりぐっと伸びる。育ってくると、担当が「そろそろ連載の時期かと」と報告してくる。</div></div>'+prizePanel();
+    h+='<div class="card"><div class="who">専属の先生（育成中）</div><div class="s">うちと専属契約している、連載待ちの先生。育成枠に入れておくだけで、自宅修練（ネーム修行の自主練）で少しずつ経験値が入る。担当1人が見られるのは2人まで。アシスタント派遣・ネーム修行・連載準備は、自宅修練よりぐっと伸びる。育ってくると、担当が「そろそろ連載の時期かと」と報告してくる。</div></div>'+prizePanel();
     const eg=S.manga.filter(m=>m.status==='stock'&&m.exclusive);
     if(!eg.length)h+='<div class="card"><div class="s">まだ専属の先生はいない。持ち込みや新人賞で、担当が手を上げた子と専属で契約しよう。</div></div>';
     eg.forEach(m=>h+=mangaCard(m,(m.soroso?'<div class="tan" style="color:var(--green)">担当「そろそろ連載の時期かと」</div>':'<div class="s">自宅修練中・Lv.'+(m.lv||1)+'</div>')+ikBlock(m)+editBlock(m)));
@@ -5001,8 +5003,8 @@ function ikBlock(m){
     return '<div class="tan">育成中：<b>'+IKP[ik.plan]+'</b>'+(ik.plan==='assist'&&tg?'（'+esc(tg.name)+'先生のところ'+(ik.ok?'':'・返事待ち')+'）':'')+(ik.plan==='prep'?'・ネーム '+(ik.n||0)+'/4本':'')+(ik.plan==='name'?'・'+(ik.n||0)+'本目まで':'')+'</div><div class="row"><button class="btn" data-act="ikstop" data-arg="'+m.id+'">育成をやめる</button></div>';}
   const s='<div class="s">'+(m.ready?'<b style="color:var(--green)">連載準備OK</b>（フリーでも会議に出せる・会議で選ばれやすい（+8）・編集部のコメントもやさしくなる・連載が始まると人気+10・4か月は原稿が遅れない）':'')+'</div>';
   if(!t)return s+'<div class="s">担当がいないと育成できない。</div>';
-  const busy=S.manga.some(x=>x!==m&&x.ik&&x.tantou===t.id&&x.status==='stock');
-  if(busy)return s+'<div class="s">担当の'+esc(t.name)+'は、ほかの先生を育成中。</div>';
+  const busy=S.manga.filter(x=>x!==m&&x.ik&&x.tantou===t.id&&x.status==='stock').length>=2;/* 担当1人で、2人まで育成できる */
+  if(busy)return s+'<div class="s">担当の'+esc(t.name)+'は、もう2人の先生を育成中。</div>';
   if(S.ikPick===m.id){const sers=serials().filter(x=>x.id!==m.id);
     return s+'<div class="s">どの先生のところへ派遣する？（得意な能力が身につく）</div><div class="row">'+sers.map(x=>{const sp=[['絵',x.ga],['構成',x.kousei],['話',x.story],['演出',x.enshutsu??x.kousei]].sort((a,b)=>b[1]-a[1])[0][0];return '<button class="btn" data-act="ikstart" data-arg="'+m.id+':assist:'+x.id+'">'+esc(x.name)+'（'+sp+'）</button>';}).join('')+'<button class="btn" data-act="ikpick" data-arg="0">やめる</button></div>';}
   return s+'<div class="row"><button class="btn" data-act="ikpick" data-arg="'+m.id+'"'+(serials().length?'':' disabled')+'>アシスタント派遣</button><button class="btn" data-act="ikstart" data-arg="'+m.id+':name">ネーム修行</button><button class="btn" data-act="ikstart" data-arg="'+m.id+':prep"'+(m.ready?' disabled':'')+'>連載準備</button></div>';
@@ -5299,7 +5301,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.358）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.360）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
