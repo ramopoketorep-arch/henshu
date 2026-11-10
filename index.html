@@ -3680,26 +3680,30 @@ function zkGo(){if(!zkCan())return;const L=(S.zkSel||[]).map(id=>S.manga.find(x=
 
 /* ===== 雑誌カラー（お試し）：連載陣のジャンルのかたよりで決まる ===== */
 const COLOR_NAME={'バトル×スポーツ':'熱血','スポーツ×バトル':'熱血','恋愛×スポーツ':'青春ラブコメ','スポーツ×恋愛':'青春ラブコメ','バトル×社会派':'硬派','社会派×バトル':'硬派','ギャグ×SF':'異色','SF×ギャグ':'異色'};
-function magColor(list){list=list||serials();const c={};for(const m of list){const g=m.genre||bestGenre(m);c[g]=(c[g]||0)+1;}
-  const r=Object.entries(c).sort((a,b)=>b[1]-a[1]);if(!r.length)return null;const [g1,n1]=r[0];const [g2,n2]=r[1]||['',0];
-  const level=n1>=5?'deep':(n1+n2>=6?'clear':'mixed');const key=g2?g1+'×'+g2:g1;const pol=S.mag.policy||'';
+function gagSlot(){return (S.mag&&S.mag.cap||9)<=9?2:3;}
+function magColor(list){list=list||serials();let c={};let gag=0;for(const m of list){const g=m.genre||bestGenre(m);if(g==='ギャグ'){gag++;continue;}c[g]=(c[g]||0)+1;}
+  /* ギャグ枠：連載9本までなら2本、それより多ければ3本までのギャグは「箸休め」。カラーの計算に入れない。枠をこえたぶんは、ふつうのジャンルとして数える */
+  const over=Math.max(0,gag-gagSlot());if(over>0)c['ギャグ']=over;let kept=0;list=list.filter(m=>{if((m.genre||bestGenre(m))!=='ギャグ')return true;kept++;return kept>gagSlot();});
+  const r=Object.entries(c).sort((a,b)=>b[1]-a[1]);if(!r.length)return null;const [g1,n1]=r[0];const [g2,n2]=r[1]||['',0];const [g3,n3]=r[2]||['',0];const tot=list.length||1;
+  /* カラーは上位3つのジャンル。1つが半分以上なら「濃い」、上位3つで3分の2以上なら「はっきり」 */
+  const level=n1/tot>=0.5?'deep':((n1+n2+n3)/tot>=0.65?'clear':'mixed');const key=g2?g1+'×'+g2:g1;const pol=S.mag.policy||'';
   const name=level==='mixed'?'なんでもありの'+pol:level==='deep'?g1+'の'+pol:(COLOR_NAME[key]?COLOR_NAME[key]+'（'+key+'）の':key+'の')+pol;
-  return {g1,g2,level,name,key};}
+  return {g1,g2,g3,level,name,key};}
 
 /* 創刊のときに「こういうカラーでいきたい」を決める（編集長の意向）。いまの連載陣がそれに合っていると、読者がぶれずについてくる */
 function aimOpts(){const G=[...new Set((POLICY[S.mag.policy]||GENRES).concat(['恋愛']))];const o=[];for(let i=0;i<G.length;i++)for(let j=i+1;j<G.length;j++)o.push(G[i]+'×'+G[j]);o.sort((x,y)=>(COLOR_NAME[y]?1:0)-(COLOR_NAME[x]?1:0));return o;}
 function aimOf(){if(!S.mag.aim){const c=chief();const O=aimOpts();S.mag.aim=O[c?(c.id%O.length):0];}return S.mag.aim;}
-function aimHit(){const c=magColor();if(!c||!S.mag.aim)return false;const [a,b]=S.mag.aim.split('×');return (c.g1===a&&c.g2===b)||(c.g1===b&&c.g2===a)||(c.level==='deep'&&(c.g1===a||c.g1===b));}
+function aimHit(){const c=magColor();if(!c||!S.mag.aim||c.level==='mixed')return false;const [a,b]=S.mag.aim.split('×');const G=[c.g1,c.g2,c.g3];return G.includes(a)&&G.includes(b);}
 function aimCard(pre){const A=aimOf();const nm=COLOR_NAME[A]?COLOR_NAME[A]+'（'+A+'）':A;const c=chief();
   return '<div class="card"><div class="who" style="font-size:19px">目指すカラー：'+esc(nm)+'</div><div class="s" style="font-size:16px">'+(c?'編集長・'+esc(c.name)+'「うちは、この色でいきたいです」':'編集長の意向')+'<br>連載陣がこのカラーになっていると、読者がぶれずについてくる（知名度が下がりにくい）。'+(pre?'':(aimHit()?'<br><b style="color:var(--green)">いまの連載陣は、目指すカラーどおり！</b>':'<br><span style="color:var(--accent)">いまの連載陣は、目指すカラーとちがう。</span>'))+'</div>'
     +'<details style="margin-top:6px"><summary style="font-size:17px">カラーを変える</summary><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'+aimOpts().map(o=>'<button class="btn'+(o===A?' sel':'')+'" style="margin:0;width:auto;flex:0 0 auto;font-size:16px" data-act="aimset" data-arg="'+esc(o)+'">'+esc(COLOR_NAME[o]||o)+(COLOR_NAME[o]?'<span class="s">（'+esc(o)+'）</span>':'')+'</button>').join('')+'</div></details></div>';}
-function colorFit(m){let c=S.mag&&S.mag.launched?magColor():null;if(S.mag&&S.mag.aim&&(!c||!S.mag.launched)){const [a,b]=S.mag.aim.split('×');c={g1:a,g2:b,level:'clear'};}if(!c||c.level==='mixed')return true;const g=m.genre||bestGenre(m);return g===c.g1||g===c.g2||gsOf(m).includes(c.g1);}
+function colorFit(m){let c=S.mag&&S.mag.launched?magColor():null;if(S.mag&&S.mag.aim&&(!c||!S.mag.launched)){const [a,b]=S.mag.aim.split('×');c={g1:a,g2:b,level:'clear'};}if(!c||c.level==='mixed')return true;const g=m.genre||bestGenre(m);if(g==='ギャグ'&&serials().filter(x=>(x.genre||bestGenre(x))==='ギャグ').length<=gagSlot())return true;const G=[c.g1,c.g2,c.g3].filter(Boolean);return G.includes(g)||gsOf(m).some(x=>G.includes(x));}
 function colorMonth(){if(!S.mag||!S.mag.launched)return;const c=magColor();if(!c)return;(S.colorHist=S.colorHist||[]).push({t:S.turns,g1:c.g1,level:c.level});if(S.colorHist.length>13)S.colorHist.shift();
   const old=S.colorHist.find(x=>x.t===S.turns-6);if(S.colorShock>0)S.colorShock--;
   if(old&&old.g1!==c.g1&&old.level!=='mixed'&&!(S.colorShock>0)){S.colorShock=3;S.pendingEvents.push({dept:'営業部',who:'読者はがき',t:'「最近の'+S.mag.name+'、なんか変わっちゃったな……」雑誌の色が変わって、昔からの読者がとまどっている（3か月ほど部数が少し落ちる）。'});}}
 function colorCard(){const c=magColor();if(!c)return '';const L={deep:'濃い',clear:'はっきり',mixed:'ばらばら'}[c.level];
   const eff={deep:'固定の読者がついて、知名度が下がりにくい。でも、その系統がはやらなくなると、まとめて落ちる。',clear:'固定の読者がそこそこつく。いちばんバランスがいい。',mixed:'流行の当たり外れには強いけど、固定の読者がつかず、知名度が下がりやすい。'}[c.level];
-  return '<div class="card"><div class="who" style="font-size:19px">雑誌のカラー：'+esc(c.name)+'</div><div class="s" style="font-size:16px">カラーの強さ：<b>'+L+'</b>　'+eff+'<br>カラーに合わない先生は、経験値が少しつきにくい。カラーが急に変わると、読者がとまどって部数が少し落ちる。'+(S.colorShock>0?'<br><b style="color:var(--red)">いま、カラーが変わって読者がとまどっている（あと'+S.colorShock+'か月）</b>':'')+'</div></div>';}
+  return '<div class="card"><div class="who" style="font-size:19px">雑誌のカラー：'+esc(c.name)+'</div><div class="s" style="font-size:16px">カラーの強さ：<b>'+L+'</b>　'+eff+'<br>カラー（連載の多いジャンルの上位3つ）に合わない先生は、経験値が少しつきにくい。ギャグ枠（連載9本までなら2本、それより多ければ3本）までのギャグは「箸休め」で、どの雑誌でもカラーに合う。'+(()=>{const n=serials().filter(x=>(x.genre||bestGenre(x))==='ギャグ').length;return '<br>いまのギャグ：'+n+'本／枠'+gagSlot()+'本'+(n>gagSlot()?'（枠をこえている）':'');})()+'<br>カラーが急に変わると、読者がとまどって部数が少し落ちる。'+(S.colorShock>0?'<br><b style="color:var(--red)">いま、カラーが変わって読者がとまどっている（あと'+S.colorShock+'か月）</b>':'')+'</div></div>';}
 
 /* ===== VS ハヤテ：2〜3年に1回、桐生の雑誌とくらべるアニメ。勝っても負けても何も起きない（気持ちだけ） ===== */
 function vsMonth(){if(!S.ousted||!S.mag.launched||S.prologue)return;if(S.vsNext==null){S.vsNext=S.turns+ri(20,30);return;}if(S.turns<S.vsNext)return;
@@ -5398,7 +5402,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.366）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.369）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
