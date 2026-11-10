@@ -3202,7 +3202,7 @@ function meetAnim3(D){const {ease,eo,cl,rr,tx}=a2;const B=meetScript(D);
     if(b.approve&&T>1.6){stamp(g,272,64,1.7,'承認','#e8382a',(T-1.6)/0.3);a2Spark(g,T,180,100,12,170,80);}
     box(g,b,st.typed);return false;};
   return {B,st,dur,draw,
-    next(now){const b=B[st.i];if(!b)return true;const n=[...b.text].length;if(st.typed<n&&!b.fixed){st.t0=now-n/16-0.01;return false;}st.i++;st.t0=now;return st.i>=B.length;},
+    next(now){const b=B[st.i];if(!b)return true;/* タップしたら、そのセリフはとばして次へ（打ちかけでも、くり返さない） */st.i++;st.t0=now;st.typed=0;return st.i>=B.length;},
     auto(now){const b=B[st.i];if(!b)return true;if(now-st.t0>dur(b)){st.i++;st.t0=now;}return st.i>=B.length;}};}
 // 本物の運営部の部屋の絵を取っておく（応接室の位置つき）
 function meetSnap(){try{const v=S.view;S.view='unei';setCvN(NR.heightL('unei'));layout();NR.unei([]);const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;c.getContext('2d').drawImage(cv,0,0);
@@ -5139,7 +5139,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.350）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.351）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -7258,7 +7258,8 @@ function henshu(bs){setRoom(S.lux?LUXW:660,980);const SE=seatsHenshu();const SM=
 function unei(bs){setRoom(660,980);const SE=seatsUnei();const UM=uneiMap();const P=propsUnei();const OU2=hasF('ousetsu2');const deco=wallsUnei(OU2);const ents=[],statics=[];
   const floorProps=[{prop:'rug',X0:420,Y0:80,pa:{w:190,d:200,col:'#2e4a6a',bd:'#8a6a3a'}}].concat(OU2?[{prop:'rug',X0:14,Y0:8,pa:{w:256,d:134,col:'#8a2e2e',bd:'#5a3a6a'}}]:[]).concat(decorOn('rug')?[{prop:'rug',X0:215,Y0:730,pa:{w:230,d:50,col:'#7a2a2a',bd:'#c9a24a'}}]:[]);
   const obst=[];for(const id in SE)obst.push(...obstOf(SE[id]));for(const p of P.concat(deco))obst.push(...propObst(p));
-  navBuild('u|'+(OU2?1:0)+JSON.stringify(S.decor||{})+JSON.stringify(S.decorOff||{}),obst);
+  /* 島の机と部長の机のすきま（せまい通路）は通らせない */for(const p of ['k','e','s']){const o=SE[p+'1'];if(o)obst.push([o.ix-50,o.y+100,224,50]);}
+  navBuild('u2|'+(OU2?1:0)+JSON.stringify(S.decor||{})+JSON.stringify(S.decorOff||{}),obst);
   const DOOR=[66,880];const ht=(S.clock||{t:0.3}).t;
   for(const id in SE){const o=SE[id];let st=id==='pres'?PRES:UM[id];let lk=null;
     if(id==='pres'){if(ht>=0.03&&ht<0.72&&!S.meetK){lk=lookOf(PRES);const sm=smokeNow(PRES.id||1,0.15);if(sm)lk.smoke=sm;const hl=toL(...headW(o));OSPOT[PRES.id]=OSPOT.pres=[hl[0],hl[1]-13*HEADK*s/K/4];}}
