@@ -3706,8 +3706,8 @@ function colorCard(){const c=magColor();if(!c)return '';const L={deep:'濃い',c
   return '<div class="card"><div class="who" style="font-size:19px">雑誌のカラー：'+esc(c.name)+'</div><div class="s" style="font-size:16px">カラーの強さ：<b>'+L+'</b>　'+eff+'<br>カラー（連載の多いジャンルの上位3つ）に合わない先生は、経験値が少しつきにくい。ギャグ枠（連載9本までなら2本、それより多ければ3本）までのギャグは「箸休め」で、どの雑誌でもカラーに合う。'+(()=>{const n=serials().filter(x=>(x.genre||bestGenre(x))==='ギャグ').length;return '<br>いまのギャグ：'+n+'本／枠'+gagSlot()+'本'+(n>gagSlot()?'（枠をこえている）':'');})()+'<br>カラーが急に変わると、読者がとまどって部数が少し落ちる。'+(S.colorShock>0?'<br><b style="color:var(--red)">いま、カラーが変わって読者がとまどっている（あと'+S.colorShock+'か月）</b>':'')+'</div></div>';}
 
 /* ===== VS ハヤテ：2〜3年に1回、桐生の雑誌とくらべるアニメ。勝っても負けても何も起きない（気持ちだけ） ===== */
-function vsMonth(){if(!S.ousted||!S.mag.launched||S.prologue)return;if(S.vsNext==null){S.vsNext=S.turns+ri(20,30);return;}if(S.turns<S.vsNext)return;
-  const r=(S.rivals||[]).find(x=>x.kiryu&&x.sold>0);if(!r)return;S.vsNext=S.turns+ri(24,36);(S.popups=S.popups||[]).push({news:'vs'});}
+function vsMonth(){if(!S.ousted||!S.mag.launched||S.prologue)return;if(S.vsNext==null||S.vsNext-S.turns>20){S.vsNext=S.turns+ri(6,12);return;}if(S.turns<S.vsNext)return;
+  const r=(S.rivals||[]).find(x=>x.kiryu&&x.sold>0);if(!r)return;S.vsNext=S.turns+ri(15,21);/* だいたい1年半ごと */(S.popups=S.popups||[]).push({news:'vs'});}
 function vsData(){const r=(S.rivals||[]).find(x=>x.kiryu&&x.sold>0);if(!r)return null;const iss=[...(S.issues||[])].reverse().find(x=>x.sold>0);const my=iss?iss.sold:0;
   const ser=serials();const fun=m=>{try{return funOf(m);}catch(e){return 40;}};const top=ser.map(fun).sort((a,b)=>b-a).slice(0,5);const myFun=top.length?Math.round(top.reduce((a,b)=>a+b,0)/top.length):0;
   const hFun=Math.round(clamp(38+Math.log10(Math.max(1,r.sold)/4000)*18+(r.f-1)*20,30,88));
@@ -4774,7 +4774,7 @@ function sheetReport(){
     } else if(r.type==='print'){
       h+='<div class="card"><div class="row" style="justify-content:space-between"><div class="who">'+esc(r.who)+'</div>'+(S.dec&&S.dec.print?'<span class="stamp">決定</span>':'')+'</div>'+r.est.map(e=>'<div class="line"><span>'+esc(e.who)+'「'+esc(e.line)+'」</span><button class="btn'+(S.printPlan===e.v?' sel':'')+'" data-act="print" data-arg="'+e.v+'">'+busu(e.v)+'</button></div>').join('')+'<div class="t">'+esc(r.t)+'</div><div class="line"><span>まとめ</span><button class="btn'+(S.printPlan===r.sum?' sel':'')+'" data-act="print" data-arg="'+r.sum+'">'+busu(r.sum)+'</button></div><div class="sec">刷る部数（社長が決める）</div><div class="row"><button class="btn" data-act="printd" data-arg="-0.1">−10%</button><span class="big" style="flex:1;text-align:center">'+busu(S.printPlan)+'</span><button class="btn" data-act="printd" data-arg="0.1">+10%</button></div><div class="s">売り切ると書店の信用が上がり、売れ残りが続くと取り扱いをやめられる。</div>'+decBtn('print')+'</div>';
     } else if(r.type==='end'){
-      h+='<div class="card alert"><div class="who">'+esc(r.who)+'</div><div class="t">'+esc(r.t)+'</div><div class="row"><button class="btn" data-act="endkeep" data-arg="'+i+'">引き止める</button><button class="btn" data-act="endstop" data-arg="'+i+'">終わらせる</button></div><div class="s">編集長の意見と違う判を押すと、編集長の情熱が少し下がる。</div></div>';
+      h+='<div class="card alert"><div class="who">'+esc(r.who)+'</div><div class="t">'+esc(r.t)+'</div><div class="row"><button class="btn" data-act="endkeep" data-arg="'+i+'">引き止める</button><button class="btn" data-act="endstop" data-arg="'+i+'">終わらせる</button></div><div class="s">先生の気持ちしだい。どちらを選んでも、編集長は気を悪くしない。</div></div>';
     } else {
       h+='<div class="card'+(r.warn?' alert':'')+'"><div class="who">'+esc(r.who)+'</div><div class="t">'+esc(r.t)+'</div></div>';
     }
@@ -5402,7 +5402,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.369）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.371）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -5725,7 +5725,7 @@ function actRest(a,arg,b){
     case 'printd':S.dec.print=false;S.printPlan=Math.max(1000,Math.round(S.printPlan*(1+ +arg)/100)*100);drawSheet();save();break;
     case 'endkeep':case 'endstop':{
       const r=S.reports[+arg];const m=S.manga.find(x=>x.id===r.id);const c=chief();
-      const keep=a==='endkeep';if((keep&&r.rec!=='引き止めましょう')||(!keep&&r.rec==='引き止めましょう')){if(c)c.jonetsu-=4;}
+      const keep=a==='endkeep';/* 先生が畳みたいと言うときは、社長がどちらを選んでも編集長は気を悪くしない */
       if(m&&m.status==='serial'){if(keep){m.months=Math.max(m.months,1);say('担当','説得に行って、'+m.name+'先生に連載を続けてもらえることになりました。');}else{const tt=m.title;const v=cancelSerial(m,'end');say('編集長','「'+tt+'」は円満に最終回。全'+v+'巻です。');}}
       S.reports.splice(+arg,1);save();drawSheet();break;}
     case 'role':{const[id,r]=arg.split(':');expand=null;setRole(+id,r);drawSheet();break;}
