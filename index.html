@@ -3547,7 +3547,7 @@ function orgMembers(k){// k: 1,2,3 → その雑誌の社員
   if(k===1)return {top:{t:'本部長',n:(staffById(S.exec.hon)||{}).name||''},ids:all.filter(x=>!taken.has(x.id)&&x.role!=='zatsumu').map(x=>x.id),genre:O0.g.hon};
   if(k===2)return {top:{t:S.exec.dairi?'副社長（本部長が兼務）':'副社長',n:(staffById(S.exec.fuku)||{}).name||''},ids:O0.st.fuku.slice(),genre:O0.g.fuku};
   return {top:{t:'社長',n:presName()},ids:O0.st.pres.slice(),genre:O0.g.pres,chief:O0.chief};}
-function orgRole(x){return (S.org&&S.org.roles&&S.org.roles[x.id])||x.role;}
+function orgRole(x){/* 三誌に分かれたあとは、昇格・異動した今の役職で出す */if(S.tri)return x.role;return (S.org&&S.org.roles&&S.org.roles[x.id])||x.role;}
 function orgTree(k){const M=orgMembers(k);const X=M.ids.map(staffById).filter(Boolean);const R=x=>orgRole(x);
   // 役職はすべて出す。いない席は「不在」
   const box=(role,label)=>{const ps=X.filter(x=>R(x)===role).map(x=>x.name);return {t:label||ROLES[role],n:'',role,names:ps.length?ps:['（不在）'],empty:!ps.length,kids:[]};};
@@ -3718,7 +3718,7 @@ function triMeetHTML(o){const M=S.tri.mags[o.k];const b=triBoss(M);const T=o.k==
     const card=(x,from)=>'<button class="btn" style="width:100%;text-align:left;margin-top:8px;font-size:17px" data-act="trimeet" data-arg="new:'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>（'+from+'）<br><span class="s">編集 '+rank(x.henshu)+'・営業 '+rank(x.eigyo)+'・情熱 '+Math.round(x.jonetsu||0)+'</span></button>';
     h+=own.map(x=>card(x,o.k+'冊目')).join('')+mine.map(x=>card(x,'うちから出す')).join('');}
   return h+'</div>';}
-function triDemote(x){if(!x)return;x.trust=Math.max(0,(x.trust||50)-25);x.jonetsu=Math.max(0,(x.jonetsu||50)-15);x.demoted=S.y;}
+function triDemote(x){if(!x)return;x.role='tantou';/* 降格したら、平の担当から出直し */x.trust=Math.max(0,(x.trust||50)-25);x.jonetsu=Math.max(0,(x.jonetsu||50)-15);x.demoted=S.y;}
 function triMeet(arg){const o=(S.popups||[])[0];if(!o||o.news!=='trimeet')return;const M=S.tri.mags[o.k];const T=o.k===1?'本部長':'副社長';const old=triBoss(M);
   const done=t=>{S.popups.shift();if(t)S.popups.unshift({rid:'st',news:'story',who:'nar',t});save();showPop();};
   if(arg==='keep'){M.warned=1;if(old)old.jonetsu=Math.min(100,(old.jonetsu||50)+8);return done(T+'・'+esc(old?old.name:'')+'「……このご恩は、数字で返します！」<br>（来年も赤字なら、もう続投はさせられない）');}
@@ -5582,7 +5582,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">3冊目を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.407）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">3冊目を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.409）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -8028,6 +8028,8 @@ function migrate(){if(S)S.skip=false;try{triFix();if(S&&S.tri&&!S.triZero){if(!S
     /* 前からのセーブ：三誌に分かれたあとに採った人に「新しく採った人」の印をつける（2冊目の創刊準備で採った人より後の番号の人） */
     if(S&&S.tri&&S.tri.mags&&!S.tri.vetMark){S.tri.vetMark=1;try{const M2=S.tri.mags[2];const og=new Set(((S.org&&S.org.st&&S.org.st.fuku)||[]));const nw=M2?M2.staff.filter(x=>!og.has(x.id)&&x.id!==M2.boss&&(S.exec?x.id!==S.exec.fuku&&x.id!==S.exec.hon:true)).map(x=>x.id):[];
       if(nw.length){const th=Math.min(...nw);for(const k of [1,2]){const M=S.tri.mags[k];if(M)for(const x of M.staff)if(x.id>=th&&x.id!==M.boss)x.triNew=1;}}}catch(e){console.error(e)}}
+    /* 前に降格した本部長・副社長は、担当にもどす（1回だけ） */
+    if(S&&S.tri&&S.tri.mags&&!S.tri.demFix){S.tri.demFix=1;for(const k of [1,2]){const M=S.tri.mags[k];if(M)for(const x of M.staff)if(x.demoted&&x.id!==M.boss)x.role='tantou';}}
     if(S&&S.tri&&!S.triZero3){S.triZero3=1;ichiZero();}
     if(S&&S.tri&&!S.triZero2){S.triZero2=1;if(S.mag.launched){triZero();launchDist();S.mag.aware=0;S.mag.sold=0;(S.pendingEvents=S.pendingEvents||[]).push({dept:'営業',who:'秘書',t:'3冊目の販路・知名度・記録を、ゼロにもどしました。取次1社のお試しから、やり直しです。'});setTimeout(()=>{try{toast('3冊目をゼロにもどした');}catch(e){}},800);}}}catch(e){console.error(e)}
   /* 独立直後に先輩がすぐ去ってしまう不具合の救済：約束の1年がまだ残っていれば戻ってくる */
