@@ -1370,7 +1370,7 @@ function a2Beats(A){if(A.steps)return A.steps.slice();const out=[];try{const c=d
   return out;}
 function a2Overlay(A,next,story){if(S.animOff&&!story){next&&next();return;}/* story：物語の大事な場面。アニメオフでも流す */const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
   ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px);aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span data-k="hint" style="color:#cfc6ae;font-size:16px">タップで先へ</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">⏭ とばす</button></div>';document.body.appendChild(ov);
-  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false;const fin=()=>{if(done)return;done=true;ov.remove();next&&next();};
+  const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false;OVN++;const fin=()=>{if(done)return;done=true;OVN=Math.max(0,OVN-1);ov.remove();if(next)next();if(!OVN&&showPop.later){showPop.later=0;if($('pop').hidden)showPop();}};
   /* タップすると「読む」モード：いまのせりふを出しきったところで止まって、次のタップを待つ */
   const beats=a2Beats(A);let hold=false;const hint=ov.querySelector('[data-k=hint]');
   const holdAt=t=>{if(!CK.paused())CK.toggle();CK.jump(t-CK.now());hold=true;if(hint)hint.textContent='タップで次へ ▼';};
@@ -3541,7 +3541,7 @@ function orgAfter(){const o=O();const magOf=id=>o.st.pres.includes(id)?3:o.st.fu
 function orgMembers(k){// k: 1,2,3 → その雑誌の社員
   const O0=S.org&&S.org.closed?S.org:null;const all=S.staff.filter(x=>!x.hidden);
   if(!O0)return {top:{t:'社長',n:presName()},ids:all.map(x=>x.id)};
-  if(S.tri){const ids=k===3?S.staff.filter(x=>!x.hidden&&x.role!=='zatsumu').map(x=>x.id):S.tri.mags[k].staff.filter(x=>x.id!==S.tri.mags[k].boss).map(x=>x.id);
+  if(S.tri){const ids=k===3?S.staff.filter(x=>!x.hidden).map(x=>x.id):S.tri.mags[k].staff.filter(x=>x.id!==S.tri.mags[k].boss).map(x=>x.id);
     const bs=k===3?null:triBoss(S.tri.mags[k]);return {top:k===3?{t:'社長',n:presName()}:{t:k===1?'本部長':'副社長',n:bs?bs.name:''},ids,genre:k===3?S.mag.policy:S.tri.mags[k].policy,chief:k===3?(chief()||{}).id:undefined};}
   const taken=new Set([...O0.st.fuku,...O0.st.pres,S.exec.hon,S.exec.fuku]);
   if(k===1)return {top:{t:'本部長',n:(staffById(S.exec.hon)||{}).name||''},ids:all.filter(x=>!taken.has(x.id)&&x.role!=='zatsumu').map(x=>x.id),genre:O0.g.hon};
@@ -3910,18 +3910,20 @@ function triTick(pay,cost){if(!S.tri||!S.tri.mags)return;const F=eraF();const pr
      if(need&&R()<0.85){const x=newStaff({base:ri(42,60),age:ri(23,32)});x.role=need[2];x.hidden=0;x.triNew=1;M.staff.push(x);M.news.push(bn+'が'+need[3]+'の'+x.name+'を採用した。');}}
     while(ser().length<9&&stock().length){const m=stock().sort((a,b)=>funOf(b)-funOf(a))[0];start(m);if(M.sold>0)M.news.push('「'+(m.title||'')+'」（'+m.name+'先生）の連載が始まった。');}
     if((S.m===6||S.m===12)&&ser().length>=9&&stock().length){const w=ser().sort((a,b)=>funOf(a)-funOf(b))[0];if((w.months||0)>=6){w.status='stock';const m=stock().filter(x=>x!==w).sort((a,b)=>funOf(b)-funOf(a))[0];M.news.push('連載会議で「'+(w.title||'')+'」が打ち切りに。');if(m){start(m);M.news.push('かわりに'+m.name+'先生の新連載が決まった。');}}}
-    const S1=ser();for(const m of S1){m.months=(m.months||0)+1;m.flow=ri(1,10);for(const a of ['story','idea','ga','kousei','enshutsu'])if(R()<0.06)m[a]=Math.min(95,(m[a]||40)+1);
+    const edS=M.staff.filter(x=>['chief','vice','tantou'].includes(x.role)&&x.id!==M.boss).map(x=>x.henshu||40).sort((a,b)=>b-a).slice(0,6);const edQ=edS.length?edS.reduce((a,b)=>a+b,0)/edS.length:35;
+    /* 担当の腕がいいほど、先生がよく育つ（弱い編集部で月3%、強い編集部で月10%くらい） */const gp=clamp(0.01+edQ/900,0.03,0.11);
+    const S1=ser();for(const m of S1){m.months=(m.months||0)+1;m.flow=ri(1,10);for(const a of ['story','idea','ga','kousei','enshutsu'])if(R()<gp)m[a]=Math.min(95,(m[a]||40)+1);
       /* 人気は面白さに寄っていき、人気が高いほど名前が売れる（うちの雑誌と同じしくみ） */let f0=50;try{f0=funOf(m);}catch(e){}m.pop=clamp((m.pop==null?f0*0.8:m.pop)+(f0*0.95-(m.pop==null?f0*0.8:m.pop))*0.08+(R()*2-1)*1.5,5,99);m.fame=Math.max(0,(m.fame||0)+Math.max(-3,(m.pop-45)*0.6));}
     for(const x of M.staff){x.age=x.age||30;if(S.m===1)x.age++;}
     const top=S1.map(m=>{try{return funOf(m);}catch(e){return 40;}}).sort((a,b)=>b-a).slice(0,9);const fun=top.length?top.reduce((a,b)=>a+b,0)/top.length:0;
     const eg=Math.max(25,...M.staff.filter(x=>['eibu','eigyo'].includes(x.role)).map(x=>x.eigyo||0));
     const nT=M.staff.filter(x=>x.role==='tantou').length,nE=M.staff.filter(x=>['eibu','eigyo'].includes(x.role)).length,nS=M.staff.filter(x=>['senbu','senden'].includes(x.role)).length;
-    const sF=0.75+((boss&&boss.henshu)||40)/220+eg/500-Math.max(0,9-S1.length)*0.07+(k===1?0.1:0)+Math.min(2,nE)*0.03-Math.max(0,S1.length-nT*2)/9*0.15;
+    const sF=0.7+((boss&&boss.henshu)||40)/400+edQ/250+eg/400+Math.min(3,nE)*0.02-Math.max(0,9-S1.length)*0.07+(k===1?0.1:0)-Math.max(0,S1.length-nT*2)/9*0.15;
     /* 部数の見込み：うちの雑誌と同じ式（人気の2乗＋先生の名前）。編集長・営業の腕で少し上下 */
     const dem=S1.reduce((a,m)=>a+2500*Math.pow(Math.max(5,m.pop||40)/40,2)+Math.min(m.fame||0,3000)*5,0)*(1+0.06*S1.filter(m=>m.isKanban).length);
-    const T=S1.length?Math.max(3000,dem*(0.55+M.aware/100)*(0.8+sF*0.2)):0;
+    const T=S1.length?Math.max(3000,dem*(0.55+M.aware/100)*sF):0;
     const was=M.sold||0;M.sold=S1.length?Math.max(1000,Math.round(was+(T-was)*(was?0.12:0.6)+(R()*2-1)*T*0.03)):0;
-    M.aware=clamp(M.aware*0.97+fun/100*3.2+Math.min(2,nS)*0.25,3,95);
+    const sdQ=Math.max(0,...M.staff.filter(x=>['senbu','senden'].includes(x.role)).map(x=>x.kikaku||0));M.aware=clamp(M.aware*0.97+fun/100*3.2+Math.min(2,nS)*0.25+sdQ/120,3,95);
     const rev=M.sold*pr*0.7,comics=M.sold*pr*0.32*Math.min(1,S1.filter(m=>m.months>=8).length/6),ads=M.sold*8*F*Math.min(1,(M.lm||0)/12);
     const print=M.sold?M.sold*1.12*pr*DIFF[S.diff||'normal'][1]:0;
     const fees=S1.reduce((a,m)=>a+(m.fee||feeQuote(m))*PAGES,0)+M.manga.filter(m=>m.exclusive&&OWN_ST.includes(m.status)).reduce((a,m)=>{try{return a+senzokuFee(m);}catch(e){return a;}},0);
@@ -5585,7 +5587,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">3冊目を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.412）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">3冊目を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.415）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -5683,7 +5685,9 @@ function talkAnimate(root,who){
     if(PUNC.includes(ch))wait=(ch==='、'||ch==='・')?2:4;else voice(fem);
     if(n>=texts[i].length){i++;n=0;wait=5;}},50);
 }
-function showPop(){if(OP&&OP.enter)return;if(showPop.inner)return showPop0();showPop.inner=true;try{showPop0();}finally{showPop.inner=false;}const el=$('pop');if(!el.hidden&&!animGate(el))talkAnimate(el,popSpeaker());}
+/* 全画面のアニメを見ているあいだは、時間を止めて、報告も後回しにする */
+var OVN=0;
+function showPop(){if(OP&&OP.enter)return;if(OVN>0){showPop.later=1;return;}if(showPop.inner)return showPop0();showPop.inner=true;try{showPop0();}finally{showPop.inner=false;}const el=$('pop');if(!el.hidden&&!animGate(el))talkAnimate(el,popSpeaker());}
 // アニメだけを小窓で流し、終わったら（またはタップで）文字とボタンを出す
 const AG={hid:[],on:false};
 function animGate(el){AG.on=false;AG.hid=[];const c=$('popanim');const box=el.querySelector('.box');if(!c||!box||S.animOff||!box.contains(c))return false;
@@ -6400,7 +6404,7 @@ function midMonth(){refreshCands();try{draftNet();}catch(e){}nextSerNotice();try
 function timeTick(){
   const now=performance.now();const dt=Math.min(500,now-lastT);lastT=now;
   if(S&&S.skip&&(sheet||!$('pop').hidden||S.over||S.paused||S.intro||S.halfDue||(S.meetS&&S.meetS.on))){S.skip=false;render();}
-  if(!S||!S.staff.length||sheet||!$('pop').hidden||S.over||S.paused||S.placeMode||!S.clock||S.intro||OP)return;
+  if(!S||!S.staff.length||sheet||!$('pop').hidden||S.over||S.paused||S.placeMode||!S.clock||S.intro||OP||OVN>0)return;
   const sp=S.skip?40:(S.speed??1);let rate=dt/83270*sp;
   const SMm=seatMap();const anyone=[chief(),...Object.values(SMm),...Object.values(uneiMap())].filter(Boolean).some(x=>presence(x)!==0);
   if(!anyone&&(S.clock.t>0.55||S.clock.t<0.03))rate*=8;
