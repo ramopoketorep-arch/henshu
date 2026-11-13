@@ -752,7 +752,7 @@ function ranking(){
   if(!S.rivals||S.rivals.length<20)rivalsTick();
   const list=S.rivals.filter(r=>r.sold>0).map(r=>({name:r.name,sold:r.sold,me:false}));
   if(S.mag.launched)list.push({name:S.mag.name,sold:S.lastResult?S.lastResult.sold:0,me:true});
-  if(S.tri)for(const k of [1,2]){const M=S.tri.mags[k];if(M&&M.sold>0)list.push({name:M.name,sold:M.sold,me:false,own:1});}
+  if(S.tri)for(const k of [1,2]){const M=S.tri.mags[k];if(M&&M.sold>0&&!M.prep)list.push({name:M.name,sold:M.sold,me:false,own:k});}
   return list.sort((a,b)=>b.sold-a.sold);
 }
 
@@ -5233,15 +5233,16 @@ function sheetHonsha(){
     const yrs=[...new Set((S.records||[]).map(r=>r.y))].sort((a,b)=>b-a);const yy=S.numY&&yrs.includes(S.numY)?S.numY:yrs[0];
     if(!yy)h+='<div class="card"><div class="s">まだ1か月も終わっていません。</div></div>';
     else{const rs=S.records.filter(r=>r.y===yy);const sum=k=>rs.reduce((a,r)=>a+((r.bk||{})[k]||0),0);
-      const parts=[['雑誌の売上',sum('mag'),'#d9a441'],['コミックス',sum('comics'),'#3d6fa8'],['広告',sum('adin'),'#3e7d4f'],['グッズ',sum('goods'),'#c4583e']].filter(x=>x[1]>0);const tot=parts.reduce((a,x)=>a+x[1],0);
+      const TH=k=>S.tri&&S.tri.mags[k]?S.tri.mags[k].hist.filter(x=>x.y===yy):[];const tIn=k=>TH(k).reduce((a,x)=>a+(x.inn||0),0),tPr=k=>TH(k).reduce((a,x)=>a+(x.profit||0),0);
+      const parts=[[S.tri?'3冊目':'雑誌の売上',sum('mag'),'#d9a441'],['コミックス',sum('comics'),'#3d6fa8'],['広告',sum('adin'),'#3e7d4f'],['グッズ',sum('goods'),'#c4583e'],['1冊目',tIn(1),'#e07a6e'],['2冊目',tIn(2),'#6ad1ff']].filter(x=>x[1]>0);const tot=parts.reduce((a,x)=>a+x[1],0);
       let acc=0;const grad=parts.map(([n,v,c])=>{const a0=acc/tot*360;acc+=v;return c+' '+a0.toFixed(1)+'deg '+(acc/tot*360).toFixed(1)+'deg';}).join(',');
-      const out=rs.reduce((a,r)=>a+(r.out||0),0),inc=rs.reduce((a,r)=>a+(r.inc||0),0);
+      const out=rs.reduce((a,r)=>a+(r.out||0),0)+[1,2].reduce((a,k)=>a+tIn(k)-tPr(k),0),inc=rs.reduce((a,r)=>a+(r.inc||0),0)+tIn(1)+tIn(2);
       h+='<div class="card"><div class="row">'+yrs.slice(0,6).map(y=>'<button class="btn'+(y===yy?' sel':'')+'" data-act="numy" data-arg="'+y+'">'+y+'年</button>').join('')+'</div>'
-        +'<div class="who" style="margin-top:8px">'+yy+'年、会社を支えたお金</div>'+(tot?'<div class="row" style="align-items:center;gap:14px;flex-wrap:nowrap"><div class="pie" role="img" aria-label="収入の内訳" style="background:conic-gradient('+grad+')"></div><div style="flex:1">'+parts.map(([n,v,c])=>'<div class="line"><span><span style="display:inline-block;width:12px;height:12px;background:'+c+';border-radius:2px;margin-right:6px"></span>'+n+'</span><b>'+Math.round(v/tot*100)+'%</b></div>').join('')+'</div></div>':'<div class="s">まだ収入がありません。</div>')
+        +'<div class="who" style="margin-top:8px">'+yy+'年、会社を支えたお金'+(S.tri?'（3誌ぜんぶ）':'')+'</div>'+(tot?'<div class="row" style="align-items:center;gap:14px;flex-wrap:nowrap"><div class="pie" role="img" aria-label="収入の内訳" style="background:conic-gradient('+grad+')"></div><div style="flex:1">'+parts.map(([n,v,c])=>'<div class="line"><span><span style="display:inline-block;width:12px;height:12px;background:'+c+';border-radius:2px;margin-right:6px"></span>'+n+'</span><b>'+Math.round(v/tot*100)+'%</b></div>').join('')+'</div></div>':'<div class="s">まだ収入がありません。</div>')
         +'<div class="line"><span>入ったお金</span><b>'+yen(inc)+'</b></div><div class="line"><span>出ていったお金</span><b>'+yen(out)+'</b></div><div class="line"><span>利益</span><b style="color:'+(inc-out<0?'var(--red)':'var(--green)')+'">'+yen(inc-out)+'</b></div></div>';}
-    const ed=[...byRole('chief'),...byRole('vice'),...byRole('tantou')].filter(x=>!x.hidden);const av=(a,k)=>a.length?a.reduce((q,x)=>q+(x[k]??60),0)/a.length:null;
+    const TS=S.tri?[1,2].flatMap(k=>S.tri.mags[k]?S.tri.mags[k].staff:[]):[];const ed=[...byRole('chief'),...byRole('vice'),...byRole('tantou'),...TS.filter(x=>['chief','vice','tantou'].includes(x.role))].filter(x=>!x.hidden);const av=(a,k)=>a.length?a.reduce((q,x)=>q+(x[k]??60),0)/a.length:null;
     const te=team('eigyo'),ts=team('senden'),tk=team('keiri');
-    {const G5=[['編集力',av(ed,'henshu'),'編集長・副編・担当の編集の力'],['営業力',te?te.eigyo:null,'営業部の力'],['宣伝力',ts?ts.kikaku:null,'宣伝部の企画の力'],['お金まわり',tk?tk.jimu:null,'経理部の事務の力'],['社員のやる気',av(S.staff.filter(x=>!['retired','quit','gone'].includes(x.role)),'jonetsu'),'みんなの情熱の平均']];
+    {const G5=[['編集力',av(ed,'henshu'),'編集長・副編・担当の編集の力'],['営業力',te?te.eigyo:null,'営業部の力'],['宣伝力',ts?ts.kikaku:null,'宣伝部の企画の力'],['お金まわり',tk?tk.jimu:null,'経理部の事務の力'],['社員のやる気',av(S.staff.filter(x=>!['retired','quit','gone'].includes(x.role)).concat(TS),'jonetsu'),'みんなの情熱の平均'+(S.tri?'（3誌ぜんぶ）':'')]];
      const tot=G5.reduce((a,g)=>a+(g[1]==null?25:g[1]),0)/G5.length;const tr=rank(tot);
      const CM={S:'業界の頂点。何も言うことはない。',A:'一流の出版社。あと一歩で頂点。',B:'なかなかの会社。弱いところを伸ばそう。',C:'ふつうの会社。ここからが勝負。',D:'まだまだ町の出版社。伸びしろしかない。',E:'がんばりましょう。',F:'たいへんよくがんばりましょう。',G:'……社長、まずは人を雇いましょう。'};
      h+='<div class="card"><div class="who">会社の通信簿</div><div class="line" style="align-items:center;padding-block:6px;border-bottom:2px solid var(--line)"><span style="font-size:20px"><b>トータル</b><br><span class="s">'+CM[tr]+'</span></span><b style="font-family:var(--f-dot);font-size:40px;color:'+(tot>=70?'var(--accent)':tot<45?'#e07a6e':'var(--fg)')+'">'+tr+'</b></div>'+G5.map(g=>gradeRow(g[0],g[1],g[2]+(g[1]==null?'（部署がない）':''))).join('')+'<div class="s">部署がないところは、きびしめに数える。</div></div>';}
@@ -5427,11 +5428,13 @@ function sheetData(){
     const row=(x,i)=>{
       let d='';
       if(!x.me&&S.rvSel===x.name){const r=S.rivals.find(y=>y.name===x.name);d='<div class="tan" style="margin:2px 0 6px 40px"><div class="s">人気漫画家</div>'+rivalStars(r).map(st=>'<div>'+esc(st.name)+'「'+esc(st.title)+'」'+(st.ours?' <b style="color:var(--red)">元うちの先生！</b>':'')+'</div>').join('')+'</div>';}
+      if(x.own)return '<div class="row" style="background:#2a3040;border-radius:6px;padding:4px 6px"><span class="rk">'+(i+1)+'</span><span style="flex:1;min-width:0;color:#9cc8ff;font-weight:700">'+esc(x.name)+'（うちの'+x.own+'冊目）</span><span style="font-variant-numeric:tabular-nums">'+busu(x.sold)+'</span></div>';
       return (x.me?'<div class="row" style="background:#3a3320;border-radius:6px;padding:4px 6px">':'<button class="row" style="width:100%;background:none;border:none;text-align:left;padding:4px 6px;font-size:inherit" data-act="rvsel" data-arg="'+esc(x.name)+'">')+'<span class="rk">'+(i+1)+'</span><span style="flex:1;min-width:0;'+(x.me?'color:var(--accent);font-weight:700':'')+'">'+esc(x.name)+(x.me?'（うち）':'')+'</span><span style="font-variant-numeric:tabular-nums">'+busu(x.sold)+'</span>'+(x.me?'</div>':'</button>')+d;};
     const mi=rk.findIndex(x=>x.me);
     h+='<div class="card"><div class="who">トップ10</div>'+rk.slice(0,10).map(row).join('')+'</div>';
     if(mi>=10)h+='<div class="card"><div class="who">うちの順位：'+(mi+1)+'位 / '+rk.length+'誌（圏外）</div>'+rk.slice(Math.max(10,mi-2),Math.min(rk.length,mi+3)).map((x,k)=>row(x,Math.max(10,mi-2)+k)).join('')+'</div>';
     else if(mi<0)h+='<div class="card"><div class="s">創刊すると、うちの雑誌もここに並ぶ。全'+rk.length+'誌。</div></div>';
+    {const oi=rk.map((x,i)=>[x,i]).filter(([x,i])=>x.own&&i>=10&&!(mi>=10&&Math.abs(i-mi)<=2));if(oi.length)h+='<div class="card"><div class="who">うちのほかの雑誌</div>'+oi.map(([x,i])=>row(x,i)).join('')+'</div>';}
     h+='<div class="card"><button class="btn" data-act="rkall">'+(S.rkAll?'全部の表示を閉じる':'全'+rk.length+'誌を見る')+'</button>'+(S.rkAll?rk.slice(10).map((x,k)=>row(x,10+k)).join(''):'')+'</div>';
     }
   } else if(tab==='etc'){
@@ -5656,7 +5659,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri?'<button class="btn pri" data-act="devexec">重役会議を見る（テスト）</button>':'')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">3冊目を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.426）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri?'<button class="btn pri" data-act="devexec">重役会議を見る（テスト）</button>':'')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">3冊目を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.427）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
