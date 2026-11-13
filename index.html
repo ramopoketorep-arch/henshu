@@ -5530,10 +5530,21 @@ function buildHalf(){
     const med=seen.length?seen[Math.floor(seen.length/2)].v:50;const young=m=>(m.months||0)<10;
     const ready=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)&&(m.exclusive||m.fav||m.ready)).length;
     /* 桐生事変から1年は立て直しの期間 */const rebuild=S.kiryu&&S.kiryu.done&&!S.kiryu.skip&&S.kiryu.y!=null&&((S.y-S.kiryu.y)*12+(S.m-S.kiryu.m))<12;
-    const maxCut=Math.min(rebuild?2:3,ready);/* 1回の連載会議で入れかえるのは3本まで */
+    const maxCut=Math.min(rebuild?2:4,ready);/* 1回の連載会議で入れかえるのは4本まで */
+    /* 流れ：部数がこの3か月で、その前の3か月より落ちていたら「流れが悪い」。編集長の気分で大なたをふるうこともある */
+    const Hs=S.history||[];const avS=a=>a.length?a.reduce((x,y)=>x+(y.sold||0),0)/a.length:0;
+    const drop=Hs.length>=6?1-avS(Hs.slice(-3))/Math.max(1,avS(Hs.slice(-6,-3))):0;
+    const why=SP?null:drop>=0.05?'drop':R()<0.15?'mood':null;
+    /* 待っている専属の先生が多いほど、入れかえたくなる（ふだんは1〜2本） */
+    const waitEx=S.manga.filter(m=>m.status==='stock'&&!(m.rechargeLeft>0)&&m.exclusive).length;
+    let want=SP?0:waitEx>=1?1:0;if(!SP&&waitEx>=3&&R()<0.5)want=2;
+    if(why)want=Math.max(want,2+(R()<0.5?1:0)+(drop>=0.12?1:0));want=Math.min(want,maxCut);
     /* 守るのは専属の先生だけ：始まって1年未満なら、1回だけ見逃す */
-    const bad=SP?[]:seen.filter(x=>!x.m.isKanban&&x.v<45&&x.v<med-8);const spared=[];let cut=[];
-    for(const x of bad){if(cut.length>=maxCut)break;if(x.m.exclusive&&(x.m.months||0)<12&&!x.m.cutSaved){x.m.cutSaved=1;spared.push(x.m.id);continue;}cut.push(x.m.id);}
+    const bad=SP?[]:seen.filter(x=>!x.m.isKanban&&x.v<50&&x.v<med-5);const spared=[];let cut=[];
+    const capN=why?maxCut:Math.min(maxCut,2);/* ふだんは2本まで。流れが悪いとき・編集長の気分しだいで4本まで */
+    for(const x of bad){if(cut.length>=capN)break;if(x.m.exclusive&&(x.m.months||0)<12&&!x.m.cutSaved){x.m.cutSaved=1;spared.push(x.m.id);continue;}cut.push(x.m.id);}
+    /* 待っている人のために、下から入れかえる（真ん中より下だけ。流れが悪いときは真ん中まで） */
+    if(cut.length<want)for(const x of seen){if(cut.length>=want)break;if(cut.includes(x.m.id)||spared.includes(x.m.id)||x.m.isKanban)continue;if(why?x.v>med:x.v>=med)continue;if(x.m.exclusive&&(x.m.months||0)<12&&!x.m.cutSaved)continue;cut.push(x.m.id);}
     if(!SP&&!cut.length&&maxCut>0&&list.length>=S.mag.cap&&seen[0]&&!seen[0].m.isKanban&&!spared.includes(seen[0].m.id)&&!(seen[0].m.exclusive&&(seen[0].m.months||0)<12&&!seen[0].m.cutSaved)&&seen[0].v<med-5)cut=[seen[0].m.id];
     const leaveN=list.filter(m=>{const e=endAt(m);return e!=null&&e-S.turns<=(SP?2:7)&&!cut.includes(m.id);}).length;
     const free0=S.mag.cap-(list.length-cut.length)-S.manga.filter(m=>m.status==='queue').length+leaveN;
@@ -5553,7 +5564,7 @@ function buildHalf(){
     const nV=Math.max(1,Math.min(2,add.length||1));const votes={chief:add.slice(0,2)};
     for(const tm of [0,1]){const v=byRole('vice').find(x=>x.team===tm);if(!v)continue;votes['t'+tm]=S.manga.filter(m=>pass.includes(m.id)).map(m=>({m,v:score(m)+(((staffById(m.tantou)||{}).team||0)===tm?12:0)+blur(v)})).sort((a,b)=>b.v-a.v).slice(0,nV).map(x=>x.m.id);}
     if(G0)votes.guest=[gp,...S.manga.filter(m=>pass.includes(m.id)&&m.id!==gp).map(m=>({m,v:GUEST[G0][2](m)+blur(gs0)})).sort((a,b)=>b.v-a.v).map(x=>x.m.id)].filter(x=>x!=null).slice(0,nV);
-    S.half={special:SP,post,leaveN,cut,add,chiefCut:cut.slice(),chiefAdd:add.slice(),meddle:!c,pass,rej,guest:G0,guestPick:gp,votes};
+    S.half={special:SP,post,leaveN,cut,add,chiefCut:cut.slice(),chiefAdd:add.slice(),meddle:!c,pass,rej,guest:G0,guestPick:gp,votes,why:cut.length>=2?why:null};
 }
 function sheetHalf(){
   const list=serials().sort((a,b)=>avgH(a)-avgH(b));
@@ -5579,7 +5590,7 @@ function sheetHalf(){
   const free=S.mag.cap-(list.length-S.half.cut.length)-S.manga.filter(m=>m.status==='queue').length;
   if(!S.half.meddle){
     const nm=id=>{const m=S.manga.find(x=>x.id===id);return m?'「'+esc(m.title||'新作')+'」'+esc(m.name):'';};
-    let h=head('半年ごとの会議').replace('<button class="close" data-act="close">閉じる</button>','')+'<div class="sh-body"><div class="card"><div class="who"><canvas id="hface" width="32" height="32" style="width:80px;height:80px;image-rendering:pixelated;float:right;border-radius:6px"></canvas>編集長・'+esc(c.name)+'</div><div class="t">「社長、この半年の人気をもとに、連載の入れ替えを決めました。この内容でいきたいです。」</div><div class="s">編集長の審美眼：'+rank(c.bigan)+'（見る目がないと、伸びる作品を切ったり、まだ早い新人を上げたりすることも）</div></div>';
+    let h=head('半年ごとの会議').replace('<button class="close" data-act="close">閉じる</button>','')+'<div class="sh-body"><div class="card"><div class="who"><canvas id="hface" width="32" height="32" style="width:80px;height:80px;image-rendering:pixelated;float:right;border-radius:6px"></canvas>編集長・'+esc(c.name)+'</div><div class="t">「社長、'+(S.half.why==='drop'?'部数が落ちてきてます。流れを変えるために、思い切って入れ替えます。':S.half.why==='mood'?'今回は気合いを入れて、大きく入れ替えたい。新しい風を入れましょう。':'この半年の人気をもとに、連載の入れ替えを決めました。')+'この内容でいきたいです。」</div><div class="s">編集長の審美眼：'+rank(c.bigan)+'（見る目がないと、伸びる作品を切ったり、まだ早い新人を上げたりすることも）</div></div>';
     h+='<div class="sec">打ち切り</div><div class="card">'+(S.half.cut.length?S.half.cut.map(id=>{const m=S.manga.find(x=>x.id===id);return '<div class="line"><span>'+nm(id)+'</span><span class="s">半年の人気 '+Math.round(avgH(m))+'</span></div>';}).join(''):'<div class="s">なし</div>')+'</div>';
     h+=screenHTML();
     if(S.half.guest){const gs=byRole(S.half.guest)[0];const gm=S.manga.find(x=>x.id===S.half.guestPick);h+='<div class="card"><div class="who">会議に呼んだ'+GUEST[S.half.guest][0]+(gs?'・'+esc(gs.name):'')+'</div><div class="t">「'+(gm?esc(gm.name)+'先生を推します。'+GUEST[S.half.guest][3]:'今回は推したい先生がいません。')+'」</div><div class="s">'+GUEST[S.half.guest][1]+'。推しは編集長の判断に少しだけ効く。</div></div>';}
@@ -5588,7 +5599,7 @@ function sheetHalf(){
     setTimeout(()=>faceDraw('hface',c,true),0);
     return h;
   }
-  let h=head('半年ごとの会議').replace('<button class="close" data-act="close">閉じる</button>','')+'<div class="sh-body">'+kHintCard()+'<div class="card"><div class="who">編集長'+(c?'・'+esc(c.name):'')+'</div><div class="t">この半年の人気をもとに、打ち切りと新連載を決めましょう。打ち切っても、たまった分はコミックスで出せます。</div><div class="s">打ち切りは最大5作品。看板は打ち切れない。</div></div><div class="sec">打ち切り（印＝編集長の案）</div>';
+  let h=head('半年ごとの会議').replace('<button class="close" data-act="close">閉じる</button>','')+'<div class="sh-body">'+kHintCard()+'<div class="card"><div class="who">編集長'+(c?'・'+esc(c.name):'')+'</div><div class="t">この半年の人気をもとに、打ち切りと新連載を決めましょう。打ち切っても、たまった分はコミックスで出せます。</div><div class="s">打ち切りは最大4作品。看板は打ち切れない。</div></div><div class="sec">打ち切り（印＝編集長の案）</div>';
   for(const m of [...list].reverse()){
     const on=S.half.cut.includes(m.id);
     h+='<div class="card"><div class="line"><b>「'+esc(m.title)+'」</b><span class="s">'+esc(m.name)+'・半年の人気 '+Math.round(avgH(m))+'</span></div><div class="row">'+(m.isKanban?'<span class="chip">看板</span>':'<button class="btn'+(on?' sel':'')+'" data-act="cut" data-arg="'+m.id+'">'+(on?'打ち切る':'続ける')+'</button>')+'</div></div>';
@@ -6005,7 +6016,7 @@ function actRest(a,arg,b){
     case 'pjudge':{const id=+arg;const J=S.prizeCfg.judges;const i=J.indexOf(id);if(i>=0)J.splice(i,1);else if(J.length<2)J.push(id);drawSheet();break;}
     case 'policy':S.mag.policy=arg;drawSheet();save();break;
     case 'launch':{const n=$('magname');if(n&&n.value.trim())S.mag.name=n.value.trim();launch();break;}
-    case 'cut':{const id=+arg;const i=S.half.cut.indexOf(id);if(i>=0)S.half.cut.splice(i,1);else if(S.half.cut.length<5)S.half.cut.push(id);drawSheet();break;}
+    case 'cut':{const id=+arg;const i=S.half.cut.indexOf(id);if(i>=0)S.half.cut.splice(i,1);else if(S.half.cut.length<4)S.half.cut.push(id);drawSheet();break;}
     case 'add':{const id=+arg;const i=S.half.add.indexOf(id);if(i>=0)S.half.add.splice(i,1);else S.half.add.push(id);drawSheet();break;}
     case 'halfok':if(S.half&&S.half.played)halfOk();else meetPlay(halfOk);break;
     case 'meddle':S.half.meddle=true;drawSheet();break;
