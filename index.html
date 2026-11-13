@@ -3998,9 +3998,18 @@ function triTick(pay,cost){if(!S.tri||!S.tri.mags)return;const F=eraF();const pr
     const fees=S1.reduce((a,m)=>a+(m.fee||feeQuote(m))*PAGES,0)+M.manga.filter(m=>m.exclusive&&OWN_ST.includes(m.status)).reduce((a,m)=>{try{return a+senzokuFee(m);}catch(e){return a;}},0);
     const sal=M.staff.reduce((a,x)=>a+salary(x),0);const other=30000*F*(1+M.staff.length/10);
     const inn=rev+comics+ads,outv=print+fees+sal+other;pay(inn,'tri');cost(outv,'tri');
+    {M.yr=M.yr||{};const Y=M.yr[S.y]=M.yr[S.y]||{mag:0,comics:0,adin:0,inc:0,out:0};Y.mag+=rev;Y.comics+=comics;Y.adin+=ads;Y.inc+=inn;Y.out+=outv;}
     M.last={y:S.y,m:S.m,sold:M.sold,inn,out:outv,profit:inn-outv,fun:Math.round(fun),ser:S1.length,staff:M.staff.length};
     M.hist.push({y:S.y,m:S.m,sold:M.sold,profit:Math.round(inn-outv),inn:Math.round(inn)});if(M.hist.length>36)M.hist.shift();}
   if(S.m===12)triYear();}
+/* 1冊目・2冊目のある年のお金（内訳つき）。M.yr がない昔の月は、月ごとの記録（hist）から見積もる。内訳は3冊目の割合を借りる */
+function triYearOf(y,ref){const r={has:false,inc:0,out:0,bk:{mag:0,comics:0,adin:0},rows:[]};if(!S.tri||!S.tri.mags)return r;
+  const rt=(()=>{const t=(ref.mag||0)+(ref.comics||0)+(ref.adin||0);return t>0?{mag:ref.mag/t,comics:ref.comics/t,adin:ref.adin/t}:{mag:0.6,comics:0.25,adin:0.15};})();
+  for(const k of [1,2]){const M=S.tri.mags[k];if(!M)continue;let inc=0,out=0;const Y=M.yr&&M.yr[y];
+    if(Y){inc=Y.inc;out=Y.out;for(const c of ['mag','comics','adin'])r.bk[c]+=Y[c]||0;}
+    else{const hs=(M.hist||[]).filter(x=>x.y===y);if(!hs.length)continue;inc=hs.reduce((a,x)=>a+(x.inn||0),0);out=hs.reduce((a,x)=>a+(x.inn||0)-(x.profit||0),0);for(const c of ['mag','comics','adin'])r.bk[c]+=inc*rt[c];}
+    r.has=true;r.inc+=inc;r.out+=out;r.rows.push([k+'冊目「'+esc(M.name||'')+'」',inc-out]);}
+  return r;}
 function triHTML(){if(!S.tri)return '<div class="card"><div class="s">三誌同時発売のあと、ここで1冊目・2冊目のようすが見られる。</div></div>';
   const yen2=v=>(v<0?'−':'')+yen(Math.abs(Math.round(v)));let h='';
   {const me=(S.income||[]).slice(-1)[0];const mine=me?me.inc-me.out:0;const iss=[...(S.issues||[])].reverse().find(x=>x.sold>0);const o1=(S.tri.mags[1]||{}).last||{},o2=(S.tri.mags[2]||{}).last||{};const tot=mine+(o1.profit||0)+(o2.profit||0);
@@ -5239,16 +5248,22 @@ function sheetHonsha(){
   } else if(tab==='num'){
     const yrs=[...new Set((S.records||[]).map(r=>r.y))].sort((a,b)=>b-a);const yy=S.numY&&yrs.includes(S.numY)?S.numY:yrs[0];
     if(!yy)h+='<div class="card"><div class="s">まだ1か月も終わっていません。</div></div>';
-    else{const rs=S.records.filter(r=>r.y===yy);const sum=k=>rs.reduce((a,r)=>a+((r.bk||{})[k]||0),0);
+    else{const rs=S.records.filter(r=>r.y===yy);const sum0=k=>rs.reduce((a,r)=>a+((r.bk||{})[k]||0),0);
+      /* 1冊目・2冊目のぶんも足して、会社ぜんたいの数字にする（記録がない昔の月は、月ごとの記録から見積もる） */
+      const TY=triYearOf(yy,{mag:sum0('mag'),comics:sum0('comics'),adin:sum0('adin')});const sum=k=>sum0(k)+(TY.bk[k]||0);
       const parts=[['雑誌の売上',sum('mag'),'#d9a441'],['コミックス',sum('comics'),'#3d6fa8'],['広告',sum('adin'),'#3e7d4f'],['グッズ',sum('goods'),'#c4583e']].filter(x=>x[1]>0);const tot=parts.reduce((a,x)=>a+x[1],0);
       let acc=0;const grad=parts.map(([n,v,c])=>{const a0=acc/tot*360;acc+=v;return c+' '+a0.toFixed(1)+'deg '+(acc/tot*360).toFixed(1)+'deg';}).join(',');
-      const out=rs.reduce((a,r)=>a+(r.out||0),0),inc=rs.reduce((a,r)=>a+(r.inc||0),0);
+      const out0=rs.reduce((a,r)=>a+(r.out||0),0),inc0=rs.reduce((a,r)=>a+(r.inc||0),0);const out=out0+TY.out,inc=inc0+TY.inc;
       h+='<div class="card"><div class="row">'+yrs.slice(0,6).map(y=>'<button class="btn'+(y===yy?' sel':'')+'" data-act="numy" data-arg="'+y+'">'+y+'年</button>').join('')+'</div>'
-        +'<div class="who" style="margin-top:8px">'+yy+'年、会社を支えたお金</div>'+(tot?'<div class="row" style="align-items:center;gap:14px;flex-wrap:nowrap"><div class="pie" role="img" aria-label="収入の内訳" style="background:conic-gradient('+grad+')"></div><div style="flex:1">'+parts.map(([n,v,c])=>'<div class="line"><span><span style="display:inline-block;width:12px;height:12px;background:'+c+';border-radius:2px;margin-right:6px"></span>'+n+'</span><b>'+Math.round(v/tot*100)+'%</b></div>').join('')+'</div></div>':'<div class="s">まだ収入がありません。</div>')
-        +'<div class="line"><span>入ったお金</span><b>'+yen(inc)+'</b></div><div class="line"><span>出ていったお金</span><b>'+yen(out)+'</b></div><div class="line"><span>利益</span><b style="color:'+(inc-out<0?'var(--red)':'var(--green)')+'">'+yen(inc-out)+'</b></div></div>';}
-    const ed=[...byRole('chief'),...byRole('vice'),...byRole('tantou')].filter(x=>!x.hidden);const av=(a,k)=>a.length?a.reduce((q,x)=>q+(x[k]??60),0)/a.length:null;
+        +'<div class="who" style="margin-top:8px">'+yy+'年、会社を支えたお金'+(TY.has?'（三誌の合計）':'')+'</div>'+(tot?'<div class="row" style="align-items:center;gap:14px;flex-wrap:nowrap"><div class="pie" role="img" aria-label="収入の内訳" style="background:conic-gradient('+grad+')"></div><div style="flex:1">'+parts.map(([n,v,c])=>'<div class="line"><span><span style="display:inline-block;width:12px;height:12px;background:'+c+';border-radius:2px;margin-right:6px"></span>'+n+'</span><b>'+Math.round(v/tot*100)+'%</b></div>').join('')+'</div></div>':'<div class="s">まだ収入がありません。</div>')
+        +'<div class="line"><span>入ったお金</span><b>'+yen(inc)+'</b></div><div class="line"><span>出ていったお金</span><b>'+yen(out)+'</b></div><div class="line"><span>利益</span><b style="color:'+(inc-out<0?'var(--red)':'var(--green)')+'">'+yen(inc-out)+'</b></div>'
+        +(TY.has?'<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:6px"><div class="s" style="font-size:16px">雑誌ごとの利益</div>'+TY.rows.concat([['3冊目（社長）',inc0-out0]]).map(([n,v])=>'<div class="line" style="font-size:17px"><span>'+n+'</span><b style="color:'+(v<0?'var(--red)':'var(--green)')+'">'+(v<0?'−':'')+yen(Math.abs(Math.round(v)))+'</b></div>').join('')+'</div>':'')+'</div>';}
+    const TS=S.tri&&S.tri.mags?[1,2].map(k=>S.tri.mags[k]).filter(M=>M&&M.staff):[];const tst=r=>TS.flatMap(M=>M.staff.filter(x=>r.includes(x.role)));
+    const ed=[...byRole('chief'),...byRole('vice'),...byRole('tantou')].filter(x=>!x.hidden).concat(tst(['chief','vice','tantou']));const av=(a,k)=>a.length?a.reduce((q,x)=>q+(x[k]??60),0)/a.length:null;
     const te=team('eigyo'),ts=team('senden'),tk=team('keiri');
-    {const G5=[['編集力',av(ed,'henshu'),'編集長・副編・担当の編集の力'],['営業力',te?te.eigyo:null,'営業部の力'],['宣伝力',ts?ts.kikaku:null,'宣伝部の企画の力'],['お金まわり',tk?tk.jimu:null,'経理部の事務の力'],['社員のやる気',av(S.staff.filter(x=>!['retired','quit','gone'].includes(x.role)),'jonetsu'),'みんなの情熱の平均']];
+    /* 営業・宣伝は、雑誌ごとの部の力の平均（部がない雑誌はきびしめに25） */
+    const tri3=(own,r,k)=>{if(!TS.length)return own;const v=[own==null?25:own].concat(TS.map(M=>{const a=M.staff.filter(x=>r.includes(x.role));return a.length?Math.max(...a.map(x=>x[k]||0)):25;}));return v.reduce((a,b)=>a+b,0)/v.length;};
+    {const G5=[['編集力',av(ed,'henshu'),'編集長・副編・担当の編集の力'+(TS.length?'（三誌）':'')],['営業力',tri3(te?te.eigyo:null,['eibu','eigyo'],'eigyo'),'営業部の力'+(TS.length?'（三誌の平均）':'')],['宣伝力',tri3(ts?ts.kikaku:null,['senbu','senden'],'kikaku'),'宣伝部の企画の力'+(TS.length?'（三誌の平均）':'')],['お金まわり',tk?tk.jimu:null,'経理部の事務の力'],['社員のやる気',av(S.staff.filter(x=>!['retired','quit','gone'].includes(x.role)).concat(TS.flatMap(M=>M.staff)),'jonetsu'),'みんなの情熱の平均'+(TS.length?'（三誌）':'')]];
      const tot=G5.reduce((a,g)=>a+(g[1]==null?25:g[1]),0)/G5.length;const tr=rank(tot);
      const CM={S:'業界の頂点。何も言うことはない。',A:'一流の出版社。あと一歩で頂点。',B:'なかなかの会社。弱いところを伸ばそう。',C:'ふつうの会社。ここからが勝負。',D:'まだまだ町の出版社。伸びしろしかない。',E:'がんばりましょう。',F:'たいへんよくがんばりましょう。',G:'……社長、まずは人を雇いましょう。'};
      h+='<div class="card"><div class="who">会社の通信簿</div><div class="line" style="align-items:center;padding-block:6px;border-bottom:2px solid var(--line)"><span style="font-size:20px"><b>トータル</b><br><span class="s">'+CM[tr]+'</span></span><b style="font-family:var(--f-dot);font-size:40px;color:'+(tot>=70?'var(--accent)':tot<45?'#e07a6e':'var(--fg)')+'">'+tr+'</b></div>'+G5.map(g=>gradeRow(g[0],g[1],g[2]+(g[1]==null?'（部署がない）':''))).join('')+'<div class="s">部署がないところは、きびしめに数える。</div></div>';}
