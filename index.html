@@ -522,7 +522,7 @@ function comicsTotal(m){try{cserInit();const e=S.cser[String(m.id)+'|'+m.title];
 /* 口コミの道：雑誌の順位や部数に関係なく、コミックスの面白さ（平均70以上・3巻以上・合計100万冊以上）で評判が広がった作品にも、アニメの話が来る */
 function anWom(m){try{cserInit();const e=S.cser[String(m.id)+'|'+m.title];if(!e)return false;const cs=(S.comics||[]).filter(c=>c.mid===m.id&&c.title===m.title&&(c.fun!=null||c.q!=null));if(cs.length<3)return false;
   const avg=cs.reduce((a,c)=>a+(c.fun!=null?c.fun:c.q),0)/cs.length;return avg>=70&&(e.sold||0)>=1000000;}catch(e){return false;}}
-function anGate(m){const r=myRank();if(r<=4)return true;if(S.y<1980)return tierOf(m)>=6;return comicsTotal(m)>=500000;}
+function anGate(m){const r=myRank();if(r<=4||m.isKanban)return true;/* 看板の作品には、雑誌の順位に関係なく話が来る（ver.459） */if(S.y<1980)return tierOf(m)>=6;return comicsTotal(m)>=500000;}
 // アニメ化会議：よその出版社の候補作と競う。作品の人気・コミックス・出版社と雑誌の格と知名度
 function anMeeting(m){const r=myRank();const n=ri(3,5);
   const me=(m.pop||0)*0.8+Math.log10(1+comicsTotal(m))*10+(m.fame||0)/60+(S.titleIdx||0)*4+Math.max(0,30-Math.min(30,r))*1.2+(S.mag.aware||0)*0.3+(R()*2-1)*12;
@@ -686,6 +686,9 @@ function funOf(m){const ab=abil5(m).reduce((a,v)=>a+RANK_PT[rank(v)],0);const fl
 function score(m){
   let s=funOf(m);
   const gg=(m.status==='serial'||m.status==='queue')?m.genre:bestGenre(m);
+  /* 評価の定まった作品（看板・大物以上・伝説・2年以上続いてトップ3に入った作品）は、流行りや雑誌の色に左右されない（ver.455） */
+  const est=m.isKanban||tierOf(m)>=5||m.legend||((m.months||0)>=24&&(m.rkh||[]).some(r=>r<=3));
+  if(est)return s*1.1*1.15;
   if(POLICY[S.mag.policy].includes(gg))s*=1.1;
   s*=trendOf(gg);
   return s;
@@ -945,16 +948,16 @@ function phase3Tick(ranked,sold){let inc=0;const n=ranked.length||1;
     S.hagaki=hg;}
   // アニメ化
   for(const m of S.manga){const a=m.an;
-    if(!a){if(m.status==='serial'&&!(m.anCool>S.turns)&&anActive()<2&&((anGate(m)&&sold>=30000&&(m.topStreak||0)>=6&&m.fame>=250&&R()<0.12*ideaF(m)*(invSyn('anime')>=3e7?1.4:1))||(anWom(m)&&R()<0.06)||(m.sig&&m.title===m.sig&&mLevel(m)>=68&&(m.months||0)>=6&&R()<0.08))){m.an={st:'rumor',t:ri(1,2)};const t=tantouOf(m);S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:'「'+m.title+'」をアニメにしたがっている会社があるって噂を聞きました……！'});}continue;}
+    if(!a){if(m.status==='serial'&&!(m.anCool>S.turns)&&anActive()<2&&((anGate(m)&&sold>=30000&&((m.topStreak||0)>=6||m.isKanban||(m.rkh||[]).slice(-6).filter(r=>r<=3).length>=4)&&m.fame>=250&&R()<0.12*ideaF(m)*(invSyn('anime')>=3e7?1.4:1))||(anWom(m)&&R()<0.06)||(m.sig&&m.title===m.sig&&mLevel(m)>=68&&(m.months||0)>=6&&R()<0.08))){m.an={st:'rumor',t:ri(1,2)};const t=tantouOf(m);S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:'「'+m.title+'」をアニメにしたがっている会社があるって噂を聞きました……！'});}continue;}
     if(a.st==='rumor'){if(--a.t<=0){if(m.status!=='serial'){m.an=null;continue;}const t=tantouOf(m);
-        if(R()<0.4){m.an=null;m.anCool=S.turns+8;S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:'「'+m.title+'」のアニメの話……どうもガセだったみたいです。すみません、ぬか喜びさせて……。'});continue;}
+        if(R()<0.25){m.an=null;m.anCool=S.turns+8;S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:'「'+m.title+'」のアニメの話……どうもガセだったみたいです。すみません、ぬか喜びさせて……。'});continue;}
         const st=pick(STUDIOS);a.st='cand';a.studio=st[0];a.t=ri(1,2);S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:st[0]+'から正式に連絡がありました！「'+m.title+'」が、アニメ化の候補に入ったそうです！ただ、よその出版社の作品と競うことになります……。',warn:false});}}
     else if(a.st==='cand'){if(--a.t<=0){if(m.status!=='serial'){m.an=null;continue;}const r=anMeeting(m);const t=tantouOf(m);
         if(r.win){a.st='offer';a.season=1;S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:a.studio+'のアニメ化会議で、「'+m.title+'」が選ばれました！！（候補'+r.n+'作の中から）'});(S.popups=S.popups||[]).push({news:'anoffer',id:m.id,season:1});}
         else{m.an=null;m.anCool=S.turns+12;S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:a.studio+'のアニメ化会議……今回は、'+r.by+'の「'+r.title+'」に決まりました。「'+m.title+'」はアニメ化ならず……。'+(r.why?r.why:''),warn:true});}}}
     else if(a.st==='offer'){if(!(S.popups||[]).some(o=>o.news==='anoffer'&&o.id===m.id))(S.popups=S.popups||[]).push({news:'anoffer',id:m.id,season:a.season||1});}
     else if(a.st==='prod'){a.t--;if(a.t===3&&!a.seiyu){a.seiyu=1;(S.popups=S.popups||[]).push({news:'seiyu',id:m.id,cast:staffName(ri(19,30)),vid:9000+ri(1,900)});}
-      if(a.t<=0){a.st='air';a.t=a.len;m.anime=true;try{m.anN=(m.anN||0)+1;const w=curWork(m);if(w)w.anime=(w.anime||0)+1;}catch(e){}a.luck=a.luck??(R()*3-1.5);a.exp=anRate(anScore(m));S.mag.aware=awAdd(3+a.exp);(S.popups=S.popups||[]).push({news:'onair',id:m.id});}}
+      if(a.t<=0){a.st='air';a.t=a.len;m.anime=true;m.anY=S.y;try{m.anN=(m.anN||0)+1;const w=curWork(m);if(w)w.anime=(w.anime||0)+1;}catch(e){}a.luck=a.luck??(R()*3-1.5);a.exp=anRate(anScore(m));S.mag.aware=awAdd(3+a.exp);(S.popups=S.popups||[]).push({news:'onair',id:m.id});}}
     else if(a.st==='air'){a.t--;const ex=a.exp;const t=tantouOf(m);
       const lic=Math.round((ex>=3?(ex===4?6e6:3e6):ex===2?1e6:0)*eraF()*(R()*0.6+0.7)*ideaF(m));if(lic>0&&R()<Math.min(0.95,0.6*ideaF(m))){inc+=lic;S.pendingEvents.push({dept:'営業',who:'営業',t:pick(['おもちゃ会社から','文房具の会社から','お菓子の会社から'])+'「'+m.title+'」の商品を出したいと連絡がありました。使用料が'+yen(lic)+'入ります！'});}
       else S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:'アニメ「'+m.title+'」'+(ex>=4?'の視聴率が20%を超えました！街じゅうで主題歌が流れてます！':ex===3?'、評判いいです！クラスの話題はこればっかりだそうです。':ex===2?'、そこそこ見られてます。':ex===1?'、正直あんまり話題になってません……。':'、視聴率がふるいません……原作ファンからも文句が来ています。')});
@@ -4432,8 +4435,10 @@ function endTurn(){
     const items=[];
     const stockAll=S.manga.filter(m=>m.status==='stock');
     for(const m of list){
-      if(m.arc==null){m.arc=0;m.arcT=0;}mTraits(m);m.flow=ri(1,10);if(!m.wl)m.wl=rollLuck(m);if(R()<0.13){const o=m.arcT;m.arcT=m.manne?ri(-18,10):m.enjuku?ri(-10,14):ri(-14,14);if(m.months>2&&S.pendingEvents){if(m.arcT-o>=14)S.pendingEvents.push({dept:'編集部',who:'担当',t:'「'+m.title+'」、新章に入ってアンケートが急に伸びてきました！'});else if(o-m.arcT>=14)S.pendingEvents.push({dept:'編集部',who:'担当',t:'「'+m.title+'」、どうもマンネリ気味で……アンケートが落ちてきています。',warn:true});}}m.arc+=(m.arcT-m.arc)*0.45;
-    let p=score(m)*0.7+(m.pop||score(m))*0.3+m.arc+(S.kenshoNext?ri(-2,2):m.enjuku?ri(-3,3):m.wave?ri(-10,10):ri(-6,6));
+      if(m.arc==null){m.arc=0;m.arcT=0;}mTraits(m);m.flow=ri(1,10);if(!m.wl)m.wl=rollLuck(m);if(R()<0.13){const o=m.arcT;m.arcT=m.manne?ri(-18,10):m.enjuku?ri(-10,14):ri(-14,14);if(tierOf(m)>=5||m.isKanban)m.arcT=Math.max(m.arcT,-9);/* 大物・大御所は、急には崩れない */if(m.months>2&&S.pendingEvents){if(m.arcT-o>=14)S.pendingEvents.push({dept:'編集部',who:'担当',t:'「'+m.title+'」、新章に入ってアンケートが急に伸びてきました！'});else if(o-m.arcT>=14)S.pendingEvents.push({dept:'編集部',who:'担当',t:'「'+m.title+'」、どうもマンネリ気味で……アンケートが落ちてきています。',warn:true});}}m.arc+=(m.arcT-m.arc)*0.45;
+    const stab=(m.topStreak||0)>=3||tierOf(m)>=5||m.isKanban;let p=score(m)*0.7+(m.pop||score(m))*0.3+m.arc+(S.kenshoNext?ri(-2,2):m.enjuku?ri(-3,3):m.wave&&!stab?ri(-10,10):stab?ri(-3,3):ri(-6,6));
+      /* 固定ファン：名前の売れた先生には、毎号かならず票を入れる読者がいる（ver.454） */p+=Math.min(9,Math.log10(1+(m.fame||0))*2.6);
+      /* 人気は、いきなりは落ちない：前の号から下がるのは12点まで */if(m.pop>0&&(m.months||0)>=3)p=Math.max(p,m.pop-12);
       if(m.id===S.colorPick)p+=8;
       if(m.teko&&m.teko.left>0){p+=m.teko.amt;if(!m.teko.told){m.teko.told=1;S.pendingEvents.push({dept:'編集部',who:'担当'+(staffById(m.tantou)?'・'+staffById(m.tantou).name:''),t:m.teko.amt>0?'「'+m.title+'」の'+m.teko.nm+'が大当たり！読者アンケートが急上昇です！':'「'+m.title+'」の'+m.teko.nm+'、空回りでした……'+(m.teko.stretch?'読者に「引きのばし」と言われています。':''),warn:m.teko.amt<0});}m.teko.left--;}
       /* 同人出身は、締め切りに慣れるまでの最初の1年だけ落としやすい *//* 長期休載（体調）：めったにないが、年配・遅筆の先生ほど起きやすい */if(m.months>=3&&!m.senpai&&R()<0.003*((m.age||30)>=45?2:1)*(m.tags.includes('遅筆')?1.5:1)){const rk=(m.rkh||[]).slice(-1)[0]||99;m.status='rest';m.restLeft=ri(3,8);m.restTop=rk<=6;const t=staffById(m.tantou);S.pendingEvents.push({dept:'編集部',who:'担当'+(t?'・'+t.name:''),t:m.name+'先生が体調をくずされました。「'+m.title+'」は、しばらく休載です（'+m.restLeft+'か月ほど）。'+(m.restTop?'人気作なので、治ったら優先して連載に戻します。':'……人気が今ひとつなので、戻る場所があるかどうか。'),warn:true});continue;}
@@ -4653,9 +4658,10 @@ function endTurn(){
   }
   // 長期連載の「畳みたい」
   for(const m of serials()){
-    if(m.months>=(m.pop>=60?24:12)&&R()<.03&&!S.pendingEvents.some(e=>e.type==='end')){
+    /* 看板は6年（コミックス12巻）くらいから。アニメの話が動いているあいだは、先生も畳もうとは言わない */if(m.isKanban&&m.an&&m.an.st!=='done')continue;if(m.isKanban&&m.anY&&S.y-m.anY<2)continue;
+    if(m.months>=(m.isKanban?72:m.pop>=60?24:12)&&R()<.03&&!S.pendingEvents.some(e=>e.type==='end')){
       const c=chief();const rec=m.pop<50?'終わらせましょう':'引き止めましょう';
-      S.pendingEvents.push({type:'end',id:m.id,rec,who:'編集長'+(c?'・'+c.name:''),t:m.name+'先生が「'+m.title+'」をそろそろ畳みたいと言っています。わたしは「'+rec+'」と思います。'});
+      S.pendingEvents.push({type:'end',id:m.id,rec,who:'編集長'+(c?'・'+c.name:''),t:m.isKanban?m.name+'先生が、看板の「'+m.title+'」を、そろそろ畳みたいと言っています。「描ききった気がするんです。……新しい作品が、描きたい」と。わたしは「'+rec+'」と思います。':m.name+'先生が「'+m.title+'」をそろそろ畳みたいと言っています。わたしは「'+rec+'」と思います。'});
     }
   }
   // コミックス刊行（連載6か月ごと）
@@ -4731,7 +4737,7 @@ function publishComic(m){
         S.pendingEvents.push({dept:'営業',who:'営業',t:'「'+m.title+'」が口コミで話題に！既刊'+old.length+'冊がまとめて重版です。'});}}}
   S.pendingEvents.push({who:'営業',t:'「'+m.title+'」'+vol+'巻を出します。'});
 }
-function cancelSerial(m,why){try{workEnd(m,why);}catch(e){}if(why!=='cut'&&(comicsTotal(m)>=300000||(m.fame||0)>=1500))m.hitEnd=1;if(why==='cut'){const t0=staffById(m.tantou);if(t0)t0.cutN=(t0.cutN||0)+1;}
+function cancelSerial(m,why){try{workEnd(m,why);}catch(e){}if(m.isKanban&&m.kFrom&&!m.kEnd&&why!=='cut'){const yrs=S.y-m.kFrom.y;kEraEnd(m);if(yrs>=2)(S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'📕 「<b>'+esc(m.title||'')+'</b>」が、最終回をむかえた。<br>'+m.kFrom.y+'年から'+yrs+'年間、この雑誌の顔だった。<br>「'+esc(S.mag.name)+'といえば、『'+esc(m.title||'')+'』だったな」<br>……ひとつの時代が、終わった。'});}if(why!=='cut'&&(comicsTotal(m)>=300000||(m.fame||0)>=1500))m.hitEnd=1;if(why==='cut'){const t0=staffById(m.tantou);if(t0)t0.cutN=(t0.cutN||0)+1;}
   notif(m,why==='fire'?'fire':why==='end'?'end':'cut');
   if(m.isKanban){for(const x of S.staff)x.jonetsu=clamp(x.jonetsu-3,0,100);}
   {const t0=staffById(m.tantou);if(t0&&m.handBy===t0.id&&why==='cut')t0.jonetsu-=6;}
@@ -5808,6 +5814,7 @@ function sheetHonsha(){
     const cur=S.manga.filter(m=>m.isKanban&&m.status!=='gone'&&m.status!=='rival');
     h+='<div class="card"><div class="who">いまの看板</div>'+(cur.length?cur.map(m=>'<div class="row" style="align-items:center;gap:12px;flex-wrap:nowrap;padding-block:4px"><canvas class="fc" data-fid="'+m.id+'" width="32" height="32"></canvas><div><div class="t"><b>'+(m.title?'「'+esc(m.title)+'」':'（連載準備中）')+'</b></div><div class="s">'+esc(m.name)+'</div></div></div>').join(''):'<div class="s">看板の先生はまだいない。</div>')+'</div>';
     const past=S.manga.filter(m=>(m.tags||[]).includes('元看板')&&!m.isKanban);
+    if((S.kHist||[]).length)h+='<div class="card"><div class="who">雑誌の顔だった作品（看板の時代）</div>'+S.kHist.map(e=>'<div class="line" style="font-size:17px"><span>'+e.fy+'〜'+e.ty+'年　「'+esc(e.t)+'」</span><span class="s">'+esc(e.n)+'</span></div>').join('')+'</div>';
     h+='<div class="card"><div class="who">歴代の看板</div>'+(past.length?past.map(m=>'<div class="line"><span>'+esc(m.name)+'</span><span class="s">'+(m.status==='rival'?'よそで連載中':m.status==='gone'?'引退・移籍':'うちにいる')+'</span></div>').join(''):'<div class="s">まだ記録がありません。</div>')+'</div>';
     const an=S.manga.filter(m=>m.anime);
     h+='<div class="card"><div class="who">アニメになった作品</div>'+(an.length?an.map(m=>'<div class="line"><span>「'+esc(m.title||'')+'」'+(m.phenom?' <span class="chip">社会現象</span>':'')+(m.an&&m.an.rate!=null?' <span class="s" style="color:'+ANRC[m.an.rate]+'">'+ANR[m.an.rate]+(m.an.season>1?'・2期':'')+'</span>':m.an&&m.an.st==='air'?' <span class="s">放送中</span>':'')+'</span><span class="s">'+esc(m.name)+'</span></div>').join(''):'<div class="s">まだありません。人気投票3位以内を半年続けると、アニメ会社から話が来ることがある。</div>')+'</div>';
@@ -6123,11 +6130,12 @@ function buildHalf(){
     let want=SP?0:waitEx>=1?1:0;if(!SP&&waitEx>=3&&R()<0.5)want=2;
     if(why)want=Math.max(want,2+(R()<0.5?1:0)+(drop>=0.12?1:0));want=Math.min(want,maxCut);
     /* 守るのは専属の先生だけ：始まって1年未満なら、1回だけ見逃す */
-    const bad=SP?[]:seen.filter(x=>!x.m.isKanban&&x.v<50&&x.v<med-5);const spared=[];let cut=[];
+    /* 大物・大御所・伝説の先生と、ここ半年で3位以内に入った作品は、よほど落ちないかぎり切らない（ver.454） */const vip=m=>tierOf(m)>=5||m.legend||(m.rkh||[]).some(r=>r<=3);
+    const bad=SP?[]:seen.filter(x=>!x.m.isKanban&&x.v<50&&x.v<med-5&&(!vip(x.m)||x.v<32));const spared=[];let cut=[];
     const capN=why?maxCut:Math.min(maxCut,2);/* ふだんは2本まで。流れが悪いとき・編集長の気分しだいで4本まで */
     for(const x of bad){if(cut.length>=capN)break;if(x.m.exclusive&&(x.m.months||0)<12&&!x.m.cutSaved){x.m.cutSaved=1;spared.push(x.m.id);continue;}cut.push(x.m.id);}
     /* 待っている人のために、下から入れかえる（真ん中より下だけ。流れが悪いときは真ん中まで） */
-    if(cut.length<want)for(const x of seen){if(cut.length>=want)break;if(cut.includes(x.m.id)||spared.includes(x.m.id)||x.m.isKanban)continue;if(why?x.v>med:x.v>=med)continue;if(x.m.exclusive&&(x.m.months||0)<12&&!x.m.cutSaved)continue;cut.push(x.m.id);}
+    if(cut.length<want)for(const x of seen){if(cut.length>=want)break;if(cut.includes(x.m.id)||spared.includes(x.m.id)||x.m.isKanban||vip(x.m))continue;if(why?x.v>med:x.v>=med)continue;if(x.m.exclusive&&(x.m.months||0)<12&&!x.m.cutSaved)continue;cut.push(x.m.id);}
     if(!SP&&!cut.length&&maxCut>0&&list.length>=S.mag.cap&&seen[0]&&!seen[0].m.isKanban&&!spared.includes(seen[0].m.id)&&!(seen[0].m.exclusive&&(seen[0].m.months||0)<12&&!seen[0].m.cutSaved)&&seen[0].v<med-5)cut=[seen[0].m.id];
     const leaveN=list.filter(m=>{const e=endAt(m);return e!=null&&e-S.turns<=(SP?2:7)&&!cut.includes(m.id);}).length;
     const free0=S.mag.cap-(list.length-cut.length)-S.manga.filter(m=>m.status==='queue').length+leaveN;
@@ -6257,7 +6265,7 @@ function halfOk(){
 }
 function sheetTitle(){
   const slots=[1,2,3].map(i=>{let d=null;try{d=JSON.parse(LS.get(SAVEKEY+'-s'+i)||'null');}catch(e){}return d?'<button class="btn" data-act="loadslot" data-arg="'+i+'">スロット'+i+'：'+esc(d.meta||'')+'</button>':'';}).join('');
-  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri?'<button class="btn pri" data-act="devexec">重役会議を見る（テスト）</button>':'')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">うちの雑誌を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.453）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
+  return '<div class="sh-body"><div class="titlebox"><canvas id="titlecv" width="400" height="320"></canvas><div class="logo" data-act="devtap"><span>出版社</span><span>経営物語</span></div><div class="sub">〜 昭和・平成 漫画雑誌ものがたり 〜</div></div>'+(S.saved?'<button class="btn pri" data-act="continue">続きから</button>':'')+'<button class="btn'+(S.saved?'':' pri')+'" data-act="start">はじめから</button>'+slots+(DEVM?(()=>{let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}return '<div class="card" style="border:2px dashed #c9a24a"><div class="who">開発用</div>'+(dm?'<button class="btn" data-act="loaddemo">後半テスト：無料版のおわりから（'+esc(dm.meta||'')+'）</button>':'<div class="s">無料版のおわりのデータが、まだありません。</div>')+(S.saved&&S.tri?'<button class="btn pri" data-act="devexec">重役会議を見る（テスト）</button>':'')+(S.saved&&S.tri&&S.mag&&S.mag.launched?'<button class="btn" data-act="devzero">うちの雑誌を、いまからゼロにもどす（販路・知名度・記録）</button>':'')+(S.saved&&S.demoDue?'<button class="btn" data-act="devgo">いまのデータで、無料版のおわりを越えて続ける</button>':'')+'</div>';})():'')+'<div class="s">試作版（ver.459）。数字やバランスはまだ仮です。MosquitoEngine</div></div>';
 }
 function sheetOver(){
   if(S.over==='win'){const w=S.won||{y:S.y,m:S.m};return '<div class="sh-head"><h2>すべて、取り戻した</h2></div><div class="sh-body"><div class="story">'+w.y+'年'+w.m+'月。\n叔父・権藤 剛造は逮捕され、\n大鷲社は、古参の篠原専務のもとで出直すことになった。\n\nあの日、会議室で「出ていけ」と言われた社長は、\nゼロから雑誌を作り、仲間を集め、\nとうとう、おじいさまの会社を取り戻した。\n\n恨みは、もうなかった。\n因果応報。……ただ、それだけのことだった。\n\n社長、'+(PRES.age+w.y-START_Y)+'歳。\n「'+esc(S.mag.name)+'」は、これからも続いていく。</div>'
@@ -6720,7 +6728,7 @@ function actRest(a,arg,b){
     case 'cterm':{const[id,y0]=arg.split(':').map(Number);const y=clamp(y0,3,5);const m=S.manga.find(x=>x.id===id);if(m&&m.exclusive){m.term=y;if((m.noSer||0)<y*12-12)m.lastChance=0;toast(m.name+'さんを'+y+'年あずかることにした');save();drawSheet();}break;}
     case 'renew':{const m=S.manga.find(x=>x.id===+arg);if(!m||!m.exclusive)break;m.noSer=0;m.lastChance=0;const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)+3,0,100);S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'育成',who:'担当'+(t?'・'+t.name:''),t:m.name+'さんとの専属契約を更新しました。「……ありがとうございます。今度こそ、結果を出します」'});toast(m.name+'さんと契約を更新した');save();drawSheet();render();break;}
     case 'kdemote':{const m=S.manga.find(x=>x.id===+arg);if(!m||!m.isKanban||!chief())break;if(!m.kdSure){m.kdSure=1;toast('もう一度押すと、看板からはずします（先生と担当はがっかりします）');drawSheet();break;}delete m.kdSure;m.isKanban=false;if(m.fee)m.fee=Math.max(100,m.fee-Math.round(1500*eraF()/100)*100);m.fame=Math.max(0,(m.fame||0)-20);const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)-6,0,100);say('編集長・'+chief().name,'「'+(m.title||m.name)+'」は、看板からはずします。……先生には、また上がってきてほしい。');S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'編集部',who:'編集長',t:m.name+'先生の「'+(m.title||'')+'」を看板からはずしました。先生も担当も、肩を落としています。これからは連載会議で入れかえの対象にもなります。',warn:true});save();drawSheet();render();break;}
-    case 'kpromote':{const m=S.manga.find(x=>x.id===+arg);if(!m||!chief())break;if(S.manga.filter(x=>x.isKanban&&x.status!=='gone').length>=3){toast('看板はもう3本です');break;}m.isKanban=true;m.kWas=1;m.fee=pageFee(m)+Math.round(1500*eraF()/100)*100;say('編集長・'+chief().name,'「'+m.title+'」を看板にします！');(S.popups=S.popups||[]).push({kup:m.id});save();drawSheet();showPop();break;}
+    case 'kpromote':{const m=S.manga.find(x=>x.id===+arg);if(!m||!chief())break;if(S.manga.filter(x=>x.isKanban&&x.status!=='gone').length>=3){toast('看板はもう3本です');break;}m.isKanban=true;m.kWas=1;m.kFrom={y:S.y,m:S.m};m.kEnd=0;m.fee=pageFee(m)+Math.round(1500*eraF()/100)*100;say('編集長・'+chief().name,'「'+m.title+'」を看板にします！');(S.popups=S.popups||[]).push({kup:m.id});save();drawSheet();showPop();break;}
     case 'ikpick':S.ikPick=+arg||null;drawSheet();break;
     case 'ikstart':{const[id,plan,tg]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m){m.ik={plan,target:tg?+tg:null,ok:false,n:0};S.ikPick=null;say('担当',m.name+'さんの育成を始めます（'+IKP[plan]+'）。');save();drawSheet();}break;}
     case 'ikstop':{const m=S.manga.find(x=>x.id===+arg);if(m){m.ik=null;save();drawSheet();}break;}
@@ -8824,15 +8832,22 @@ function kAvg(m){const r=(m.rkh||[]).slice(-6);if(r.length<4)return null;return 
 /* 看板の評価：人気投票の平均順位から、固定ファンの多さを差し引く（10万人ごとに1位分よく見る。最大3位分） */
 function kFanB(m){return Math.min(3,Math.floor((m.fans||0)/100000));}
 function kScore(m){const a=kAvg(m);return a==null?null:Math.round((a-kFanB(m))*10)/10;}
+/* 看板＝雑誌の代名詞（ver.456〜457）：一度看板になった作品は、半年の平均が4.5位以内なら看板のまま。空きが出たときだけ、トップ3を守りぬいた作品が新しく看板になる */
+function kEraEnd(m){if(!m.kFrom||m.kEnd)return;m.kEnd=1;(S.kHist=S.kHist||[]).push({t:m.title||'',n:m.name,fy:m.kFrom.y,ty:S.y});}
 function kanbanReview(){if(!S.mag.launched||S.prologue)return;const kf=Math.round(1500*eraF()/100)*100;
-  /* 先輩と迎えた看板は約束の看板。ほかは、うちの先生も外から来た先生も、人気投票だけで決まる（大看板は平均8位までなら残れる） */
-  const keep=S.manga.filter(m=>m.isKanban&&(m.senpai||(!m.amateur&&m.freeEnd!=null))&&['serial','stock','queue'].includes(m.status));/* 先輩と、契約して迎えた看板（期限つき）は約束どおり */
-  const pool=serials().filter(m=>!m.senpai&&kScore(m)!=null&&(kScore(m)<=4||(m.isKanban&&m.daiKanban&&kScore(m)<=8))).sort((a,b)=>kScore(a)-kScore(b));
-  const pick3=pool.slice(0,Math.max(0,3-keep.length));const ins=[],outs=[];
-  for(const m of S.manga){if(!m.isKanban||m.senpai||keep.includes(m))continue;if(!pick3.includes(m)){m.isKanban=false;if(m.fee)m.fee=Math.max(100,m.fee-kf);const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)-4,0,100);outs.push(m);}}
-  for(const m of pick3){m.kWas=1;if(m.isKanban)continue;m.isKanban=true;m.fee=pageFee(m)+kf;const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)+6,0,100);ins.push(m);}
+  const keep=S.manga.filter(m=>m.isKanban&&(m.senpai||(!m.amateur&&m.freeEnd!=null))&&['serial','stock','queue'].includes(m.status));
+  const ins=[],outs=[];
+  /* いまの看板：連載中で、半年の平均が8位以内なら、そのまま */
+  for(const m of S.manga){if(!m.isKanban||m.senpai||keep.includes(m))continue;const k=kScore(m);const stay=m.status==='serial'&&(k==null||k<=4.5);if(stay)continue;
+    m.isKanban=false;if(m.fee)m.fee=Math.max(100,m.fee-kf);const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)-4,0,100);kEraEnd(m);outs.push(m);}
+  const cur=S.manga.filter(m=>m.isKanban&&['serial','stock','queue'].includes(m.status));let room=3-cur.length;
+  const pool=serials().filter(m=>!m.isKanban&&!m.senpai&&(m.months||0)>=6&&kScore(m)!=null&&kScore(m)<=3).sort((a,b)=>kScore(a)-kScore(b));
+  /* 空きがなくても、圧倒的な新星（平均1.5位以内）は、かげりの見えた看板（平均3.5位より下）と入れかわる */
+  if(room<=0&&pool.length&&kScore(pool[0])<=1.5){const weak=cur.filter(m=>!m.senpai&&!keep.includes(m)&&kScore(m)!=null&&kScore(m)>3.5).sort((a,b)=>kScore(b)-kScore(a))[0];
+    if(weak){weak.isKanban=false;if(weak.fee)weak.fee=Math.max(100,weak.fee-kf);kEraEnd(weak);outs.push(weak);room=1;}}
+  for(const m of pool){if(room<=0)break;m.kWas=1;m.isKanban=true;m.kFrom={y:S.y,m:S.m};m.kEnd=0;if(!(m.tags||[]).includes('元看板'))(m.tags=m.tags||[]).push('元看板');m.fee=pageFee(m)+kf;const t=staffById(m.tantou);if(t)t.jonetsu=clamp((t.jonetsu||50)+6,0,100);ins.push(m);room--;}
   if(!ins.length&&!outs.length)return;const ks=S.manga.filter(m=>m.isKanban&&['serial','stock','queue'].includes(m.status));
-  (S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'📣 '+S.y+'年'+S.m+'月　今期の看板が決まった（読者の人気投票より）<br>'+ks.map(m=>'「<b>'+esc(m.title||'')+'</b>」').join('　')+(ins.length?'<br><span style="color:var(--green)">新しく看板に：'+ins.map(m=>esc(m.name)+'先生').join('、')+'</span>':'')+(outs.length?'<br><span style="color:var(--red)">看板からはずれた：'+outs.map(m=>esc(m.name)+'先生').join('、')+'</span>':'')});}
+  (S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'📣 '+S.y+'年'+S.m+'月　看板が変わった<br>'+ks.map(m=>'「<b>'+esc(m.title||'')+'</b>」').join('　')+(ins.length?'<br><span style="color:var(--green)">新しく看板に：'+ins.map(m=>'「'+esc(m.title||'')+'」（'+esc(m.name)+'先生）').join('、')+'<br>――この雑誌の、新しい顔だ。</span>':'')+(outs.length?'<br><span style="color:var(--red)">看板をおりた：'+outs.map(m=>'「'+esc(m.title||'')+'」').join('、')+'</span>':'')});}
 function capFor(sold){return Math.min(15,9+Math.floor((sold||0)/100000));}
 function migrate(){if(S)S.skip=false;try{triFix();if(S&&S.tri&&!S.triZero){if(!S.mag.launched){triZero();S.mag.aware=Math.min(S.mag.aware||0,5);}else S.triZero=1;}
     /* v386：いまのセーブの3冊目を、1回だけゼロにもどす（販路・知名度・称号・記録） */
