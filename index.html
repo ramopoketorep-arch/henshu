@@ -962,7 +962,7 @@ function phase3Tick(ranked,sold){let inc=0;const n=ranked.length||1;
         if(r.win){a.st='offer';a.season=1;S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:a.studio+'のアニメ化会議で、「'+m.title+'」が選ばれました！！（候補'+r.n+'作の中から）'});(S.popups=S.popups||[]).push({news:'anoffer',id:m.id,season:1});}
         else{m.an=null;m.anCool=S.turns+12;S.pendingEvents.push({dept:'編集部',who:'担当・'+t.name,t:a.studio+'のアニメ化会議……今回は、'+r.by+'の「'+r.title+'」に決まりました。「'+m.title+'」はアニメ化ならず……。'+(r.why?r.why:''),warn:true});}}}
     else if(a.st==='offer'){if(!(S.popups||[]).some(o=>o.news==='anoffer'&&o.id===m.id))(S.popups=S.popups||[]).push({news:'anoffer',id:m.id,season:a.season||1});}
-    else if(a.st==='prod'){a.t--;if(a.t===3&&!a.seiyu){a.seiyu=1;(S.popups=S.popups||[]).push({news:'seiyu',id:m.id,cast:staffName(ri(19,30)),vid:9000+ri(1,900)});}
+    else if(a.st==='prod'){a.t--;if(a.t===3&&!a.seiyu){a.seiyu=1;const cs=staffName(ri(19,30)),vd=9000+ri(1,900);a.cv={name:cs.name,fem:cs.fem,vid:vd};(S.popups=S.popups||[]).push({news:'seiyu',id:m.id,cast:cs,vid:vd});}
       if(a.t<=0){a.st='air';a.t=a.len;m.anime=true;m.anY=S.y;try{m.anN=(m.anN||0)+1;const w=curWork(m);if(w)w.anime=(w.anime||0)+1;}catch(e){}a.luck=a.luck??(R()*3-1.5);a.exp=anRate(anScore(m));S.mag.aware=awAdd(3+a.exp);(S.popups=S.popups||[]).push({news:'onair',id:m.id});}}
     else if(a.st==='air'){a.t--;const ex=a.exp;const t=tantouOf(m);
       const lic=Math.round((ex>=3?(ex===4?6e6:3e6):ex===2?1e6:0)*eraF()*(R()*0.6+0.7)*ideaF(m));if(lic>0&&R()<Math.min(0.95,0.6*ideaF(m))){inc+=lic;S.pendingEvents.push({dept:'営業',who:'営業',t:pick(['おもちゃ会社から','文房具の会社から','お菓子の会社から'])+'「'+m.title+'」の商品を出したいと連絡がありました。使用料が'+yen(lic)+'入ります！'});}
@@ -1318,6 +1318,111 @@ function dealAnim2(o){const eg0=(typeof team==='function'&&(team('eigyo')||{}).l
     if(t>Z1){a2Spark(g,t,180,100,10,160,60);if(t<Z1+1.2)a2Bub(g,'ありがとうございます！',110,46,11,1);}
     if(t>4.4)a2Banner(g,'大口の取引が決まった！',t-4.4,'#6ad1ff');
   }};}
+
+// ========== アニメ雑誌の取材（ver.468）：電話 → 社長に報告 → 対談 → 色紙 → 翌月の表紙 ==========
+function anitvAnim(o){const m=S.manga.find(x=>x.id===o.id)||{name:'先生',title:'まんが'};const {eo,cl,rr,tx,head}=a2;
+  const LK=p=>{try{return NR.lookOf(p);}catch(e){return {st:'short'};}};
+  const t0=tantouOf(m);const TL=LK(t0);const PL=LK(PRES);PL.tie=PL.tie||'#b23a2e';
+  const cvP={id:o.cv.vid,name:o.cv.name,fem:o.cv.fem,age:24};const VL=LK(cvP);
+  const ML=LK(m);const RL=LK({id:7731,name:'記者',age:31});RL.jacket=RL.jacket||'#6a5a48';
+  const tv=!!o.tv,yr=S.y||1980,era=yr>=1994?'keitai':yr>=1985?'push':'dial';
+  const GEN=m.genre||(()=>{try{return gOf(m.title);}catch(e){return 'バトル';}})()||'バトル';
+  const GC={'バトル':[{st:'spiky',brow:'angry',mouth:'open',hair:'#2a2a3a'},'#2a4a8a',['#fff6c0','#ff8a3a']],'恋愛':[{st:'long',fem:1,ribbon:1,brow:'soft',mouth:'smile',hair:'#6a3a2a'},'#e87aa0',['#fff0f6','#ff9cc0']],
+    'SF':[{st:'short',brow:'angry',mouth:'flat',hair:'#c8d0e8'},'#e8eef4',['#2a2a6a','#05051a']],'スポーツ':[{st:'short',brow:'angry',mouth:'open',hair:'#2a2220'},'#d9342a',['#9ae07a','#3a9a3a']],
+    'ギャグ':[{st:'afro',eye:'dot',brow:'soft',mouth:'open',hair:'#2a2220'},'#f0c020',['#fffbd0','#ffd040']],'時代劇':[{st:'pony',eye:'narrow',brow:'angry',mouth:'flat',hair:'#1a1a22'},'#2a3a6a',['#ffb070','#7a2a4a']],
+    'ストーリー':[{st:'short',brow:'soft',mouth:'smile',hair:'#4a3020'},'#3a8a7a',['#e8f6ff','#7ac0f0']],'社会派':[{st:'oldback',eye:'narrow',brow:'angry',mouth:'flat',hair:'#2a2220'},'#2a2a30',['#5a6a8a','#151a2a']],
+    '麻雀':[{st:'regent',eye:'narrow',mouth:'flat',hair:'#2a2220'},'#3a3a3a',['#3a8a5a','#164a2a']]}[GEN]||[{st:'spiky',brow:'angry',mouth:'open',hair:'#2a2a3a'},'#2a4a8a',['#fff6c0','#ff8a3a']];
+  const HERO=Object.assign({eye:'big',skin:'#f6d2a8'},GC[0],{shirt:GC[1]});
+  const nm2=s=>String(s||'').split(' ')[0];
+  const nextM=S.m>=12?1:(S.m||1)+1;
+  const A=5.2,B=9.6,C=16.2,D=19.8,E=24.4;
+  const phone=(g,x,y,lift,ring)=>{const sh=ring?Math.sin(ring*60)*2:0;g.save();g.translate(x+sh,y);
+    if(era==='keitai'){rr(g,-8,-26,16,38,4,'#3a3e44');rr(g,-5,-22,10,9,2,'#9fc7e0');g.fillStyle='#3a3e44';g.fillRect(4,-34,2.4,10);}
+    else{const col=era==='push'?'#e9dfc6':'#1e1c1e';rr(g,-24,-11,48,22,7,col);if(!lift)rr(g,-28,-22,56,11,5,col);
+      if(era==='dial'){g.beginPath();g.arc(0,0,9,0,7);g.fillStyle='#3a3a3a';g.fill();g.beginPath();g.arc(0,0,3,0,7);g.fillStyle='#c9b07a';g.fill();}
+      else for(let i=0;i<3;i++)for(let j=0;j<3;j++)rr(g,-7+j*5.4,-7+i*4.6,4.4,3.4,1,'#8a8070');}
+    g.restore();
+    if(ring){g.strokeStyle='#e8382a';g.lineWidth=2;for(const k of [-1,1])for(let i=0;i<2;i++){const r=14+i*7+(ring*20%6);g.beginPath();g.arc(x,y-8,r,k<0?Math.PI*0.95:-Math.PI*0.3,k<0?Math.PI*1.3:Math.PI*0.05);g.stroke();}}};
+  const recv=(g,x,y)=>{if(era==='keitai'){rr(g,x-5,y-14,10,26,3,'#3a3e44');return;}const col=era==='push'?'#e9dfc6':'#1e1c1e';rr(g,x-6,y-20,12,40,5,col);rr(g,x-8,y-24,16,9,4,col);rr(g,x-8,y+15,16,9,4,col);};
+  const office=g=>{g.fillStyle='#ece6d3';g.fillRect(0,0,360,220);g.fillStyle='#e0d9c2';for(let x=0;x<360;x+=14)g.fillRect(x,0,2,220);
+    rr(g,28,24,80,56,3,'#9fc7e0');g.fillStyle='#fffdf6';g.fillRect(66,24,4,56);g.fillRect(28,50,80,4);
+    rr(g,250,22,46,62,2,'#fffdf6');g.fillStyle='#e87aa0';g.fillRect(254,26,38,30);tx(g,'締切厳守',273,70,8,'#2a2220');};
+  const studio=(g,t)=>{g.fillStyle='#f6e8ee';g.fillRect(0,0,360,220);g.fillStyle='#f0dce4';for(let y=0;y<150;y+=18)g.fillRect(0,y,360,2);
+    rr(g,90,8,180,22,6,'#ff7aa8');tx(g,'月刊アニメポップ 特別対談',180,19,11,'#fff');
+    g.fillStyle='#d8c8b0';g.fillRect(0,150,360,70);
+    // テーブルと名札
+    rr(g,120,132,120,10,3,'#8a5a3a');g.fillStyle='#6a4228';g.fillRect(128,142,6,30);g.fillRect(226,142,6,30);
+    for(const x of [150,210]){rr(g,x-4,122,8,10,2,'#fffdf6');}
+    const plate=(x,a,b)=>{rr(g,x-76,182,152,32,4,'#fffdf6');g.strokeStyle='#c8a060';g.lineWidth=1.5;g.strokeRect(x-74,184,148,28);tx(g,a,x,191,8,'#8a7a6a');tx(g,b,x,204,11,'#2a2220');};
+    plate(84,'原作「'+(m.title||'')+'」',(m.name||'')+' 先生');plate(276,'主人公の声（声優）',o.cv.name+' さん');};
+  const flash=(g,t,ts)=>{for(const f of ts){const u=t-f;if(u>=0&&u<0.35){g.fillStyle='rgba(255,255,255,'+(0.75*(1-u/0.35))+')';g.fillRect(0,0,360,220);}}};
+  return {dur:E+0.4,draw:(g,t)=>{
+    if(t<A){// 編集部：電話が鳴る
+      office(g);const lift=t>1.7;const s=1.35,hip=200-22*s,hy=hip-32*s-16*s*0.78;
+      a2Person(g,150,200,s,TL,'down',{sit:1,arms:'down',hands:lift?[[-30,-4],[25,-66]]:[[-30,-2],[30,-2]],mouth:t>1.9?'open':'flat',eye:t>3.1&&t<4.4?'big':undefined,sweat:t>3.1&&t<4.4});
+      if(lift)recv(g,150+25*s*0.95,hy+4);
+      rr(g,0,168,360,12,2,'#6b3a22');g.fillStyle='#4a2416';g.fillRect(0,180,360,40);
+      for(let i=0;i<4;i++)rr(g,40,150-i*5,44,5,1,i%2?'#fffdf6':'#f0ead8');
+      phone(g,262,160,lift,t<1.7?t:0);
+      if(t<1.7)a2Bub(g,'プルルル……',270,108,12,1);
+      if(t>1.9&&t<3.1)a2Bub(g,'はい、編集部です！',150,40,12,1);
+      if(t>3.1&&t<A)a2Bub(g,'えっ、アニメポップさん！？',150,40,12,1);
+      if(t>4.2)a2Banner(g,'アニメ雑誌から電話が来た！',t-4.2,'#ff9cc0');}
+    else if(t<B){// 社長に報告
+      office(g);g.fillStyle='#c9b48a';g.fillRect(0,196,360,24);
+      const u=t-A;const run=u<0.8;
+      a2Person(g,run?40+u/0.8*90:130,212,1.3,TL,'right',{arms:'down',walk:run?u*14:null,mouth:u>0.9&&u<3.1?'open':'smile',jump:u>0.9&&u<1.3?Math.sin((u-0.9)/0.4*Math.PI)*8:0});
+      a2Person(g,250,212,1.3,PL,'left',{arms:u>3.1?'down':'cross',mouth:u>3.1?'open':'flat',eye:u>0.9&&u<3.1?'big':undefined});
+      if(u>0.9&&u<2.0)a2Bub(g,'社長！取材の申しこみです！',130,40,12,1);
+      if(u>2.0&&u<3.1)a2Bub(g,'先生と声優さんの対談を、って！',150,40,12,1);
+      if(u>3.1)a2Bub(g,'よし、受けよう！',250,40,12,1);}
+    else if(t<C){// 対談
+      studio(g,t);const u=t-B;const laugh=u>5.6;
+      a2Person(g,180,150,0.95,RL,'down',{arms:'down',hands:[[-14,-30],[10,-34]],mouth:u<1.4||laugh?'open':'smile'});
+      g.save();g.translate(176,112);rr(g,-8,-10,14,18,1,'#fffdf6');g.fillStyle='#8a8478';for(let i=0;i<3;i++)g.fillRect(-6,-6+i*4,10,1);g.restore();
+      const mt=u>1.4&&u<2.8,vt=u>2.8&&u<4.4,mt2=u>4.4&&u<5.6;
+      a2Person(g,84,180,1.2,ML,'right',{sit:'chair',arms:'down',mouth:mt||mt2||laugh?'open':(tv?'smile':'flat'),sweat:!tv&&u<2.8,blush:mt2||laugh?1:0,brow:!tv&&u<2.8?'worry':undefined});
+      a2Person(g,276,180,1.2,VL,'left',{sit:'chair',arms:'down',mouth:vt||laugh?'open':'smile',eye:vt?'big':undefined});
+      if(u<1.4)a2Bub(g,'では、作品のお話から！',180,46,11,1);
+      if(mt)a2Bub(g,tv?'なんでも聞いてください！':'き、緊張します……',96,62,11,1);
+      if(vt)a2Bub(g,'原作、ずっと大好きなんです！',250,62,11,1);
+      if(mt2)a2Bub(g,'……ありがとう、ございます',110,62,11,1);
+      if(laugh){a2Bub(g,'あはははは！',180,62,12,1);a2Spark(g,t,180,100,8,150,50);}
+      flash(g,t,[B+0.5,B+3.2,B+5.8]);}
+    else if(t<D){// 色紙
+      const u=t-C;g.fillStyle='#7a5232';g.fillRect(0,0,360,220);g.fillStyle='#6b4a2a';for(let y=0;y<220;y+=22)g.fillRect(0,y,360,2);
+      g.save();g.translate(180,110);rr(g,-74,-84,148,168,4,'#d8b860');rr(g,-68,-78,136,156,2,'#fffdf6');
+      const k=cl(u/2.2,0,1);g.save();g.beginPath();g.rect(-68,-78,136,156*k);g.clip();
+      try{head(g,0,-10,34,HERO,'down');}catch(e){}
+      tx(g,nm2(m.name),40,62,12,'#2a2220');g.restore();
+      if(u<2.2){const px=-30+Math.sin(u*9)*30,py=-78+156*k;g.save();g.translate(px,py);g.rotate(0.6);rr(g,-3,-40,6,40,2,'#2a2220');g.fillStyle='#f2c9a0';g.beginPath();g.ellipse(4,-46,14,11,0,0,7);g.fill();g.restore();}
+      g.restore();
+      if(u>2.2){a2Spark(g,t,180,110,10,110,90);a2Bub(g,'読者プレゼントにしよう！',180,22,11,1);}
+      if(u>2.6)a2Banner(g,'色紙は読者プレゼントになった！',t-C-2.6,'#ffd970');}
+    else{// 翌月の表紙
+      const u=t-D;g.fillStyle='#2a2028';g.fillRect(0,0,360,220);const k=eo(u/0.8);
+      g.save();g.translate(0,(1-k)*220);
+      const X=110,Y=6,W=140,H=180;const gr=g.createLinearGradient(0,Y,0,Y+H);gr.addColorStop(0,GC[2][0]);gr.addColorStop(1,GC[2][1]);
+      g.fillStyle='rgba(0,0,0,0.35)';g.fillRect(X+5,Y+5,W,H);g.fillStyle=gr;g.fillRect(X,Y,W,H);
+      g.save();g.beginPath();g.rect(X,Y,W,H);g.clip();
+      for(let i=0;i<12;i++){g.fillStyle='rgba(255,255,255,0.18)';g.beginPath();g.moveTo(180,150);const a=i/12*Math.PI*2+u*0.2;g.lineTo(180+Math.cos(a)*260,150+Math.sin(a)*260);g.lineTo(180+Math.cos(a+0.18)*260,150+Math.sin(a+0.18)*260);g.fill();}
+      a2Person(g,180,270,2.3,HERO,'down',{arms:'down'});g.restore();
+      g.fillStyle='#ff4a88';g.fillRect(X,Y,W,34);tx(g,'月刊アニメポップ',180,Y+14,15,'#fff','#c0285e');tx(g,yr+(nextM===1?1:0)+'年'+nextM+'月号',180,Y+29,7,'#fff');
+      tx(g,'大特集',X+28,Y+50,10,'#fff','#e8382a');
+      tx(g,'「'+(m.title||'')+'」',180,Y+H-22,13,'#ffe040','#2a2220');
+      tx(g,'原作者×主人公の声 夢の対談！',180,Y+H-8,7,'#fff','#2a2220');
+      g.strokeStyle='#fffdf6';g.lineWidth=2;g.strokeRect(X,Y,W,H);g.restore();
+      if(u>1)a2Spark(g,t,180,110,10,160,100);
+      if(u>1.6)a2Banner(g,'翌月号の表紙を飾った！',u-1.6,'#ff9cc0');}
+  }};}
+function anitvResHTML(o){const m=S.manga.find(x=>x.id===o.id)||{name:'先生',title:''};const cv={id:o.cv.vid,name:o.cv.name,fem:o.cv.fem,age:24};const nextM=S.m>=12?1:(S.m||1)+1;
+  const ln=(a,b)=>'<div class="line" style="font-size:18px"><span>'+a+'</span><b style="color:var(--accent)">'+b+'</b></div>';
+  return '<div class="box" style="border-color:#ff9cc0"><h3 id="pop-h" style="color:#ff9cc0">📰 アニメ雑誌の取材</h3>'
+    +'<div class="s" style="text-align:center;font-size:16px">「'+ANMAG+'」アニメ『'+esc(m.title)+'』特集</div>'
+    +whoRow(m,'原作　'+m.name+'先生','「'+esc(m.title)+'」','pf0')+whoRow(cv,'声優　'+cv.name+'さん','主人公の声','pf1')
+    +'<div class="quote">'+(o.tv?'「先生、いちばんいい服で来てくれましたね！」':'「人前は苦手で……」と言いながら、先生はちゃんと来てくれた。')+'<br>対談は大いに盛りあがった。</div>'
+    +'<div class="card">'+ln('先生の知名度','＋'+(o.fu||40))+ln('雑誌の知名度','少し上がった')+ln('色紙','読者プレゼントに')+ln(nextM+'月号の表紙','主人公が飾った')+'</div>'
+    +'<div class="row"><button class="btn pri" data-act="popok">いい取材だった！</button>'+animBtn()+'</div></div>';}
 
 // ========== 電話（社長がかける） ==========
 function phoneAnim2(o){const C=(typeof CALLEE!=='undefined'&&CALLEE[o.to])||['相手','相手',7300,45];const PL=NR.lookOf(PRES);PL.tie=PL.tie||'#b23a2e';const p={id:C[2],name:C[1],age:C[3]};const QL=NR.lookOf(p);QL.jacket=QL.jacket||'#5a5a62';QL.tie=QL.tie||'#2a4a7a';
@@ -1902,13 +2007,13 @@ function trophyShelfHTML(){const T=S.trophies||[];const SH=S.shoten||[];if(!T.le
   return '<div class="card"><div class="who">🏆 トロフィー棚</div>'+(T.length?'<div style="font-size:30px;letter-spacing:4px;margin:4px 0">'+T.map(x=>IC[x.k]).join('')+'</div>'+T.slice().reverse().map(x=>'<div class="line" style="font-size:17px"><span>'+x.y+'年　'+IC[x.k]+' '+MED[x.k]+'</span><span>「'+esc(x.t)+'」</span></div>').join(''):'<div class="s">日本まんが大賞の表彰台は、まだ。</div>')
     +(SH.some(x=>x.n)?'<div class="s" style="font-size:16px;margin-top:6px">📚 書店員おすすめ20に選ばれた数：のべ'+SH.reduce((a,x)=>a+x.n,0)+'作</div>':'')+'</div>';}
 
-/* ===== アニメ雑誌（ver.467）：放送中に取材が来る。毎年6月には、読者が選ぶ「アニメグランプリ」 ===== */
+/* ===== アニメ雑誌（ver.467・ver.468で取材を電話→対談→色紙→表紙のアニメに）：放送中に取材が来る。毎年6月には、読者が選ぶ「アニメグランプリ」 ===== */
 const ANMAG='月刊アニメポップ';
 function anMagMonth(){if(!S.mag||!S.mag.launched)return;
   for(const m of S.manga){const a=m.an;if(!a||a.st!=='air'||a.itv)continue;if(a.t>Math.max(1,(a.len||3)-2)||R()<0.5)continue;a.itv=1;
     const tv=(m.tags||[]).includes('テレビ好き');m.fame=(m.fame||0)+(tv?60:40);S.mag.aware=awAdd(1);try{cserInit();const e=S.cser[String(m.id)+'|'+m.title];if(e)e.buzz=Math.min(1.5,(e.buzz||0)+0.15);}catch(e){}
-    const cv=TG_NM.f[(m.id*7)%TG_NM.f.length];
-    (S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'📰 アニメ雑誌「'+ANMAG+'」から、取材の申しこみが来た！<br>「アニメ『'+esc(m.title)+'』の特集を組みたいんです。'+esc(m.name)+'先生と、主人公の声優さんの対談を！」<br><br>'+(tv?'先生は大はりきりで、いちばんいい服を着てきた。<br>':'先生は「人前は苦手で……」と言いながら、ちゃんと来てくれた。<br>')+'対談は大いに盛りあがり、先生がその場で描いた色紙は、読者プレゼントになった。<br><br>翌月の表紙は、「'+esc(m.title)+'」の主人公だった。<span class="s">（先生の知名度が上がった）</span>'});return;}}
+    if(!a.cv){const cs=staffName(ri(19,30));a.cv={name:cs.name,fem:cs.fem,vid:9000+ri(1,900)};}
+    (S.popups=S.popups||[]).push({news:'anitv',id:m.id,tv:tv?1:0,cv:a.cv,fu:tv?60:40});return;}}
 function anGPRun(){if(S.agpY===S.y||!S.mag||!S.mag.launched||S.m!==6)return;S.agpY=S.y;const Y=S.y-1;
   const ours=S.manga.filter(m=>m.title&&(m.anY===Y||(m.anime&&m.an&&m.an.st==='air')));if(!ours.length&&R()<0.6)return;
   const J=()=>0.8+R()*0.4;const L=ours.map(m=>({ours:1,mid:m.id,t:m.title,v:((m.an&&m.an.exp!=null?m.an.exp:2)*18+Math.min(40,(m.fame||0)/50)+30)*J()}));
@@ -3714,6 +3819,7 @@ function whoRow(o,nm,sub,id){return '<div class="who"><canvas id="'+id+'" width=
 function p3Pop(o,el){if(o.news==='vs'){el.hidden=true;S.popups.shift();save();vsShow(()=>showPop());return true;}if(o.news==='trimeet'){el.innerHTML=triMeetHTML(o);el.hidden=false;return true;}const m=S.manga.find(x=>x.id===o.id);const faces=[];const done=()=>{el.hidden=false;faces.forEach(([id,p,op])=>face32($(id),p,op||{}));};
   const box=(col,h3,body)=>'<div class="box" style="border-color:'+col+'"><h3 id="pop-h" style="color:'+col+'">'+h3+'</h3>'+body+'</div>';
   if(o.news==='call'){callPop(o,el);return true;}
+  if(o.news==='anitv'){if(!m){S.popups.shift();showPop0();return true;}el.innerHTML=anitvResHTML(o);faces.push(['pf0',m],['pf1',{id:o.cv.vid,name:o.cv.name,fem:o.cv.fem,age:24}]);o._sp=null;done();return true;}
   if(o.news==='anoffer'){if(!m||!m.an){S.popups.shift();showPop0();return true;}const L=anConsult(m,o);let b='<div class="s" style="text-align:center">'+esc(m.an.studio)+'から'+(o.season>1?'2期':'アニメ化')+'の打診</div>';
     L.forEach(([p,nm,q],i)=>{b+=whoRow(p,nm,'','pf'+i)+'<div class="quote">「'+esc(q)+'」</div>';faces.push(['pf'+i,p,{tie:p===PRES||['chief','vice'].includes(p.role)}]);});
     b+='<div class="s">'+(o.season>1?'受けると4か月後から半年間放送。':'受けると半年後から3か月間放送。')+'放送中はコミックスがぐっと売れて、評判しだいで先生の人気も上がる。'+(anActive()>=2?'':'（アニメは同時に2本まで）')+'</div><div class="row"><button class="btn pri" data-act="anok" data-arg="1">お願いする</button><button class="btn" data-act="anok" data-arg="0">見送る</button></div>';
@@ -5234,7 +5340,7 @@ function growMonth(){
     }
     if(s.hidden>0){s.hidden--;if(s.hidden===0){S.pendingEvents.push({who:'人事',t:'新入社員の'+s.name+'の研修が終わり、力がわかりました。'});if(s.role==='kenshu'){s.role='mi';(S.popups=S.popups||[]).push({haizoku:true,id:s.id});}}}
     if(s.role==='tantou'){
-      for(const m of serials().filter(x=>x.tantou===s.id)){s.henshu=Math.min(s.pot,s.henshu+0.05+m.pop/1000);if(m.pop>=70)s.jonetsu=Math.min(100,s.jonetsu+1);}
+      for(const m of serials().filter(x=>x.tantou===s.id)){s.henshu=Math.min(s.pot,s.henshu+0.08+m.pop/600);if(m.pop>=70)s.jonetsu=Math.min(100,s.jonetsu+1);}
       s.bigan=Math.min(s.pot,s.bigan+0.02);
     }
     if(s.role==='chief'){s.kikaku=Math.min(s.pot,s.kikaku+0.1);s.henshu=Math.min(s.pot,s.henshu+0.05);}
@@ -5756,7 +5862,7 @@ function ptGain(v){return v<40?10:v<50?7:v<60?5:v<70?4:v<80?3:v<90?2.5:2;}
 const gTxt=v=>'+'+ptGain(v)+(v>=90?'（Sの中で、99まで）':'');
 /* 漫画家の次のレベルまでの経験値（前より少しゆるく） */
 function mNeed(lv){return 160+lv*50;}
-function sNeed(lv){return 300+lv*70;}
+function sNeed(lv){return 240+lv*45;}/* ver.468：社員のレベルを上がりやすく（前は300+lv*70） */
 function pairS(other,me){return Math.min(1.5,1+Math.max(0,(other??0)-(me??0))/60);}
 /* 組み合わせの力：相手が自分より強いほど、その差のぶん学べる（最大1.8倍） */
 function pairF(other,me){return Math.min(1.8,1+Math.max(0,(other??0)-(me??0))/50);}
@@ -6603,7 +6709,8 @@ function showPop0(){if(OP&&OP.enter){$('pop').hidden=true;return;}
   try{skipPass();}catch(e){}
   {const o=(S.popups||[])[0];if(o&&(o.contest||o.news==='ichires')&&!o.played&&S.animOff&&!S.skip){o.played=1;animSkipNote();}
   if(o&&(o.contest||o.news==='ichires')&&!o.played&&!S.animOff&&!S.skip){o.played=1;$('pop').hidden=true;try{a2Overlay(o.contest?prizeAnim(o):ichiAnim(o.res),()=>showPop());return;}catch(e){console.error(e);}}}
-  {const o=(S.popups||[])[0];if(o&&['anoffer','seiyu','onair','anres','fanletter','sign','top1','deal','call','trimeet','vs'].includes(o.news)){if(p3Pop(o,$('pop'))!==false)return;}}
+  {const o=(S.popups||[])[0];if(o&&o.news==='anitv'&&!o.played){o.played=1;if(!S.animOff&&!S.skip){$('pop').hidden=true;try{a2Overlay(anitvAnim(o),()=>showPop());return;}catch(e){console.error(e);}}}}
+  {const o=(S.popups||[])[0];if(o&&['anitv','anoffer','seiyu','onair','anres','fanletter','sign','top1','deal','call','trimeet','vs'].includes(o.news)){if(p3Pop(o,$('pop'))!==false)return;}}
   {const q0=(S.popups||[]);if(q0[0]&&q0[0].callok){const el=$('pop');const m=S.manga.find(x=>x.id===q0[0].id);const sc=byRole('zatsumu')[0];
     el.innerHTML='<div class="box" style="border-color:var(--green)"><h3 id="pop-h" style="color:var(--green)">☎ '+(m?esc(m.name):'先生')+'先生から電話</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+(sc?'秘書・'+esc(sc.name):'社長')+'</div></div></div><div class="quote">「'+(sc?'社長、'+(m?esc(m.name):'')+'先生からお電話です。お受けいただけるそうです！近いうちに、契約に来社されます。':'よし、'+(m?esc(m.name):'')+'先生がOKしてくれた！近いうちに契約に来てくれるそうだ。')+'」</div><div class="s">'+(q0[0].kanban?'看板として迎える話も、受けてもらえた。':'')+'来社したら、担当を決めて顔合わせをしよう。</div><button class="btn pri" data-act="popok">やった！</button></div>';
     el.hidden=false;face32($('popface'),sc||PRES,{tie:!sc});return;}}
