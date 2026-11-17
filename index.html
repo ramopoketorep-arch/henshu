@@ -618,7 +618,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='497';
+const GAME_VER='510';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -2305,8 +2305,8 @@ function awardsHTML(o){const W=o.W;const row=(lb,w,sub)=>'<div style="margin:10p
     +'<div class="quote">'+(any?'「社長！うちの名前が呼ばれました！！」':'「……今年も、うちの名前は呼ばれませんでしたね。来年こそ。」')+'</div><button class="btn pri" data-act="popok">'+(any?'やったー！':'来年こそ')+'</button></div>';}
 
 // ========== ライバル：桐生の裏切り（永遠のライバル）と、大手・大鷲社という「壁」 ==========
-const GONDO_LK={fem:false,hs:0,style:'oldback',eye:'narrow',brow:'angry',mouth:'smile',glasses:true,blush:false,mus:true,beard:false,bald:false,ribbon:false,shirt:'#2a2a30',skin:0};
-const GONDO={id:9004,name:'権藤',age:56,fem:false,shirt:'#2a2a30',lk:GONDO_LK};
+const GONDO_LK={fem:false,hs:0,style:'nanasan',eye:'sharp',thick:true,brow:'angry',mouth:'hechi',glasses:false,blush:false,mus:false,beard:false,hourei:true,bald:false,ribbon:false,shirt:'#2a2a30',skin:0};
+const GONDO={id:9004,name:'権藤',age:46,hairC:['#55555a','#3c3c42','#7a7a80'],fem:false,shirt:'#2a2a30',lk:GONDO_LK};
 const WALL_PUB='大鷲社',KIRYU_PUB='疾風社',KIRYU_MAG_B='少年ハヤテ';
 function sinceLaunch(){return S.mag&&S.mag.launched?(S.y-S.mag.launchY)*12+(S.m-S.mag.launchM):-1;}
 function kiryuStaff(){return S.staff.find(s=>s.kiryu||(s.sei==='桐生'&&String(s.name).startsWith('桐生 健一')));}
@@ -2829,7 +2829,7 @@ function prizeAnim(o){const {eo,cl,tx}=a2;const W=(o.hands||[]).filter(h=>h.r!==
 
 
 // ===== 序章：叔父がすべて用意した会社（チュートリアル） =====
-const UNCLE_KIND={id:9005,name:'権藤',age:54,fem:false,shirt:'#2a2a30',lk:Object.assign({},GONDO_LK,{brow:'normal',eye:'normal',mouth:'smile'})};
+const UNCLE_KIND={id:9005,name:'権藤',age:46,hairC:['#55555a','#3c3c42','#7a7a80'],fem:false,shirt:'#2a2a30',lk:Object.assign({},GONDO_LK,{brow:'flat',eye:'sharp',mouth:'hechi'})};
 function secOf(){return byRole('zatsumu').find(x=>!x.hidden)||byRole('zatsumu')[0]||null;}
 function storyWho(w){if(w==='sec')return secOf()||PRES;if(w==='uncle')return UNCLE_KIND;if(w==='gondo')return GONDO;if(w==='kiryu'){const k=S.staff.find(x=>x.kiryu||x.sei==='桐生');return k||KIRYU;}return PRES;}
 function storyHTML(o){const nar=o.who==='nar';const NM={uncle:'叔父・権藤',gondo:'叔父・権藤',kiryu:'桐生 健一',pres:'社長',sec:'秘書'+(secOf()?'・'+secOf().name:'')}[o.who]||'';
@@ -2852,15 +2852,15 @@ function startPrologue(){
   // 販路は10万部ほど
   S.dist={tori:[2,2,1,0],chain:[1,1,0,0,0],senmon:2,conv:0,promised:[]};try{S.mag.stores=distCalc().stores;}catch(e){}
   S.flags.phone=3;S.desks={t0b0:1,t0f0:1,t0b1:1,t0f1:1,t0b2:1,t0f2:1,t1b0:1,t1f0:1,t1b1:1,t1f1:1,t1b2:1,t1f2:1,v0:1,v1:1,sec:1,eb:1,e1:1,e2:1,sb:1,s1:1,s2:1,kb:1,k1:1,k2:1};if(S.lux)Object.assign(S.desks,{t2b0:1,t2f0:1,t2b1:1,t2f1:1,t2b2:1,t2f2:1});S.uneiV=1;S.view='henshu';S.clock={d:0,t:0.02};S.speed=1;S.paused=false;S.dayq=[];
-  say('叔父','建物も、部長たちも、販路も、わしが用意した。');
+  say('叔父','建物も、部長たちも、販路も、私が用意した。');
   makeReports();
-  S.introPending=['叔父「ここが、おまえの会社だ。編集部も運営部も、もう人がそろっておる。」','叔父「足りないのは、先生があと3人と、担当があと3人。……やり方は、このあと、わしが順に教えてやろう。」','叔父「秘書は、おまえが選んだ者だ。いい秘書は、社長の目と耳になる。大事にしろ。」','叔父「左上のボタンで、編集部と運営部を行き来できる。毎月のようすは「報告書」だ。」','叔父「あわてることはない。社員も先生も、じっくり選べ。」'];S.intro=null;S.newRead=false;
+  S.introPending=['叔父「ここが、おまえの会社だ。編集部も運営部も、もう人がそろっている。」','叔父「足りないのは、先生があと3人と、担当があと3人。……やり方は、このあと、私が順に教えてやろう。」','叔父「秘書は、おまえが選んだ者だ。いい秘書は、社長の目と耳になる。大事にしろ。」','叔父「左上のボタンで、編集部と運営部を行き来できる。毎月のようすは「報告書」だ。」','叔父「あわてることはない。社員も先生も、じっくり選べ。」'];S.intro=null;S.newRead=false;
   const st=(who,t,mouth)=>(S.popups=S.popups||[]).push({rid:'st',news:'story',who,t,mouth});
   st('nar',START_Y+'年1月。<br>東京・神田。');st('nar','大手出版社「大鷲社」。その会長である祖父が、病に倒れた。');st('nar','一族のあいだでは、後継の座をめぐる争いが、もう始まっている。');st('pres','（……後継者なんて、柄じゃない。でも、漫画雑誌をつくるのは、子どものころからの夢だった。）');st('pres','（敵だらけの一族の中で、ただひとり、味方をしてくれる人がいる。）');
-  st('uncle','よく来たな。……おじいさまの話は、聞いておるな？');
+  st('uncle','よく来たな。……おじいさまの話は、聞いているな？');
   st('uncle','大鷲社の会長、おまえのおじいさまは、もう長くない。後継を決めねばならん。');
-  st('uncle','条件はひとつ。新しい出版社を立ち上げ、<b>3年で業界20位以内</b>に入ること。');st('uncle','おまえの手腕が問われておる。……ほかの連中は、おまえがしくじるのを待っておるぞ。');
-  st('uncle','なに、心配するな。建物も、部長たちも、販路も、わしが全部用意してやった。');st('uncle','一族がなんと言おうと、わしだけは、おまえの味方だ。');st('pres','叔父さん……ありがとうございます。必ず、やってみせます。');
+  st('uncle','条件はひとつ。新しい出版社を立ち上げ、<b>3年で業界20位以内</b>に入ること。');st('uncle','おまえの手腕が問われている。……ほかの連中は、おまえがしくじるのを待っているぞ。');
+  st('uncle','なに、心配するな。建物も、部長たちも、販路も、私が全部用意してやった。');st('uncle','一族がなんと言おうと、私だけは、おまえの味方だ。');st('pres','叔父さん……ありがとうございます。必ず、やってみせます。');
   st('uncle','おまえの右腕も紹介しよう。……桐生。');
   st('kiryu','桐生 健一です。編集長を任されました。社長、よろしくお願いします。');
   st('uncle','優秀な男だ。右腕に使え。');
@@ -2881,7 +2881,7 @@ const GUIDE=[
  {t:'では、先生を集めにいこう。<b>「閉じる」</b>を押せ。',q:'#sheet [data-act=close]',ok:()=>!sheet},
  {t:'先生も社員も、雇うときは下の<b>「雇う」</b>だ。押してみろ。',q:'[data-act=open][data-arg=hire]',ok:()=>sheet==='hire'},
  {t:'上の<b>「漫画家をさがす」</b>タブを押せ。',q:'#sheet [data-act=tab][data-arg=market]',ok:()=>sheet==='hire'&&tab==='market'},
- {t:'下のほうに、いま見つかっている先生が並んでおる。<br><b>「フリーで打診」</b>：1本勝負の契約。<br><b>「専属で打診」</b>：毎月の専属料がかかるが、うちでじっくり育つ。',q:()=>{const b=document.querySelector('#sheet [data-act=offer]');return b&&b.closest('.card');}},
+ {t:'下のほうに、いま見つかっている先生が並んでいる。<br><b>「フリーで打診」</b>：1本勝負の契約。<br><b>「専属で打診」</b>：毎月の専属料がかかるが、うちでじっくり育つ。',q:()=>{const b=document.querySelector('#sheet [data-act=offer]');return b&&b.closest('.card');}},
  {t:'どの先生でもいい。<b>打診</b>してみろ。',q:'#sheet [data-act=offer]',ok:()=>(S.offers||[]).length>(GD.off||0),pre:()=>{GD.off=(S.offers||[]).length;}},
  {t:'よし。返事は<b>半月〜1か月後</b>に来る。受けてもらえたら、下の<b>「漫画家」</b>画面に入る。<br>いい先生が見つからなければ、上の<b>「ほかの先生を探す」</b>で、編集長に電話で探させろ。結果は来月だ。',q:()=>{const b=document.querySelector('#sheet [data-act=search]');return b&&b.closest('.card');}},
  {t:'次は、社員の採用だ。同じ「雇う」の中にある。<br>上の<b>「社員を採用」</b>タブを押せ。',q:'#sheet [data-act=tab][data-arg=hire]',ok:()=>sheet==='hire'&&tab==='hire'},
@@ -2892,7 +2892,7 @@ const GUIDE=[
  {t:'ふだんのことも教えておこう。<br>時間は<b>ひとりでに進む</b>。下の<b>「⏸ 停止」</b>で止められるし、<b>「×2」</b>で速くなる。考えたいときは止めればいい。',q:'#ctl'},
  {t:'社員の頭の上に<b>ふきだし</b>が出たら、話があるという合図だ。<b>タップ</b>して聞いてやれ。',q:'#officeWrap'},
  {t:'毎月のようすは<b>「報告書」</b>にまとまる。部長たちの報告を読んで、決めることを決めろ。<br>左上のボタンで、<b>編集部と運営部</b>を行き来できるぞ。',q:'#cmd-report'},
- {t:'先生が9人そろったら、もう一度<b>「創刊準備」</b>を開いて、<b>「創刊する」</b>だ。<br>……期待しておるぞ。',q:'[data-act=open][data-arg=mag]',end:1},
+ {t:'先生が9人そろったら、もう一度<b>「創刊準備」</b>を開いて、<b>「創刊する」</b>だ。<br>……期待しているぞ。',q:'[data-act=open][data-arg=mag]',end:1},
 ];
 const GD={i:-1,el:null,hi:null,wp:false,off:0,st:0};
 function guideReady(){return S&&sheet!=='title'&&!S.over&&!document.getElementById('stname')&&!document.getElementById('demogate')&&S.prologue&&!S.ousted&&!S.guideDone&&!S.mag.launched&&!S.intro&&!S.introPending&&!(S.popups||[]).length&&$('pop').hidden&&!OP&&!SPLASH&&!document.querySelector('[style*="z-index:9000"]');}
@@ -2947,9 +2947,9 @@ function fallScript(C,part){const B=[];const b=(bg,who,t,o)=>B.push(Object.assig
     b('phone','nar','すがるような思いで、叔父に電話をかけた。');
     b('phone','uncle','どうした。……そうか。');
     b('phone','gondo','やはりおまえは、ただのボンボンで、後継者など到底無理な話だったんだな。',{shock:1});
-    b('phone','gondo','これで、おまえは後継者の資格はなくなった。まぁ、わしの会社で掃除係か警備員くらいなら、紹介してやれるがな。ハッハッハ！',{shock:1});
+    b('phone','gondo','これで、おまえは後継者の資格はなくなった。まぁ、うちの会社で掃除係か警備員くらいなら、紹介してやれるがな。ハッハッハ！',{shock:1});
     b('phone','pres','お、叔父さん……！ それは、あんまりじゃないですか！ 俺は……！');
-    b('phone','gondo','おまえに適正がなかったのが悪いんじゃろが！！ わしを誰だと思っておる、この凡人が！！',{fx:'shake',shock:1});
+    b('phone','gondo','おまえに適性がなかったのが悪いんだろうが！！ 俺を誰だと思ってる、この凡人が！！',{fx:'shake',shock:1});
     b('phone','gondo','去ね！！',{fx:'thunder',shock:1,d:4});
     b('phone','nar','ガチャッ。……ツー、ツー、ツー。',{hang:1,d:5});
     b('exit','nar','荷物をまとめて、会社を出た。',{d:5});
@@ -7648,16 +7648,17 @@ function look(o){
   if(!giv&&![...FEM_PEN].some(x=>nm.endsWith(x))&&/[ーぁ-ん]$/.test(nm)&&h(9)<0.2)fem=true;
   const isManga=o.story!=null;
   const hs=isManga?Math.floor(h(1)*HSET.length):Math.floor(h(1)*5);
-  const style=fem?['long','bob','hime','pony','bob','long','twin'][Math.floor(h(2)*7)]:['nanasan','short','spiky','short','afro','nanasan','regent','short'][Math.floor(h(2)*8)];
-  const L={fem,hs,style,eye:['dot','dot','big','narrow','smile'][Math.floor(h(3)*5)],brow:['flat','flat','angry','worry'][Math.floor(h(4)*4)],
-    mouth:['smile','smile','flat','open','frown'][Math.floor(h(5)*5)],glasses:h(6)<0.22,blush:fem?h(7)<0.7:h(7)<0.15,
-    mus:!fem&&h(8)<0.12,beard:!fem&&h(10)<0.08,bald:!fem&&h(11)<0.35,ribbon:fem&&h(12)<0.4,
+  let style=fem?['long','bob','hime','pony','bob','long','twin'][Math.floor(h(2)*7)]:['nanasan','short','spiky','short','afro','nanasan','regent','short'][Math.floor(h(2)*8)];
+  /* ver.510：ロン毛の兄ちゃんは女の子に見えるので中止（出てこない） */const RK=style==='rock';
+  const L={fem,hs,style,eye:RK?['sharp','narrow','sharp','dot'][Math.floor(h(3)*4)]:['dot','dot','big','narrow','smile'][Math.floor(h(3)*5)],brow:RK?['flat','angry','angry'][Math.floor(h(4)*3)]:['flat','flat','angry','worry'][Math.floor(h(4)*4)],
+    mouth:['smile','smile','flat','open','frown'][Math.floor(h(5)*5)],glasses:h(6)<0.22,blush:fem?h(7)<0.7:!RK&&h(7)<0.15,
+    mus:!fem&&h(8)<0.12,beard:!fem&&h(10)<0.08,bald:!fem&&style!=='rock'&&h(11)<0.35,ribbon:fem&&h(12)<0.4,
     shirt:o.shirt||SHIRT[Math.floor(h(13)*SHIRT.length)],skin:h(14)<0.15?1:0};
   if(L.fem&&L.eye==='narrow')L.eye='big';
   o.lk=L;return L;
 }
 function lookCol(o,opt={}){
-  const L=look(o);const old=(o.age||30)>=50;const hc=old?GRAY:HSET[L.hs];
+  const L=look(o);const old=(o.age||30)>=50;const hc=old?GRAY:(o.hairC||HSET[L.hs]);
   return {L,old,hair:hc[0],hairS:hc[1],hairH:hc[2],shirt:L.shirt,shirtS:shade(L.shirt,0.75),
     skin:L.skin?'#e8b88a':'#f6cfa5',skinS:L.skin?'#c8946a':'#e0a97f',tie:opt.tie||(!L.fem&&(o.role==='chief'||o.role==='vice'||o.role==='eibu'||o.role==='keibu'||o.role==='senbu')),
     bald:old&&L.bald&&!L.fem};
@@ -7672,17 +7673,19 @@ function face48(cvs,o,opt={}){
   const get=(x,y)=>(x>=0&&y>=0&&x<W&&y<W)?G[y][x]:null;
   const ell=(cx,cy,rx,ry,cl,cond)=>{for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++)for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++){const dx=(x-cx)/rx,dy=(y-cy)/ry;if(dx*dx+dy*dy<=1&&(!cond||cond(x,y)))set(x,y,cl);}};
   const rect=(x0,y0,x1,y1,cl)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,cl);};
-  const skin=K.skin,skinS=K.skinS,hair=K.hair,hairS=K.hairS,hairH=K.hairH;const st=K.bald?'bald':(L.style==='oldback'?'afro':(L.style||'short'));
+  const skin=K.skin,skinS=K.skinS,hair=K.hair,hairS=K.hairS,hairH=K.hairH;const st=K.bald?'bald':(L.style==='oldback'?'afro':(L.style||'short'));const ROCK=st==='rock';
   const tri=(a,b,c2,cl)=>{const xs=[a[0],b[0],c2[0]],ys=[a[1],b[1],c2[1]];for(let y=Math.floor(Math.min(...ys));y<=Math.ceil(Math.max(...ys));y++)for(let x=Math.floor(Math.min(...xs));x<=Math.ceil(Math.max(...xs));x++){const px=x+0.5,py=y+0.5;const d=(p,q,r2)=>(p[0]-r2[0])*(q[1]-r2[1])-(q[0]-r2[0])*(p[1]-r2[1]);const P0=[px,py];const d1=d(P0,a,b),d2=d(P0,b,c2),d3=d(P0,c2,a);if(!((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0)))set(x,y,cl);}};
   const FX=24,FY=24;// 顔のまん中
   // --- 服 ---
   for(let y=39;y<48;y++){const w=y===39?9:y===40?13:y<43?16:18;for(let x=FX-w;x<FX+w;x++)set(x,y,x>=FX+w-5?K.shirtS:K.shirt);}
   rect(20,34,27,40,skinS);
-  if(K.tie||!L.fem){for(const [x,y] of [[18,39],[19,40],[20,41],[21,41],[29,39],[28,40],[27,41],[26,41],[19,39],[28,39]])set(x,y,'#ffffff');}
+  if(ROCK){/* 革ジャンっぽい黒＋Vネック、銀のネックレス */for(let y=39;y<48;y++){const w=y===39?9:y===40?13:y<43?16:18;for(let x=FX-w;x<FX+w;x++)set(x,y,x>=FX+w-5?'#141418':'#24242a');}for(let y=39;y<=45;y++){const hw=Math.max(0,4-(y-39)*0.6);for(let x=Math.round(FX-hw);x<Math.round(FX+hw);x++)set(x,y,skinS);}for(const [x,y] of [[20,40],[21,41],[22,42],[23,43],[24,43],[25,42],[26,41],[27,40]])set(x,y,'#c8ccd4');for(const [x,y] of [[14,40],[15,41],[16,42],[33,40],[32,41],[31,42]])set(x,y,'#3a3a44');}
+  else if(K.tie||!L.fem){for(const [x,y] of [[18,39],[19,40],[20,41],[21,41],[29,39],[28,40],[27,41],[26,41],[19,39],[28,39]])set(x,y,'#ffffff');}
   if(K.tie){rect(23,41,24,47,'#b23a2e');rect(22,40,25,41,'#8e2a22');}
   else if(L.ribbon){for(const [x,y] of [[20,41],[21,41],[21,42],[26,41],[27,41],[26,42],[22,42],[25,42]])set(x,y,'#d94a6a');rect(23,41,24,42,'#b23a52');}
   // --- うしろの髪 ---
   const back=(cl)=>{
+    if(ROCK){for(let y=18;y<=41;y++){const w=y<26?14.5:15.5-(y-26)*0.12;for(let x=Math.round(FX-w);x<=Math.round(FX+w);x++){if(y>32&&Math.abs(x+0.5-FX)<w-3.5)continue;if(y>=35&&((x*5+y*3)%4===0||(y>=39&&(x%3)!==0)))continue;set(x,y,cl);}}for(let i=0;i<6;i++){const sd=i%2?1:-1;const x0=FX+sd*(13+(i>>1));tri([x0-1.5,30+i*1.5],[x0+1.5,30+i*1.5],[x0+sd*1.5,43+(i%3)],cl);}}
     if(st==='long'||st==='hime')for(let y=16;y<=43;y++){const w=13.5+Math.min(1.5,(y-16)/8);for(let x=Math.round(FX-w);x<=Math.round(FX+w);x++){if(y>34&&Math.abs(x+0.5-FX)<w-4.5)continue;set(x,y,cl);}}
     if(st==='bob')ell(FX,25,14.5,12.5,cl);
     if(st==='pony'){ell(FX,20,13,10,cl);for(let y=10;y<=38;y++){const cx=40+Math.sin((y-10)/9)*1.5,w=y<14?2:y>34?1.5:3.2;for(let x=Math.round(cx-w);x<=Math.round(cx+w);x++)set(x,y,cl);}}
@@ -7705,6 +7708,10 @@ function face48(cvs,o,opt={}){
     ell(FX,5.5,11,5.5,H);ell(FX-1,4,8.5,3.5,H);ell(FX-3,9,10.5,3.6,H);ell(12,11.5,3.4,2.4,H);
     for(let x=15;x<=32;x++)set(x,Math.round(1.5+Math.pow((x-23.5)/9,2)*3),hairH);for(let x=13;x<=31;x++)set(x,Math.round(6+Math.pow((x-21)/10,2)*3),hairS);for(let x=11;x<=29;x++)set(x,Math.round(10.5+Math.pow((x-19)/10,2)*2),hairS);
     for(let y=12;y<=17;y++)set(21+Math.round((y-12)*0.3),y,H);}
+  else if(ROCK){/* センター分けのロン毛：おでこを見せて、左右に流した毛束が顔のわきに落ちる */
+    cap(23,(x,y)=>{const d=Math.abs(x+0.5-FX);return y<=11||y<=Math.min(22,10+Math.round(d*0.75))+((x%3)===0&&d>4?1:0);});
+    for(let y=14;y<=31;y++){const j=(y%4===0)?1:0;for(const x of [10,11,12])set(x,y,H);if(y<=27)set(13-j,y,H);for(const x of [36,37,38])set(x,y,H);if(y<=27)set(35+j,y,H);}
+    for(let y=11;y<=16;y++){set(FX-1+(y>13?-1:0),y,hairS);}}
   else if(st==='hime'){cap(21,(x,y)=>y<=20);rect(11,14,14,34,H);rect(34,14,37,34,H);}
   else if(st==='long'||st==='bob'||st==='pony'||st==='twin'){cap(21,(x,y)=>y<=12||y<=17+((x*5)%7<2?3:((x*3)%4===0?1:0))||(x<15||x>33)&&y<=24);
     for(let y=15;y<=(st==='bob'?33:28);y++){set(11,y,H);set(12,y,H);set(36,y,H);set(37,y,H);}}
@@ -7718,11 +7725,18 @@ function face48(cvs,o,opt={}){
   const bc=K.old?'#8a8a8a':hairS;const ex1=19,ex2=29,ey=26;
   const br={flat:[[0,0],[1,0],[2,0],[3,0]],angry:[[0,-1],[1,0],[2,0],[3,1]],worry:[[0,1],[1,0],[2,0],[3,-1]]}[L.brow]||[[0,0],[1,0],[2,0],[3,0]];
   for(const [dx,dy] of br){set(ex1-2+dx,ey-6+dy,bc);set(ex2+2-dx,ey-6+dy,bc);}
+  if(ROCK){set(11,29,'#d8dce4');set(11,30,'#a8acb4');}
+  /* ver.503：太い眉（権藤） */if(L.thick||ROCK){const bt=K.old?'#6a6a6a':'#2e2e34';const ext=[[-1,br[0][1]],...br,[4,br[3][1]]];for(const [dx,dy] of ext)for(const yy of [0,1]){set(ex1-2+dx,ey-6+dy+yy,bt);set(ex2+2-dx,ey-6+dy+yy,bt);}}
   // --- 目（アニメっぽく、ハイライト入り） ---
   const EC='#2b2026',IR=L.fem?'#5a3a6a':'#3a2a26',IR2=L.fem?'#8a5aa0':'#6a4a3a';
   for(const [ex,s2] of [[ex1,-1],[ex2,1]]){
     if(L.eye==='smile'){for(const [dx,dy] of [[-2,1],[-1,0],[0,-1],[1,-1],[2,0],[3,1]])set(ex+dx,ey+dy,EC);continue;}
     if(L.eye==='narrow'){for(let x=ex-2;x<=ex+2;x++){set(x,ey,EC);set(x,ey+1,IR);}set(ex+(s2>0?3:-3),ey-1,EC);continue;}
+    /* ver.500：切れ長の鋭い目（やり手）。白目の中に小さい黒目、目じりがつり上がる */
+    if(L.eye==='sharp'){const o=s2>0?1:-1;for(let y=ey-1;y<=ey+1;y++)for(let x=ex-2;x<=ex+2;x++)set(x,y,'#e4dccf');
+      for(let y=ey-1;y<=ey+1;y++){set(ex-1+(o>0?1:0),y,IR);set(ex+(o>0?1:0)-1+1,y,IR);}set(ex-1+(o>0?1:0),ey,EC);set(ex+(o>0?1:0),ey,EC);set(ex-1+(o>0?1:0),ey-1,EC);set(ex+(o>0?1:0),ey-1,EC);
+      for(let x=ex-2;x<=ex+2;x++)set(x,ey-2,EC);set(ex-2*o,ey-1,EC);set(ex-1*o,ey-1,EC);
+      continue;}
     const h=L.eye==='big'?6:5,top=ey-(h>5?3:2);
     for(let y=top;y<top+h;y++)for(let x=ex-2;x<=ex+1;x++)set(x,y,y<top+2?IR:IR2);
     for(let x=ex-3;x<=ex+2;x++)set(x,top-1,EC);set(s2<0?ex-3:ex+2,top,EC);
@@ -7736,9 +7750,11 @@ function face48(cvs,o,opt={}){
   if(mo==='flat'){for(let x=22;x<=25;x++)set(x,34,mc);}
   if(mo==='open'){rect(22,33,26,35,'#6b2a22');rect(23,35,25,35,'#e07a6e');set(22,35,null);set(26,35,null);for(let x=22;x<=26;x++)if(!get(x,35))set(x,35,skin);}
   if(mo==='frown'){for(const [x,y] of [[22,35],[23,34],[24,34],[25,34],[26,35]])set(x,y,mc);}
+  if(mo==='hechi'){for(const [x,y] of [[21,34],[22,33],[23,32],[24,32],[25,32],[26,33],[27,34]])set(x,y,mc);}
   if(L.blush){for(const cx of [16.5,31.5])ell(cx,31,2.2,1,'#f2a0a0',(x,y)=>get(x,y)===skin||get(x,y)===skinS);}
   if(L.mus){for(let x=21;x<=27;x++)set(x,32,K.old?'#c8c8c8':hairS);}
   if(L.beard){const bcl=K.old?'#c8c8c8':hairS;for(let y=33;y<=37;y++)for(let x=14;x<=34;x++){const g0=get(x,y);if((g0===skin||g0===skinS)&&!(y<=35&&x>=22&&x<=26))set(x,y,bcl);}}
+  /* ver.505：口の横のシワ（ほうれい線） */if(L.hourei){const wc='#c98e66';for(const [x,y] of [[21,30],[20,31],[20,32],[19,33],[19,34],[27,30],[28,31],[28,32],[29,33],[29,34]])set(x,y,wc);}
   if(L.glasses){const gc='#3a3a3a';for(const ex of [ex1,ex2]){for(let x=ex-4;x<=ex+3;x++){set(x,ey-4,gc);set(x,ey+3,gc);}for(let y=ey-4;y<=ey+3;y++){set(ex-4,y,gc);set(ex+3,y,gc);}}for(let x=23;x<=25;x++)set(x,ey-2,gc);}
   // --- 外側のふちどり ---
   const N=G.map(r=>r.slice());const OLc='#2b2026';
@@ -7763,7 +7779,7 @@ function face32old(cvs,o,opt={}){
   for(let y=14;y<19;y++){set(6,y,skin);set(25,y,skinS);}set(7,16,skinS);set(24,16,skinS);
   const H=(x,y)=>set(x,y,hair);
   const inHead=(x,y)=>{const dx=(x-15.5)/9.6,dy=(y-14.5)/10.8;return dx*dx+dy*dy<=1;};
-  const st=K.bald?'bald':L.style;
+  const st=K.bald?'bald':(L.style==='rock'?'long':L.style);
   if(st!=='bald'){
     for(let y=2;y<14;y++)for(let x=0;x<W;x++)if(inHead(x,y)){
       let top=st==='bob'||st==='long'||st==='hime'||st==='pony'?11:st==='nanasan'?(x<20?11-(x>16?1:0):8):st==='oldback'?6:9;
@@ -8423,7 +8439,7 @@ function headA(ctx,X,Y,r,lk,skin,hair,dir,s){
   const spikes=(cx,cy,n,len,a0,a1,col)=>{for(let i=0;i<n;i++){const a=a0+(a1-a0)*(i+0.5)/n,w=(a1-a0)/n*0.62;poly([[cx+Math.cos(a-w)*r*0.8,cy+Math.sin(a-w)*r*0.8],[cx+Math.cos(a)*len*(i%2?0.85:1),cy+Math.sin(a)*len*(i%2?0.85:1)],[cx+Math.cos(a+w)*r*0.8,cy+Math.sin(a+w)*r*0.8]],col);}};
   const afro=(cx,cy,R,col)=>{ell(cx,cy,R,R*0.86,col);for(let i=0;i<12;i++){const a=i/12*Math.PI*2;ell(cx+Math.cos(a)*R*0.92,cy+Math.sin(a)*R*0.8,R*0.3,R*0.28,col);}};
   const gloss=(cx,cy,rx,ry)=>{ctx.save();ctx.globalAlpha=0.55;ctx.strokeStyle=HH;ctx.lineWidth=Math.max(1,r*0.1);ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,Math.PI*1.15,Math.PI*1.75);ctx.stroke();ctx.restore();};
-  const fem=!!lk.fem||['long','bob','hime','pony','twin'].includes(st);
+  const fem=(!!lk.fem||['long','bob','hime','pony','twin'].includes(st))&&!lk.rock;
   // ---- 正面 ----
   if(dir==='down'){
     // うしろの髪
@@ -9005,7 +9021,7 @@ function lookOf(st,opt={}){if(!st)return {};const K0=lookCol(st);const L=K0.L;co
     tie:(!L.fem&&(su||K0.tie||lead||(!isArt&&st.id%3)))?TIEC[st.id%TIEC.length]:null,hair:K0.hair,skin:K0.skin,hs,glasses:L.glasses,mus:L.mus,blush:L.fem&&L.blush,bald:K0.bald,
     cardigan:(!su&&L.fem&&st.id%2===0&&!isArt)?SHIRT[(st.id*5)%SHIRT.length]:null,pants:L.fem?'#4a3e5a':(isArt?'#4a4038':'#3a3e48')};
   if(st.id===9001){o.jacket=su||'#2c3e66';o.tie='#b23a2e';}
-  o.st=L.style==='oldback'?'afro':L.style;o.walk=o.st==='regent'?'yankee':(st.age||30)>=55?'old':((st.jonetsu||0)>=85&&(st.age||30)<30?'genki':'');o.eye=L.eye;o.brow=L.brow;o.mouth=L.mouth;o.beard=L.beard;o.ribbon=L.ribbon;
+  o.st=L.style==='oldback'?'afro':L.style==='rock'?'long':L.style;o.rock=L.style==='rock';o.walk=o.st==='regent'?'yankee':(st.age||30)>=55?'old':((st.jonetsu||0)>=85&&(st.age||30)<30?'genki':'');o.eye=L.eye;o.brow=L.brow;o.mouth=L.mouth;o.beard=L.beard;o.ribbon=L.ribbon;
   o.fem=!!L.fem;return Object.assign(o,opt);}
 const lk2key=o=>JSON.stringify(o);
 const hsh=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
