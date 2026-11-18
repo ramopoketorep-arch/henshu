@@ -418,7 +418,9 @@ for(const x of [...MEI_F.old,...MEI_F.mid,...MEI_F.new])FEM_MEI.add(x);
 const PEN_SOLO=['おにぎり侍','カラス天狗','ヤマアラシ','もぐら堂','ペンギン亭','ちくわぶ','ドクター寝坊','うさぎ団子','月刊さぼてん','タヌキ親方','かっぱ巻','とんかつ将軍','ふくろう博士','らっこ鍋','金魚鉢子','こけし太郎','だるま堂','はらぺこ王','みかん星人','たこやき坊','あんこ餅子','すずめ番長','夜更かし堂','こんぶ茶','ひよこ組','でんでん虫','ねぼすけ社長','いわし雲','つくし坊','おでん屋台']; 
 
 function genOf(by){return by<1945?'old':by<1965?'mid':'new';}
-function pickGiven(fem,by){const L=fem?MEI_F:MEI_M;let g=genOf(by);if(R()<0.2)g=g==='old'?'mid':g==='new'?'mid':pick(['old','new']);return pick(L[g]);}
+/* ver.511：戦前っぽい名前（キヨ・トメ・留吉など）は、1925年より前に生まれた人だけ */
+const ANTIQUE=new Set(['ミツ','ハナ','トメ','キヨ','千代子','与一','源蔵','徳治','清吉','留吉','甚八','辰夫','重雄','国男','三男','初枝','菊江','八重']);
+function pickGiven(fem,by){const L=fem?MEI_F:MEI_M;let g=genOf(by);if(R()<0.2)g=g==='old'?'mid':g==='new'?'mid':(by<1950?pick(['old','new']):'new');let n=pick(L[g]);for(let k=0;k<12&&by>=1925&&ANTIQUE.has(n);k++)n=pick(L[g]);return n;}
 function usedSei(){const u=new Set();if(S){for(const x of [...(S.staff||[]),...(S.cands||[]),...(S.manga||[])]){if(x.status==='gone'||x.role==='retired'||x.role==='quit')continue;if(x.sei)u.add(x.sei);else if(x.name&&x.name.includes(' '))u.add(x.name.split(' ')[0]);}}return u;}
 function staffName(age){const us=usedSei(),un=usedNames();const fem=R()<0.3;const by=(S?S.y:1970)-age;
   for(let i=0;i<80;i++){const sei=pick(SEI_ALL);if(i<60&&us.has(sei))continue;const n=sei+' '+pickGiven(fem,by);if(!un.has(n))return {name:n,sei,fem};}
@@ -618,7 +620,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='510';
+const GAME_VER='513';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -637,7 +639,7 @@ function refreshMarket(init){
   if(!init){for(const m of mk)if(!S.offers.some(o=>o.id===m.id)&&R()<.35){m.status='gone';if(R()<.3)moveToRival(m,'market');}}
   const n=14-S.manga.filter(m=>m.status==='market'&&!m.kanbanOK).length;
   for(let i=0;i<n;i++)S.manga.push(tierManga());
-  if(!init&&legendOK()&&R()<0.03){const L=legendPick(false);if(L){const m=makeLegend(L,false);S.manga.push(m);S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'編集部',who:'業界のうわさ',t:'あの'+m.name+'先生が、新しい連載先を探しているらしい。「漫画家 → '+(m.kanbanOK?'看板':'探す')+'」をのぞいてみよう。'});}}
+  if(!init&&legendOK()&&R()<0.03){const L=legendPick(false);if(L){const m=makeLegend(L,false);S.manga.push(m);S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'編集部',who:'業界のうわさ',t:'あの'+m.name+'先生が、新しい連載先を探しているらしい。「漫画家 → '+(m.kanbanOK?'看板':'声をかける')+'」をのぞいてみよう。'});}}
 }
 function refreshCands(){
   S.cands=[];
@@ -2425,8 +2427,8 @@ function wallAnime(win,best){if(!win||!best||!S.wall||S.wall.end)return;const r=
 
 // ---------- ポップアップ ----------
 function rivPop(o,el){
-  if(o.news==='secpick'){const cs=o.ids.map(id=>S.cands.find(c=>c.id===id)).filter(Boolean);const RK=v=>v>=80?'A':v>=70?'B':v>=60?'C':v>=50?'D':'E';
-    el.innerHTML='<div class="box" style="border-color:#c9a24a"><h3 id="pop-h" style="color:#e8c45a">秘書をえらぶ</h3><div class="s" style="font-size:17px;margin-bottom:8px">叔父「この3人だ。おまえの目で決めろ。」</div>'+cs.map((c,i)=>'<div class="card" style="margin:8px 0"><div class="who"><canvas id="secf'+i+'" width="32" height="32"></canvas><div style="min-width:0"><div class="nm" style="font-size:19px">'+esc(c.name)+'</div><div class="s" style="font-size:15px">'+c.age+'歳・'+(c.fem?'女性':'男性')+'・事務 '+RK(c.jimu)+'・企画 '+RK(c.kikaku)+'・月給 '+yen(salary(c))+'</div></div></div><div style="font-size:16px;line-height:1.6;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;margin:6px 0">「'+esc(c.secLine||'よろしくお願いします。')+'」</div><button class="btn pri" data-act="riv" data-arg="sec:'+c.id+'" style="width:100%;font-size:18px">この人にする</button></div>').join('')+'</div>';
+  if(o.news==='secpick'){const cs=o.ids.map(id=>S.cands.find(c=>c.id===id)).filter(Boolean);const RK=v=>v>=90?'S':v>=80?'A':v>=70?'B':v>=60?'C':v>=50?'D':'E';const RC=r=>({S:'#ff7a3a',A:'#e8c45a',B:'#7ac0e8',C:'#9aa',D:'#777',E:'#666'})[r];const chip=(lab,v,note)=>{const r=RK(v);return '<div style="flex:1;text-align:center;background:rgba(0,0,0,.3);border-radius:8px;padding:6px 2px"><div style="font-size:15px;opacity:.8">'+lab+'</div><div style="font-size:30px;font-weight:bold;line-height:1.1;color:'+RC(r)+'">'+r+'</div><div style="font-size:13px;opacity:.75">'+note+'</div></div>';};const TIP={jimu:'得意：書類・計算',kikaku:'得意：企画・アイデア',hito:'得意：人づきあい'};
+    el.innerHTML='<div class="box" style="border-color:#c9a24a"><h3 id="pop-h" style="color:#e8c45a">秘書をえらぶ</h3><div class="s" style="font-size:17px;margin-bottom:8px">叔父「この3人だ。おまえの目で決めろ。」</div><div class="s" style="font-size:16px;margin-bottom:6px;color:#e8c45a">3人とも事務は優秀。得意なことがちがうぞ。</div>'+cs.map((c,i)=>'<div class="card" style="margin:8px 0"><div class="who"><canvas id="secf'+i+'" width="32" height="32"></canvas><div style="min-width:0"><div class="nm" style="font-size:19px">'+esc(c.name)+'</div><div class="s" style="font-size:16px">'+c.age+'歳・'+(c.fem?'女性':'男性')+'・月給 '+yen(salary(c))+'</div>'+(c.secType?'<div style="font-size:16px;color:#e8c45a;margin-top:2px">'+TIP[c.secType]+'</div>':'')+'</div></div><div style="display:flex;gap:6px;margin:8px 0 2px">'+chip('事務',c.jimu,'書類・お金')+chip('企画',c.kikaku,'企画・宣伝')+chip('編集',c.henshu,'人を見る目')+'</div><div style="font-size:16px;line-height:1.6;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;margin:6px 0">「'+esc(c.secLine||'よろしくお願いします。')+'」</div><button class="btn pri" data-act="riv" data-arg="sec:'+c.id+'" style="width:100%;font-size:18px">この人にする</button></div>').join('')+'</div>';
     el.hidden=false;cs.forEach((c,i)=>{try{face32($('secf'+i),c);}catch(e){}});return;}
   if(o.news==='oust'){el.innerHTML=oustHTML();el.hidden=false;return;}
   if(o.news==='story'){el.innerHTML=storyHTML(o);el.hidden=false;try{const f=$('popface');if(f)face32(f,storyWho(o.who),{tie:true,mouth:o.mouth||'smile'});}catch(e){}return;}
@@ -2865,8 +2867,14 @@ function startPrologue(){
   st('kiryu','桐生 健一です。編集長を任されました。社長、よろしくお願いします。');
   st('uncle','優秀な男だ。右腕に使え。');
   st('uncle','それと秘書。秘書だけは、おまえが自分で選べ。候補を3人、呼んである。');
-  {const g3=[true,false,R()<0.5];const ids=[];const LINE=['事務なら、だれにも負けません。','人の顔と名前は、一度で覚えます。','社長のためなら、なんでもやります！','書類の山なら、まかせてください。','電話番は得意です。お客さまの声で、だいたい用件がわかります。'];
-    g3.forEach((fem,i)=>{let c;for(let k=0;k<30;k++){c=newStaff({exp:true,focus:'jimu',age:ri(23,36)});if(c.fem===fem)break;}/* 秘書は、本当はとびきり優秀（事務 A〜S）。手放したくなくなるように */c.jimu=ri(84,95);c.pot=Math.max(c.pot||0,c.jimu+ri(2,4));c.henshu=Math.max(c.henshu,ri(55,68));c.kikaku=Math.max(c.kikaku,ri(55,68));c.secLine=LINE[(i+ri(0,4))%LINE.length];c.secCand=1;S.cands.push(c);ids.push(c.id);});
+  {/* ver.511：女性2人・男性1人。3人とも事務は優秀だが、得意がちがう（セリフも能力に合わせて、かぶらない） */
+    const TY=[{k:'jimu',line:'書類の山なら、まかせてください。計算も、まちがえません。',jimu:[92,96],kikaku:[48,56],henshu:[50,58]},
+      {k:'kikaku',line:'雑誌の企画にも、口を出していいですか？ アイデアなら、いくらでもあります。',jimu:[80,84],kikaku:[76,82],henshu:[58,64]},
+      {k:'hito',line:'人の顔と名前は、一度で覚えます。社内のことなら、なんでも聞いてください。',jimu:[85,89],kikaku:[62,68],henshu:[70,76]}];
+    for(let a=TY.length-1;a>0;a--){const b=Math.floor(R()*(a+1));[TY[a],TY[b]]=[TY[b],TY[a]];}
+    const g3=[true,true,false];for(let a=2;a>0;a--){const b=Math.floor(R()*(a+1));[g3[a],g3[b]]=[g3[b],g3[a]];}const ids=[];
+    g3.forEach((fem,i)=>{let c;for(let k=0;k<30;k++){c=newStaff({exp:true,focus:'jimu',age:ri(23,34)});if(c.fem===fem)break;}const T=TY[i];
+      c.jimu=ri(T.jimu[0],T.jimu[1]);c.kikaku=ri(T.kikaku[0],T.kikaku[1]);c.henshu=ri(T.henshu[0],T.henshu[1]);c.pot=Math.max(c.pot||0,c.jimu+ri(2,4));c.secLine=T.line;c.secType=T.k;c.secCand=1;S.cands.push(c);ids.push(c.id);});
     S.popups.push({rid:'riv',news:'secpick',ids});}
   closeSheet();save();render();startEnter();musicSync();
 }
@@ -2880,10 +2888,10 @@ const GUIDE=[
  {t:'ここが<b>創刊の準備</b>だ。赤い<b>「まだ」</b>が、足りないもの。<br>漫画家は、看板を入れて<b>9人</b>いる。いまはあと何人か、ここでわかる。<br>全部が緑の「OK」になれば、<b>「創刊する」</b>が押せるぞ。',q:()=>{const b=document.querySelector('#sheet [data-act=launch]');return b&&b.closest('.card');}},
  {t:'では、先生を集めにいこう。<b>「閉じる」</b>を押せ。',q:'#sheet [data-act=close]',ok:()=>!sheet},
  {t:'先生も社員も、雇うときは下の<b>「雇う」</b>だ。押してみろ。',q:'[data-act=open][data-arg=hire]',ok:()=>sheet==='hire'},
- {t:'上の<b>「漫画家をさがす」</b>タブを押せ。',q:'#sheet [data-act=tab][data-arg=market]',ok:()=>sheet==='hire'&&tab==='market'},
+ {t:'上の<b>「先生に声をかける」</b>タブを押せ。',q:'#sheet [data-act=tab][data-arg=market]',ok:()=>sheet==='hire'&&tab==='market'},
  {t:'下のほうに、いま見つかっている先生が並んでいる。<br><b>「フリーで打診」</b>：1本勝負の契約。<br><b>「専属で打診」</b>：毎月の専属料がかかるが、うちでじっくり育つ。',q:()=>{const b=document.querySelector('#sheet [data-act=offer]');return b&&b.closest('.card');}},
  {t:'どの先生でもいい。<b>打診</b>してみろ。',q:'#sheet [data-act=offer]',ok:()=>(S.offers||[]).length>(GD.off||0),pre:()=>{GD.off=(S.offers||[]).length;}},
- {t:'よし。返事は<b>半月〜1か月後</b>に来る。受けてもらえたら、下の<b>「漫画家」</b>画面に入る。<br>いい先生が見つからなければ、上の<b>「ほかの先生を探す」</b>で、編集長に電話で探させろ。結果は来月だ。',q:()=>{const b=document.querySelector('#sheet [data-act=search]');return b&&b.closest('.card');}},
+ {t:'よし。返事は<b>半月〜1か月後</b>に来る。受けてもらえたら、下の<b>「漫画家」</b>画面に入る。<br>いい先生が見つからなければ、上の<b>「先生を探す」</b>タブで、編集長に電話で探させろ。結果は来月だ。',q:()=>{const b=document.querySelector('#sheet [data-act=search]');return b&&b.closest('.card');}},
  {t:'次は、社員の採用だ。同じ「雇う」の中にある。<br>上の<b>「社員を採用」</b>タブを押せ。',q:'#sheet [data-act=tab][data-arg=hire]',ok:()=>sheet==='hire'&&tab==='hire'},
  {t:'<b>「経験者」</b>は、すぐに働ける。<b>「新卒」</b>は若くて伸びるが、研修が1か月かかる。<br>候補は毎月入れ替わるぞ。<b>書類選考</b>で「C以上だけ」にすると、できる者だけが残る。',q:'#sheet [data-act=hiretab]'},
  {t:'今いちばん要るのは<b>担当</b>だ。<b>「向いている役職：担当」</b>の者を見つけて、<b>「採用する」</b>を押してみろ。<br>（ほかの者を選んでもかまわんぞ）',q:()=>{const L=[...document.querySelectorAll('#sheet [data-act=expand]')];const fit=L.find(b=>{const c=(S.cands||[]).find(x=>x.id===+b.dataset.arg);return c&&!c.hidden&&['tantou','chief','vice'].includes(bestRole(c));});return fit||L[0];},ok:()=>expand!=null&&(S.cands||[]).some(c=>c.id===expand)},
@@ -4241,7 +4249,7 @@ function p3Pop(o,el){if(o.news==='vs'){el.hidden=true;S.popups.shift();save();vs
   if(o.news==='call'){callPop(o,el);return true;}
   if(o.news==='hirehelp'){const sc=secOf();const need=[o.st<9?'漫画家の先生（いま '+o.st+'人／9人）':'',!o.tn?'担当の社員':'',!o.ch?'編集長':''].filter(Boolean);
     el.innerHTML='<div class="box" style="border-color:#c9a24a"><h3 id="pop-h" style="color:#c9a24a">📋 秘書から</h3>'+(sc?whoRow(sc,'秘書・'+sc.name,'','pf0'):'')
-      +(o.step?'<div class="card"><div class="t" style="font-size:18px;line-height:1.8">① 下の<b>「雇う」</b>ボタンを押します。<br>② <b>「漫画家をさがす」</b>で先生に打診します。受けてもらえたら「漫画家」に入ります。<br>③ <b>「社員を採用」</b>で、担当などの社員を面接して採用します。<br>④ 先生9人と担当がそろったら、<b>「創刊準備」</b>から創刊できます。</div></div>'
+      +(o.step?'<div class="card"><div class="t" style="font-size:18px;line-height:1.8">① 下の<b>「雇う」</b>ボタンを押します。<br>② <b>「先生に声をかける」</b>で先生に打診します（良い先生がいなければ<b>「先生を探す」</b>で電話）。受けてもらえたら「漫画家」に入ります。<br>③ <b>「社員を採用」</b>で、担当などの社員を面接して採用します。<br>④ 先生9人と担当がそろったら、<b>「創刊準備」</b>から創刊できます。</div></div>'
         +'<div class="row"><button class="btn pri" data-act="hhopen" style="font-size:18px">「雇う」を開く</button><button class="btn" data-act="popok" style="font-size:18px">わかった</button></div>'
        :'<div class="quote" style="font-size:19px">「社長、創刊に必要な人が、まだそろっていないようです。採用のしかたを、もう一度説明しましょうか？」</div><div class="card"><div class="t" style="font-size:17px">足りないもの：'+need.join('、')+'</div></div>'
         +'<div class="row"><button class="btn pri" data-act="hhyes" style="font-size:18px">お願い</button><button class="btn" data-act="popok" style="font-size:18px">大丈夫</button></div>')+'</div>';
@@ -5330,7 +5338,7 @@ function endTurn(){
     const gq=S.searchGenre||null;S.searchGenre=null;
     if(c){const n=ri(3,5);const lvBase=40+c.bigan*0.3;
       for(let i=0;i<n;i++){const kb=R()<0.15&&!S.manga.some(x=>x.isKanban&&!x.amateur&&x.status!=='gone');S.manga.push(newManga(Math.round(lvBase+ri(-14,15)+(kb?12:0)),{fame:kb?ri(150,350):ri(0,150),kanban:kb,genre:gq||undefined}));}
-      S.pendingEvents.push({dept:'編集部',who:'編集長・'+c.name,t:'電話をかけまくって、'+(gq?gq+'の':'新しい')+'先生を'+n+'人見つけました。「漫画家 → 探す」に載せてあります。'});}
+      S.pendingEvents.push({dept:'編集部',who:'編集長・'+c.name,t:'電話をかけまくって、'+(gq?gq+'の':'新しい')+'先生を'+n+'人見つけました。「漫画家 → 声をかける」に載せてあります。'});}
   }
   refreshMarket(false);
   refreshCands();
@@ -6262,9 +6270,9 @@ function sheetReport(){
   return h+'</div>';
 }
 /* ver.469：「雇う」画面。漫画家さがしと社員の採用を、ひとつのボタンにまとめた（どこで雇うか迷わないように） */
-function sheetHire(){const T=[['market','🖊 漫画家をさがす'],['hire','👔 社員を採用']];if(!tab||!T.some(x=>x[0]===tab))tab='market';const k=tab;
+function sheetHire(){const T=[['market','🖊 先生に声をかける'],['search','📞 先生を探す'],['hire','👔 社員を採用']];if(!tab||!T.some(x=>x[0]===tab))tab='market';const k=tab;
   const raw=k==='hire'?sheetStaff():sheetManga();tab=k;const i=raw.indexOf('<div class="sh-body">');const body=i>=0?raw.slice(i+21):'<div>';
-  const hint=k==='market'?'うちの雑誌で描いてくれる<b>漫画家の先生</b>をさがす。打診して受けてもらえたら、「漫画家」画面に入るよ。':'編集部・営業・宣伝などで働く<b>社員</b>を採用する。候補は毎月入れかわるよ。';
+  const hint=k==='market'?'見つかっている<b>漫画家の先生</b>に、うちで描いてもらえないか声をかける。受けてもらえたら、「漫画家」画面に入るよ。':k==='search'?'まだ知らない先生を、<b>編集長に電話で探してもらう</b>。見つかった先生は、来月「先生に声をかける」に載るよ。':'編集部・営業・宣伝などで働く<b>社員</b>を採用する。候補は毎月入れかわるよ。';
   return head('雇う')+tabs(T)+'<div class="sh-body"><div class="card"><div class="t" style="font-size:17px">'+hint+'</div></div>'+body;}
 /* ver.471：セーブと設定は、画面の右上「💾 セーブ」からいつでも */
 function sheetSave(){let h=head('セーブと設定')+tabs([['save','💾 セーブ'],['set','⚙ 設定']])+'<div class="sh-body">';
@@ -6433,7 +6441,7 @@ function mangaCard0(m,extra,more){
   h+='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;margin-top:4px"><div style="flex:1;min-width:0">'+(extra||'')+'</div><button class="btn" style="font-size:15px;padding:4px 12px;flex:none" data-act="mdet" data-arg="'+m.id+'">'+(open?'とじる ▲':'詳細 ▼')+'</button></div></div>';
   return h;}
 function sheetManga(){
-  let h=head('漫画家')+tabs([['serial','連載陣'],['stock','フリー'],['ikusei','専属'],['keiyaku','契約'+((S.manga||[]).some(m=>keiyakuNeed(m))?'⚠':'')],['market','探す'],['kanban','看板'],['oikake','追っかけ']])+'<div class="sh-body">'+(tab==='market'||tab==='stock'?kHintCard():'');
+  let h=head('漫画家')+tabs([['serial','連載陣'],['stock','フリー'],['ikusei','専属'],['keiyaku','契約'+((S.manga||[]).some(m=>keiyakuNeed(m))?'⚠':'')],['search','探す'],['market','声をかける'],['kanban','看板'],['oikake','追っかけ']])+'<div class="sh-body">'+(tab==='market'||tab==='stock'?kHintCard():'');
   if(tab==='serial'){
     const list=serials().sort((a,b)=>b.pop-a.pop);
     /* 今月のアンケート順位（先月とくらべて↑↓） */
@@ -6449,7 +6457,7 @@ function sheetManga(){
   } else if(tab==='stock'){
     h+='<div class="card"><div class="s">担当がためている漫画家。原稿が落ちたときの代原にもなる。専属の先生は「専属」タブにいる。<br>フリーの先生は1本勝負：担当と連載用のネームを打ち合わせて、固まったら連載会議へ。会議で落ちたら、粘らずに去っていく。</div>'+(S.mag.launched?'':'<div class="t">創刊には、持ち駒と育成あわせて、看板1人を含む9人が必要。</div>')+'</div>';
     const st=S.manga.filter(m=>m.status==='stock'&&!m.exclusive);
-    if(!st.length)h+='<div class="card"><div class="s">まだいません。「探す」で先生に連載を打診しよう。</div></div>';
+    if(!st.length)h+='<div class="card"><div class="s">まだいません。「声をかける」で先生に連載を打診しよう。</div></div>';
     h+='<div class="card"><div class="s">担当1人につき、育成できる先生は2人まで。方針を選ぶと、毎月自動で進んで報告が来る。</div></div>';
     st.forEach(m=>h+=mangaCard(m,freeBlock(m)+ikBlock(m)+editBlock(m)));
   } else if(tab==='ikusei'){
@@ -6479,14 +6487,16 @@ function sheetManga(){
       for(const m of kc){const pending=S.offers.some(o=>o.id===m.id);const kfee=({S:1e7,A:6e6,B:3e6,C:15e5}[mRank(m)]||15e5)*eraF();
         h+=mangaCard(m,'<div class="s">'+TIERS[tierOf(m)]+'・総合 '+mRank(m)+'・原稿料 1ページ '+yen(TFEE[tierOf(m)]*eraF())+'</div><div class="row">'+(pending?'<span class="s">返事待ち</span>':'<button class="btn pri" data-act="offer" data-arg="'+m.id+':1"'+(chief()?'':' disabled')+'>看板として迎える（契約金 '+yen(kfee)+'）</button>'+(kudokiLeft()?'':'<button class="btn" data-act="offer" data-arg="'+m.id+':4"'+(chief()?'':' disabled')+'>社長が口説く（看板）</button>'))+'</div>');}
     }
-  } else {
+  } else if(tab==='search'){
     if(S.mag&&S.mag.launched&&S.y>=1975){const pre=(S.m===7||S.m===11)&&S.ichiPre===S.y*100+S.m;const ready=Array.isArray(S.ichiSend)&&S.ichiSend.length||S.ichiBooth;
       h+='<div class="card" style="border-color:#e0a0e0"><div class="who">📚 '+ICHI+'（8月と12月）</div>'+(pre?'<div class="t" style="font-size:18px">来月は'+ICHI+'。'+(ready?'<b>準備はできている。</b>':'行くなら、だれと行くか決めよう。')+'</div><button class="btn pri" style="font-size:18px" data-act="ichiopen">'+(ready?'顔ぶれを見直す':'行く準備をする')+'</button>':'<div class="s" style="font-size:17px">7月と11月になると、ここから準備できる。</div>')+'<div class="row" style="margin-top:6px"><button class="btn'+(S.ichiAsk?' sel':'')+'" style="font-size:16px" data-act="ichiask">毎回、秘書にきいてもらう：'+(S.ichiAsk?'ON':'OFF')+'</button></div></div>';}
-    h+='<div class="card"><div class="s">連載を打診すると、返事は半月〜1か月後。受けてもらえたら持ち駒に入る。看板の先生は「看板」タブから。</div><div class="s">社長特権「社長が口説く」：2年に1回だけ、社長みずから口説きに行ける。受けてもらいやすくなり、その先生は「社長のご愛顧」になって、よそへ移らない。'+(kudokiLeft()?'<b>次に口説けるのは、あと'+kudokiLeft()+'か月後。</b>':'<b style="color:var(--green)">いま口説けます！</b>')+'</div></div>';
-    h+='<div class="card"><div class="who">ほかの先生を探す</div><div class="t">'+(S.searchReq?'編集長が電話をかけて探しています。結果は来月の報告で。':'ここにいない先生を、編集長に電話で探してもらう。結果は来月。')+'</div>'+(S.searchReq?(S.searchGenre?'<div class="s">探しているジャンル：'+esc(S.searchGenre)+'</div>':''):(chief()?'<div class="row"><button class="btn pri" data-act="search" data-arg="">ジャンルを問わず探す</button></div><div class="s">ジャンルを決めて探す（無名の先生も多い）</div><div class="row">'+GENRES.map(g=>'<button class="btn" data-act="search" data-arg="'+g+'">'+g+'</button>').join('')+'</div>':'<span class="s">編集長がいないと頼めない</span>'))+'</div>';
-    h+='<div class="sec">いま見つかっている先生（ジャンルでしぼる）</div><div class="row">'+['すべて',...GENRES].map(g=>'<button class="btn'+((S.mkFilter||'すべて')===g?' sel':'')+'" data-act="mkfilter" data-arg="'+g+'">'+g+'</button>').join('')+'</div>';
-    const mk=S.manga.filter(m=>m.status==='market'&&!m.kanbanOK&&!tooBig(m)&&(!S.mkFilter||S.mkFilter==='すべて'||gsOf(m).includes(S.mkFilter))).sort((a,b)=>mLevel(b)-mLevel(a));
-    if(!mk.length)h+='<div class="card"><div class="s">このジャンルの先生はいま見つかっていない。編集長に探してもらおう。</div></div>';
+    h+='<div class="card"><div class="who">📞 編集長に電話で探してもらう</div><div class="t">'+(S.searchReq?'編集長が電話をかけて探しています。結果は来月の報告で。':'ジャンルを選んで頼むと、編集長が電話をかけまくってくれる。結果は来月の報告で。')+'</div>'+(S.searchReq?(S.searchGenre?'<div class="s">探しているジャンル：'+esc(S.searchGenre)+'</div>':''):(chief()?'<div class="row"><button class="btn pri" data-act="search" data-arg="">ジャンルを問わず探す</button></div><div class="s">ジャンルを決めて探す（無名の先生も多い）</div><div class="row">'+GENRES.map(g=>'<button class="btn" data-act="search" data-arg="'+g+'">'+g+'</button>').join('')+'</div>':'<span class="s">編集長がいないと頼めない</span>'))+'</div>';
+    h+='<div class="card"><div class="s" style="font-size:17px">見つかっている先生は「声をかける」タブにいる。電話で探すのは、そこに良い先生がいないときでいい。</div></div>';
+  } else {
+    /* ver.513：説明とジャンルしぼりは消して、先生の一覧だけに */
+    h+='<div class="sec">いま見つかっている先生</div>';
+    const mk=S.manga.filter(m=>m.status==='market'&&!m.kanbanOK&&!tooBig(m)).sort((a,b)=>mLevel(b)-mLevel(a));
+    if(!mk.length)h+='<div class="card"><div class="s">いま見つかっている先生はいない。「探す」タブで、編集長に探してもらおう。</div></div>';
     for(const m of mk){
       const pending=S.offers.some(o=>o.id===m.id);
       const fee=TFEE[tierOf(m)]*80*eraF();
@@ -7313,7 +7323,7 @@ function showPop0(){if(OP&&OP.enter){$('pop').hidden=true;return;}
   const m=S.manga.find(x=>x.id===o.id);if(!m){q.shift();return showPop();}
   const t=m.tantou?staffById(m.tantou):null;
   const tag=m.tags.find(x=>x!=='遅筆')||m.tags[0];
-  if(o.no){el.innerHTML='<div class="box" style="border-color:var(--red)"><h3 id="pop-h" style="color:var(--red)">'+(o.kanban?'看板の話、お断り……':'お断りされました……')+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+esc(m.name)+'</div><div class="s">'+m.age+'歳・'+esc(gtxt(m))+'・総合 '+mRank(m)+'</div><div class="s">'+(o.poor?'受けてくれたのに、契約金が払えなかった……':'契約金は払っていません')+'</div></div></div><div class="quote">「'+esc(pick(['今回はご縁がなかったということで。','もう少し名の売れた雑誌なら考えたんだが。','いまは他の仕事で手一杯でね。']))+'」</div><div class="s">'+(o.kanban?'看板候補はまだほかにもいる。「漫画家 → 探す」から別の先生に頼もう。':'しばらくして、また頼んでみることもできる。')+'</div><button class="btn pri" data-act="popok">'+(q.length>1?'次へ（あと'+(q.length-1)+'人）':'OK')+'</button></div>';}
+  if(o.no){el.innerHTML='<div class="box" style="border-color:var(--red)"><h3 id="pop-h" style="color:var(--red)">'+(o.kanban?'看板の話、お断り……':'お断りされました……')+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+esc(m.name)+'</div><div class="s">'+m.age+'歳・'+esc(gtxt(m))+'・総合 '+mRank(m)+'</div><div class="s">'+(o.poor?'受けてくれたのに、契約金が払えなかった……':'契約金は払っていません')+'</div></div></div><div class="quote">「'+esc(pick(['今回はご縁がなかったということで。','もう少し名の売れた雑誌なら考えたんだが。','いまは他の仕事で手一杯でね。']))+'」</div><div class="s">'+(o.kanban?'看板候補はまだほかにもいる。「漫画家 → 看板」から別の先生に頼もう。':'しばらくして、また頼んでみることもできる。')+'</div><button class="btn pri" data-act="popok">'+(q.length>1?'次へ（あと'+(q.length-1)+'人）':'OK')+'</button></div>';}
   else{const hands=raisers(m);o.hands=(o.hands||hands.map(x=>x.id)).filter(id=>{const t2=staffById(id);return t2&&!t2.hidden&&t2.role==='tantou';});/* 手を挙げた担当が、そのあと辞めたり異動したりしていたら外す（押すボタンがなくなって止まらないように） */
     el.innerHTML='<div class="box" style="max-height:92%;overflow-y:auto"><h3 id="pop-h">'+(o.kanban?'看板の先生が来社！':'先生が来社！顔合わせ')+'</h3><div class="who"><canvas id="popface" width="32" height="32"></canvas><div style="min-width:0"><div class="nm">'+esc(m.name)+'</div><div class="s">'+m.age+'歳・'+esc(gtxt(m))+'・総合 '+mRank(m)+(o.kanban?' <span class="chip">看板</span>':'')+'</div><div class="s">契約金 '+yen(o.fee)+'</div></div></div>'+mks(m)+'<div class="quote">「'+esc(QUOTES[tag]||'よろしくお願いします。')+'」</div>'+
     (o.hands.length?'<div class="sec">担当に手を挙げたのは'+o.hands.length+'人</div><div class="s">選んだ担当と先生はコンビになる。手を挙げた担当は張り切って育てる。</div>'+o.hands.map(id=>{const t2=staffById(id);if(!t2)return '';return '<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="kaoawase" data-arg="'+m.id+':'+t2.id+'"><b>担当・'+esc(t2.name)+'</b>（編集 '+rank(t2.henshu)+'・情熱 '+rank(t2.jonetsu)+'・受け持ち '+stockOf(t2).length+'人）<br><span class="s">「'+pick(['ぜひ私に！','先生の作品、ずっと読んでました！','一緒にてっぺん取りましょう！','私が担当します！'])+'」</span></button>';}).join(''):'<div class="s" style="font-size:17px;margin:8px 0">'+(byRole('tantou').some(t=>!t.hidden)?'担当はみんな新人を抱えていて、手を挙げる余裕がなかった。担当は自動で決まる。':'')+'</div><button class="btn pri" data-act="popok">OK</button>')+'</div>';}
