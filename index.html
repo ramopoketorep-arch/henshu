@@ -633,7 +633,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='522';
+const GAME_VER='523';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -7678,7 +7678,7 @@ function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;{const
   const nav=$('onav');if(nav){if(zoom){if(nav.parentElement!==app)app.appendChild(nav);const tp=(st.offsetTop+4)+'px';if(nav.style.top!==tp)nav.style.top=tp;nav.classList.add('fixed');}else if(nav.parentElement!==w){w.appendChild(nav);nav.style.top='';nav.classList.remove('fixed');}}
   const zk=zoom&&uz<=1.01?((S&&S.view)||'')+'|'+ww:'';if(zoom&&uz<=1.01&&layout.zk!==zk){layout.zk=zk;requestAnimationFrame(()=>{st.scrollLeft=(ww-st.clientWidth)/2;});}if(!zoom||uz>1.01)layout.zk='';}
 var UZ=1,UZMAX=3;
-function zctlPos(on){let z=$('zctl');if(!z){z=document.createElement('div');z.id='zctl';z.innerHTML='<button data-z="in" aria-label="寄る">＋</button><button data-z="out" aria-label="引く">－</button>';document.getElementById('app').appendChild(z);
+function zctlPos(on){/* ver.523：＋－ボタンはなし（ピンチだけ） */return;let z=$('zctl');if(!z){z=document.createElement('div');z.id='zctl';z.innerHTML='<button data-z="in" aria-label="寄る">＋</button><button data-z="out" aria-label="引く">－</button>';document.getElementById('app').appendChild(z);
     z.addEventListener('click',e=>{const b=e.target.closest('[data-z]');if(!b)return;e.stopPropagation();const st=$('stage');zoomTo(b.dataset.z==='in'?Math.min(UZMAX,UZ*1.5):Math.max(1,UZ/1.5),st.clientWidth/2,st.clientHeight/2);});}
   const st=$('stage');if(!on||!st){z.style.display='none';return;}z.style.display='flex';const r=st.getBoundingClientRect();z.style.left=Math.round(r.right-104)+'px';z.style.top=Math.round(r.bottom-54)+'px';
   z.children[0].disabled=UZ>=UZMAX-0.01;z.children[1].disabled=UZ<=1.01;}
