@@ -633,7 +633,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='523';
+const GAME_VER='534';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -658,6 +658,7 @@ function refreshCands(){
   S.cands=[];
   /* 創刊したら、毎月の候補は中途（経験者）だけ。新卒は年に1回（10月に応募→4月に入社） */const pre=!S.mag||!S.mag.launched;
   for(let i=0;i<(pre?20:12);i++)S.cands.push(newStaff({exp:pre?i<12:true,focus:pick(['henshu','henshu','bigan','bigan','kikaku','eigyo','jimu'])}));
+  try{townHireAdj();}catch(e){}
 }
 
 // ===== ログ =====
@@ -1064,13 +1065,13 @@ function p3Anim(kind,o){clearInterval(p3Anim.h);const c=$('popanim');if(!c)retur
         for(let i=0;i<4;i++){const p0=ppl[i];chibi(20+i*22,44+(i%2)*2,p0,true);if(on&&f>14&&(Math.floor(f/6)+i)%3===0){P(26+i*22,30,6,8,'#fffdf6');g.fillStyle='#b23a2e';g.font='bold 7px sans-serif';g.fillText('!',28+i*22,37);}}
       } else if(kind==='read'){// 駄菓子屋の前で雑誌を読む
         P(0,0,200,84,'#cfe3f0');P(0,50,200,34,'#cfc8b8');OB(110,6,86,46,'#9a6b3a');P(114,10,78,8,'#b23a2e');g.fillStyle='#fffdf6';g.font='bold 7px sans-serif';g.fillText('だがし',140,17);P(116,22,74,26,'#e9dfc6');for(let k=0;k<6;k++)P(120+k*12,28,8,10,SHIRT[k%SHIRT.length]);
-        for(let i=0;i<5;i++){const p0=ppl[i];const x=8+i*20;walker(x,38,p0,0);P(x+3,46,9,6,SHIRT[(i+3)%SHIRT.length]);if(f>8+i*4){const j=(Math.floor(f/5)+i)%4;if(j<3){P(x+2,26,10,9,'#fffdf6');P(x+6,35,2,2,'#fffdf6');g.fillStyle='#b23a2e';g.font='bold 8px sans-serif';g.fillText(j===0?'!!':j===1?'♪':'!?',x+3,33);}}}
+        for(let i=0;i<5;i++){const p0=ppl[i];const x=8+i*20;walker(x,38,p0,0);P(x+3,46,9,6,SHIRT[(i+3)%SHIRT.length]);if(f>8+i*4){const j=(Math.floor(f/5)+i)%4;if(j<3){P(x+2,26,10,9,'#fffdf6');P(x+6,35,2,2,'#fffdf6');g.fillStyle='#b23a2e';g.font='bold 6px sans-serif';g.fillText(j===0?'!!':j===1?'♪':'!?',x+3,33);}}}
       } else if(kind==='sign'){// サイン会
         P(0,0,200,84,'#e9dfc6');P(0,0,200,10,'#3e7d4f');g.fillStyle='#fffdf6';g.font='bold 7px sans-serif';g.fillText((m?m.name:'')+'先生 サイン会',60,8);P(0,60,200,24,'#cfc8b8');
         OB(150,40,40,14,'#8a5a2e');P(152,42,36,3,'#fffdf6');if(m)chibi(160,26,m,false);
         const nq=Math.min(9,crowdN<3?crowdN:Math.ceil(Math.log2(crowdN+1)*1.3));
         for(let i=0;i<nq;i++){const p0=ppl[i];const stop=132-i*14;let x=-14-i*14+f*4;let w=true;if(x>stop){x=stop;w=false;}walker(x,42,p0,w?Math.floor(f/3)%2:0);}
-        if(crowdN<3&&f>20){g.fillStyle='#8a8070';g.font='bold 8px sans-serif';g.fillText(f%20<10?'……シーン':'',40,40);}
+        if(crowdN<3&&f>20){g.fillStyle='#8a8070';g.font='bold 6px sans-serif';g.fillText(f%20<10?'……シーン':'',40,40);}
         if(crowdN>=200&&f>30){g.fillStyle='#b23a2e';g.font='bold 7px sans-serif';g.fillText('最後尾はこちら →',4,24);}
       } else if(kind==='phone'){// 社長が電話
         P(0,0,200,84,'#ece6d3');for(let x=0;x<200;x+=6)P(x,0,1,52,'#e0d9c2');P(0,52,200,32,'#8a5a2e');P(0,52,200,2,'#a8743e');
@@ -1078,7 +1079,7 @@ function p3Anim(kind,o){clearInterval(p3Anim.h);const c=$('popanim');if(!c)retur
         if(y0>=1994){P(up?100:118,up?26:58,6,12,'#4a4a4a');P(up?101:119,up?27:59,4,4,'#9fc7e0');P(up?103:121,up?20:52,1,6,'#222');}
         else{const body=y0>=1985?'#e9dfc6':'#1e1e1e';OB(110,56,26,12,body);if(y0>=1985){for(let i=0;i<3;i++)for(let j=0;j<2;j++)P(114+i*6,59+j*4,4,2,'#8a8070');}else{P(118,57,10,10,'#3a3a3a');P(121,60,4,4,'#c9b07a');}
           if(up){P(100,24,4,16,body);P(98,22,6,4,body);P(98,38,6,4,body);P(104,40,1,1,'#222');for(let k=0;k<4;k++)P(104+k*3,42+k*3,2,2,'#222');}else{P(108,52,30,5,body);}}
-        g.fillStyle='#b23a2e';g.font='bold 8px sans-serif';
+        g.fillStyle='#b23a2e';g.font='bold 6px sans-serif';
         if(f>10&&f<34)g.fillText(y0>=1994?'ピッ ポッ パッ':y0>=1985?'ピッポッパ':'ジーコロ……',128,f%8<4?24:26);
         if(f>=34){P(126,10,62,16,'#fffdf6');P(130,26,4,3,'#fffdf6');g.fillStyle='#222';g.fillText('もしもし……',132,21);}
       } else if(kind==='deal'){// 商談
@@ -1087,7 +1088,7 @@ function p3Anim(kind,o){clearInterval(p3Anim.h);const c=$('popanim');if(!c)retur
         const eg=(team('eigyo')||{}).lead||byRole('eigyo')[0]||PRES;const buyer={id:7777,name:'取次の担当',age:52};
         const bow=f>10&&f<28;walker(bow?52:50,bow?36:30,eg,0);walker(134,30,buyer,0);
         if(f>34){const s=Math.min(1,(f-34)/6);P(96,40-8*(1-s),8,8,'#b23a2e');}
-        if(f>40){P(92,34,16,10,'#fffdf6');g.fillStyle='#b23a2e';g.font='bold 8px sans-serif';g.fillText('契約',93,42);}
+        if(f>40){P(92,34,16,10,'#fffdf6');g.fillStyle='#b23a2e';g.font='bold 6px sans-serif';g.fillText('契約',93,42);}
         if(f>46&&f%8<5){g.fillStyle='#b23a2e';g.font='bold 9px sans-serif';g.fillText('ポン！',100,30);}
       }});
     if(f===90)animReveal();if(f>160)clearInterval(p3Anim.h);},90);}
@@ -1873,14 +1874,17 @@ function a2Beats(A){if(A.steps)return A.steps.slice();const out=[];try{const c=d
   try{for(let t=0;t<=A.dur;t+=0.1){cur=new Set();g.setTransform(2,0,0,2,0,0);g.save();try{A.draw(g,t);}catch(e){}g.restore();let nw=false;for(const z of cur)if(!seen.has(z))nw=true;seen=cur;if(nw&&t>0.25&&t-last>0.8){out.push(+t.toFixed(2));last=t;}}}finally{window.sfx=sv;window.voice=vv;}}catch(e){}
   return out;}
 function a2Overlay(A,next,story){if(S.animOff&&!story){animSkipNote();next&&next();return;}/* story：物語の大事な場面。アニメオフでも流す */const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span data-k="hint" style="color:#cfc6ae;font-size:16px">タップで止める</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">⏭ とばす</button></div>';document.body.appendChild(ov);
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span data-k="hint" style="color:#cfc6ae;font-size:16px">タップで全文</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">⏭ とばす</button></div>';document.body.appendChild(ov);
   const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false;OVN++;const fin=()=>{if(done)return;done=true;OVN=Math.max(0,OVN-1);ov.remove();if(next)next();if(!OVN&&showPop.later){showPop.later=0;if($('pop').hidden)showPop();}};
   /* タップすると「読む」モード：いまのせりふを出しきったところで止まって、次のタップを待つ */
   let hold=false;const hint=ov.querySelector('[data-k=hint]');
   const holdAt=()=>{};
-  ov.addEventListener('pointerdown',e=>{e.preventDefault();const k=e.target.closest('[data-k]');if(k&&k.dataset.k==='pause'){const pz=CK.toggle();k.textContent=pz?'▶ 再開':'⏸ 止める';if(hint)hint.textContent=pz?'タップで再開 ▶':'タップで止める';return;}if(k&&k.dataset.k==='skip'){fin();return;}
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();const k=e.target.closest('[data-k]');if(k&&k.dataset.k==='pause'){const pz=CK.toggle();k.textContent=pz?'▶ 再開':'⏸ 止める';if(hint)hint.textContent=pz?'タップで再開 ▶':'タップで全文';return;}if(k&&k.dataset.k==='skip'){fin();return;}
     /* ver.516：画面タップで「止める ⇔ 自動で進む」。最後まで来ていたら閉じる */
-    const t=CK.now();if(t>=A.dur-0.05){fin();return;}const pz=CK.toggle();const pb=ov.querySelector('[data-k=pause]');if(pb)pb.textContent=pz?'▶ 再開':'⏸ 止める';if(hint)hint.textContent=pz?'タップで再開 ▶':'タップで止める';});
+    /* ver.525：流れているときにタップ → いまのせりふを最後まで出して止まる。止まっているときにタップ → また自動で進む */
+    const t=CK.now();if(t>=A.dur-0.05){fin();return;}const pb=ov.querySelector('[data-k=pause]');
+    if(CK.paused()){CK.toggle();if(pb)pb.textContent='⏸ 止める';if(hint)hint.textContent='タップで全文';return;}
+    if(!A._beats)A._beats=a2Beats(A);const nx=A._beats.find(v=>v>t+0.15);const to=nx!=null?Math.max(t,nx-0.3):A.dur-0.05;CK.jump(to-t);CK.toggle();if(pb)pb.textContent='▶ 再開';if(hint)hint.textContent='タップで再開 ▶';});
   /* ver.485：どこかの場面で描けなくても、止まらずに先へ進む（原因は下に小さく出す） */let aerr=null;
   const step=()=>{if(done)return;let t=CK.now();if(!isFinite(t))t=0;g2.setTransform(2,0,0,2,0,0);g2.globalAlpha=1;g2.globalCompositeOperation='source-over';g2.shadowBlur=0;g2.clearRect(0,0,360,220);g2.save();
     try{A.draw(g2,Math.min(t,A.dur));}catch(e){if(!aerr){aerr=String((e&&e.message)||e).slice(0,70);try{console.error(e);S.lastAnimErr=aerr;}catch(_){}}}g2.restore();
@@ -4349,7 +4353,7 @@ function doCall(arg){const [to,what]=arg.split(':');const C=CALLEE[to];let me=''
     else if(what==='kokin'){if(!kokinOK())return toast('創業融資は、もう申し込めません');S.kokin={amt:KOKIN_AMT,bal:KOKIN_AMT,m:0};S.money+=KOKIN_AMT;me='もしもし、'+coName()+'の社長です。銀行さんから、国民金融公庫の創業融資の話を聞きまして。';you='はい、まるみ銀行が窓口になります。……公庫さんの審査、通りましたよ。'+yen(KOKIN_AMT)+'、返済は1年後からで結構です。';res='国民金融公庫から'+yen(KOKIN_AMT)+'を借りた。返済は1年後から。';say('社長','国民金融公庫から'+yen(KOKIN_AMT)+'の創業融資を受けた。');}
     else if(what==='borrow'){if((S.loan||0)+la>la*3)return toast('これ以上は借りられません');S.loan=(S.loan||0)+la;S.money+=la;me='もしもし、'+coName()+'の社長です。運転資金を'+yen(la)+'、お借りしたいのですが。';you=calleeGreet()+'……はい、'+yen(la)+'ですね。ご用意いたします。利息は月0.5%です。';res=yen(la)+'を借りた。借金は合計'+yen(S.loan)+'。';say('社長','銀行から'+yen(la)+'借りた。');}
     else{const L=S.loan||0;if(!L||S.money<L)return;S.money-=L;S.loan=0;me='もしもし、'+coName()+'の社長です。お借りしていた分、全部お返しします。';you='これはご丁寧に！'+yen(L)+'、たしかに。またいつでもご相談ください。';res='借金を全部返した。';say('社長','銀行の借金を全部返した。');}}
-  else if(to==='fudo'&&what==='land'){if(S.land)return;const price=landPrice();if(S.money<price)return toast('お金が足りません');S.money-=price;S.feeAcc=(S.feeAcc||0)+price;S.land={y:S.y,m:S.m,price};me='もしもし、'+coName()+'の社長です。自社ビルを建てたい。土地を探してもらえますか。';you=calleeGreet()+'……神田駅の近くに、いい空き地がありますよ！'+yen(price)+'です。';res='自社ビル用の土地を買った（'+yen(price)+'）。次は、建設会社に頼もう。';say('社長','自社ビル用の土地を買った。'+yen(price)+'。');
+  else if(to==='fudo'&&what==='land'){if(S.land)return;const price=landPrice();if(S.money<price)return toast('お金が足りません');S.money-=price;S.feeAcc=(S.feeAcc||0)+price;S.land={y:S.y,m:S.m,price};townInit();me='もしもし、'+coName()+'の社長です。自社ビルを建てたい。土地を探してもらえますか。';you=calleeGreet()+'……安いところなら、ありますよ！ 郊外の「'+S.town.name+'」。まあ……畑ばっかりで、駅からも遠いですがね。'+yen(price)+'です。';res='自社ビル用の土地を買った（'+yen(price)+'）。次は、建設会社に頼もう。<br>「◀ 編集部 ▶」で切りかえると、「町」が見られるようになった。';say('社長','自社ビル用の土地を買った。'+yen(price)+'。');
     (S.popups=S.popups||[]).unshift({news:'call',to,me,you,res,land:1});save();drawSheet();render();showPop();return;}
   else if(to==='fudo'){const lf=landF();me='もしもし、'+coName()+'の社長です。最近の神田の土地の相場はどうです？';you=calleeGreet()+'……'+(lf>=4?'いやあ、とんでもない値段になってますよ！買うなら覚悟がいります。':lf>=2?'じわじわ上がってますねえ。欲しい物件があるなら早めがいいですよ。':'まだ落ち着いてますよ。いい物件が出たらお知らせします。');res='土地の値段は'+START_Y+'年の'+(lf/landF(START_Y)).toFixed(1)+'倍。';}
   else if(to==='kenchiku'&&what==='hq'){if(!S.land||S.hq||S.hqBuild)return;const cost=hqPrice();if(S.money<cost)return toast('お金が足りません');S.money-=cost;S.feeAcc=(S.feeAcc||0)+cost;S.hqBuild={y:S.y,m:S.m,cost,need:HQB_NEED,done:0};
@@ -5052,7 +5056,7 @@ function triHTML(){if(!S.tri)return '<div class="card"><div class="s">三誌同�
       +(!sb.reoDone?'<div class="row" style="margin-top:8px"><button class="btn pri" data-act="reoopen" style="font-size:18px">重役会議を開く（再編成ドラフト）</button></div>':'')
       +'<div class="s" style="font-size:16px;margin-top:6px">人を送る・呼びもどすのは「買収」タブから。「社員」の「配置・解雇」からも出向させられる。</div></div>';}
   return h;}
-function landPrice(){return Math.round(3e8*landF()/1e6)*1e6;}
+/* ver.524：自社ビル用の土地は、安いけど不便な郊外 */function landPrice(){return S&&S.town?plotPrice():Math.round(1.0e8*landF()/1e6)*1e6;}
 function hqPrice(){return Math.round(4e8*eraF()/1e6)*1e6;}
 function drawDecorBack(){const on=k=>hasD(k)&&!(S.decorOff&&S.decorOff[k]);
   if(on('art')){QB(194,6,36,28,'#8a6a2a');Q(196,8,32,24,'#e8c76a');Q(198,10,28,20,'#9fc7e0');Q(198,22,28,8,'#4e9a62');Q(204,16,8,6,'#7d8fa8');Q(214,14,6,8,'#5e6f88');Q(220,11,4,4,'#fffdf6');}
@@ -5283,7 +5287,7 @@ function endTurn(){
     /* 持ち込みを見るのは、新人（見ている途中もふくむ）が2人未満で、2か月以内に持ち込みを見ていない担当。少ない人から */
     const own=x=>stockOf(x).length+S.manga.filter(m=>m.status==='pending'&&m.tantou===x.id).length;
     const room=byRole('tantou').filter(x=>!x.hidden&&own(x)<2&&!(x.mochiAt!=null&&S.turns-x.mochiAt<2)).sort((a,b)=>own(a)-own(b)+(R()-0.5)*0.8);const t=room[0];
-    if(t){t.mochiAt=S.turns;S.mochiNext=S.turns+3;const YL=S.y>=1975&&R()<0.08?legendPick(true):null;const n=YL?makeLegend(YL,true):rookieManga(compTier(),{age:ri(17,23)});n.status='pending';n.tantou=t.id;S.manga.push(n);
+    if(t){t.mochiAt=S.turns;S.mochiNext=S.turns+townMochiGap();const YL=S.y>=1975&&R()<0.08?legendPick(true):null;const n=YL?makeLegend(YL,true):rookieManga(compTier(),{age:ri(17,23)});n.status='pending';n.tantou=t.id;S.manga.push(n);
       const A=(100-(t.hidden?40:t.bigan))/100*26*(hasF('uchiawase')?0.6:1);const ns=k=>(R()*2-1)*A*k;n.est={story:clamp(Math.round(n.story+ns(0.5)),10,99),idea:clamp(Math.round(n.idea+ns(0.5)),10,99),ga:clamp(Math.round(n.ga+ns(0.5)),10,99),kousei:clamp(Math.round(n.kousei+ns(0.5)),10,99),enshutsu:clamp(Math.round(n.enshutsu+ns(0.5)),10,99),cap:clamp(Math.round(n.cap+ns(1)),20,99)};const ok=n.est.cap>=82;n.judge=ok;
       (S.popups=S.popups||[]).push({mochi:n.id});
       /* 持ち込みは報告書に載せない：ピンポーンで会ってから決める */
@@ -5571,7 +5575,7 @@ function hqbP(){const B=S.hqBuild;return B?0.03+0.97*Math.min(1,B.done/B.need):1
 function hqbStage(p){return p<0.08?'地ならし（更地を平らにしている）':p<0.2?'基礎工事（地面を掘って、コンクリートを流している）':p<0.45?'鉄骨を組んでいる':p<0.8?'外壁をはっている':'内装と仕上げ';}
 function hqbMonth(){const B=S.hqBuild;if(!B||S.hq)return;B.done++;const p=hqbP(),pe=(S.pendingEvents=S.pendingEvents||[]);
   const st=hqbStage(p);if(st!==B.st){B.st=st;if(B.done<B.need)pe.push({dept:'運営部',who:'丸山工務店',t:'社長、自社ビルの工事は「'+st+'」まで進みましたよ！（あと'+(B.need-B.done)+'か月）　「建築」から、工事現場を見られます。'});}
-  if(B.done>=B.need){S.hq={y:S.y,m:S.m,cost:B.cost};delete S.hqBuild;
+  if(B.done>=B.need){S.hq={y:S.y,m:S.m,cost:B.cost};delete S.hqBuild;try{if(S.town){const nc=townCompl();if(nc.length)(S.pendingEvents=S.pendingEvents||[]).push({dept:'運営部',who:'秘書',t:'社長……新しいビルはりっぱですけど、社員から文句が出ています。「'+nc.map(k=>COMPL[k][0]).join('」「')+'」。<br>「町」の「🏗 町づくり」で、手を打ちましょう。',warn:true});}}catch(e){}
     (S.popups=S.popups||[]).unshift({news:'call',to:'kenchiku',me:'……もしもし、'+coName()+'です。',you:calleeGreet()+'……社長！ ビルが、完成しましたよ！ 1年間、お待たせしました！',res:'自社ビルが完成した！',after:'hq'});}}
 function hqbView(){if(!S.hqBuild)return;const X=NR.opx;const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;touch-action:none';
   const B=S.hqBuild,p=hqbP();ov.innerHTML='<div style="color:#ffd970;font-size:22px;font-weight:bold">🏗 自社ビルの工事現場</div><canvas id="hqbcv" width="720" height="440" style="width:min(96vw,720px);border-radius:10px;background:#9fd0ee"></canvas><div style="color:#fffdf6;font-size:19px;text-align:center;line-height:1.6">いまは「<b>'+hqbStage(p)+'</b>」<br>完成まで あと<b>'+(B.need-B.done)+'か月</b>（'+Math.round(p*100)+'%）</div><div style="color:#cfc6ae;font-size:16px">指で左右になぞると、ぐるっと回れる</div><button class="btn pri" style="font-size:19px;min-width:140px">とじる</button>';
@@ -5984,7 +5988,7 @@ function render(){if(S&&S.demoDue&&!OP&&sheet!=='title'&&!document.getElementByI
   $('status').innerHTML='<span class="chip">'+esc(TITLES[S.titleIdx][1])+'</span><span class="mag">'+esc(mag.name)+'</span><span class="sub">'+(mag.launched?(mag.issue?'第'+mag.issue+'号まで':'創刊号を制作中')+(S.lastResult?'・前号 '+busu(S.lastResult.sold):''):'創刊準備中')+'</span>'+rkStatus();
   const logs=[...(S.reports||[]).filter(r=>!r.type||r.type==='end').slice(0,3).map(r=>({who:r.who,txt:r.t,warn:r.warn})),...S.log.slice(0,4)];
   if(!$('log').hidden)$('log').innerHTML=logs.map(l=>'<div class="msg'+(l.warn?' warn':'')+'"><div class="who">'+esc(l.who)+'</div><div class="txt">'+esc(l.txt)+'</div></div>').join('')||'<div class="msg"><div class="txt">報告書を見て、指示を出そう。</div></div>';
-  S.rooms=S.rooms||{};$('onav').hidden=!!OP||sheet==='title'||sheetCovers();/* タイトル画面では、時計や部屋の切りかえを出さない（セーブの読みこみやクラウドの同期で、タイトル中に呼ばれることがある） */$('onav').innerHTML='<span style="display:flex;gap:6px;align-items:flex-start"><span class="clk">'+(S._clk||'')+'</span>'+(STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'')+(!STACK?'<button data-act="room">◀ '+(S.view==='sub'?'子会社':S.view==='unei'?'運営部':'編集部')+' ▶'+(S.view!=='unei'&&(S.kq||[]).length?' <b style="color:#b23a2e">！'+(S.kq||[]).length+'</b>':'')+'</button>':'')+'</span>'+(!STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'');
+  S.rooms=S.rooms||{};$('onav').hidden=!!OP||sheet==='title'||sheetCovers();/* タイトル画面では、時計や部屋の切りかえを出さない（セーブの読みこみやクラウドの同期で、タイトル中に呼ばれることがある） */$('onav').innerHTML='<span style="display:flex;gap:6px;align-items:flex-start"><span class="clk">'+(S._clk||'')+'</span>'+(STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'')+(!STACK&&S.view==='town'?'<button data-act="townsheet" style="background:#ffd970">🏗 町づくり</button><button data-act="townrot">🔄 回す</button>':'')+(!STACK?'<button data-act="room">◀ '+(S.view==='sub'?'子会社':S.view==='unei'?'運営部':S.view==='town'?'町':'編集部')+' ▶'+(S.view!=='unei'&&(S.kq||[]).length?' <b style="color:#b23a2e">！'+(S.kq||[]).length+'</b>':'')+'</button>':'')+'</span>'+(!STACK&&S.placeMode?'<button data-act="placeend" style="background:#ffd970">置き終わる</button>':'');
   {const sp=$('subpanel');if(sp){const on=S.view==='sub'&&S.sub&&subMag()&&!OP&&sheet!=='title';sp.hidden=!on;if(on){/* 部屋の拡大・横スライドに引きずられないよう、画面に固定して部屋の場所に重ねる */const r=$('stage').getBoundingClientRect();Object.assign(sp.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});const h=subPanelHTML();if(sp._h!==h){sp._h=h;sp.innerHTML=h;}}}}
   const n=(S.reports||[]).filter(r=>!r.read).length;
   $('cmd-report').innerHTML='報告書'+(!S.newRead&&!S.secLater&&n?'<span class="badge">'+n+'</span>':'');
@@ -6055,6 +6059,7 @@ function drawSheet(){
   else if(sheet==='half')h=sheetHalf();
   else if(sheet==='title')h=sheetTitle();
   else if(sheet==='over')h=sheetOver();
+  else if(sheet==='town')h=S.town?sheetTown():'';
   {const tc=tipCard();if(tc){const i=h.indexOf('<div class="sh-body">');if(i>=0)h=h.slice(0,i+21)+tc+h.slice(i+21);}}
   el.innerHTML=h;drawSheet.k=sheet+'/'+tab;
   try{const ns=nextStep();if(ns&&ns.sheet===sheet&&ns.tab&&ns.tab!==tab){const tb=el.querySelector('[data-act=tab][data-arg="'+ns.tab+'"]');if(tb)tb.classList.add('glow');}}catch(e){}if(sheetCovers())$('onav').hidden=true;if(sheet==='title'){$('onav').hidden=true;const sp=$('subpanel');if(sp)sp.hidden=true;}
@@ -7580,7 +7585,10 @@ function actRest(a,arg,b){
       else say('社長','このまま耐える。');
       (S.popups||[]).shift();save();render();showPop();break;}
     case 'numy':{S.numY=+arg;drawSheet();break;}
-    case 'room':{S.view=S.view==='henshu'?'unei':(S.view==='unei'&&S.sub&&subMag())?'sub':'henshu';save();render();break;}
+    case 'room':{const cyc=['henshu','unei'];if(S.sub&&subMag())cyc.push('sub');if(S.town)cyc.push('town');const ci=cyc.indexOf(S.view);S.view=cyc[(ci+1)%cyc.length];save();render();break;}
+    case 'townsheet':{openSheet('town');break;}
+    case 'townrot':{TROT=(TROT+1)&3;TCAM.init=0;drawOffice.k=null;break;}
+    case 'townbuy':case 'townbuild':case 'townbus':case 'townname':{townAct(a,arg);break;}
     case 'buyroom':{const rc=1e7*landF();if(S.money<rc){toast('お金が足りません');break;}S.money-=rc;S.feeAcc=(S.feeAcc||0)+rc;S.rooms=S.rooms||{};S.rooms.gyomu=true;S.view='gyomu';say('社長','となりの部屋を'+yen(rc)+'で買った。業務部の部屋にしよう。宣伝部と経理部も4人まで増やせる。');save();drawSheet();render();toast('業務部ができました');break;}
     case 'buyfac':{const f=FAC.find(x=>x[0]===arg);const cost=f[2]*1e4*eraF();if(f&&!hasF(arg)&&S.money>=cost){S.money-=cost;S.feeAcc=(S.feeAcc||0)+cost;S.fac=S.fac||{};S.fac[arg]=true;say('社長',f[1]+'を導入した。'+f[3]+'。');save();drawSheet();render();toast(f[1]+'を導入しました');}break;}
     case 'sign':{const m=S.manga.find(x=>x.id===+arg);if(!m||S.signNext||S.signDone===S.turns)break;const cost=300000*eraF();if(S.money<cost){toast('お金が足りません');break;}
@@ -7657,7 +7665,7 @@ function start(){
 const cv=$('office');let g=cv.getContext('2d');function withCtx(c,fn){const o=g;g=c;try{fn();}finally{g=o;}}
 g.imageSmoothingEnabled=false;
 const OW=200,OH=160,OL='#3a2a22',SH=323;let STACK=false;let ZOOMPREF='on';try{ZOOMPREF=localStorage.getItem('henshu-zoom')||'on';}catch(e){}let ORIPREF='auto';try{ORIPREF=localStorage.getItem('henshu-orient')||'auto';}catch(e){}let STACKPREF=false;try{STACKPREF=localStorage.getItem('henshu-stack')==='on';}catch(e){}
-const DS=2;let CVH=0;function setCvH(h){if(CVH===h)return;CVH=h;cv.width=OW*DS;cv.height=h*DS;g.setTransform(DS,0,0,DS,0,0);g.imageSmoothingEnabled=false;layout();}
+const DS=2;let CVH=0,CVW=200;function setCvH(h){if(CVH===h&&CVW===OW)return;CVH=h;CVW=OW;cv.width=OW*DS;cv.height=h*DS;g.setTransform(DS,0,0,DS,0,0);g.imageSmoothingEnabled=false;layout();}
 // 細かいドット（2倍の細かさ）で描く：座標は 400×320 の世界
 const Q=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x)/2,Math.round(y)/2,w/2,h/2);};
 const QB=(x,y,w,h,f)=>{Q(x,y,w,h,OL);Q(x+1,y+1,w-2,h-2,f);};
@@ -7667,17 +7675,27 @@ function layout(){const st=$('stage'),w=$('officeWrap');if(!st||!w)return;{const
   const LAND=!OP&&sheet!=='title'&&(ORIPREF==='land'||(ORIPREF==='auto'&&VW>VH*1.15));app.classList.toggle('land',LAND);if(LAND){const W=app.clientWidth,Hh=app.clientHeight;app.style.setProperty('--stw',Math.floor(Math.min(W*0.64,W-330,Hh*OW/(CVH||OH)))+'px');}
   const aw=st.clientWidth,ah=st.clientHeight;if(!aw||!ah)return;
   const stk=false;if(stk!==STACK){STACK=stk;drawOffice.k=null;try{render();}catch(e){}}
-  const H=OP?(CVH||OH):(sheet==='title'?OH:(STACK?SH:(CVH||OH)));let ww=Math.floor(Math.min(aw,ah*OW/H));let zoom=false;
+  const H=OP?(CVH||OH):(sheet==='title'?OH:(STACK?SH:(CVH||OH)));const CW=(OP||sheet==='title')?OW:(CVW||OW);let ww=Math.floor(Math.min(aw,ah*CW/H));let zoom=false;
   const nrm=!LAND&&!STACK&&!OP&&sheet!=='title';
-  if(nrm&&ZOOMPREF!=='off'){const z=Math.floor(Math.min(aw*2.4,(ah-12)*OW/H));if(z>aw*1.15){ww=z;zoom=true;}}
-  const ww0=ww;/* ver.518：指でつまんで・広げてズーム（絵が粗くならない範囲まで） */const uz=nrm?UZ:1;if(uz>1.01)ww=Math.round(Math.min(ww0*uz,Math.max(ww0,1100)));
-  w.style.width=ww+'px';cv.style.aspectRatio=OW+'/'+H;st.classList.toggle('zoom',zoom&&uz<=1.01);st.classList.toggle('uzoom',uz>1.01);
+  const TWN=nrm&&CW!==OW;if(TWN){ww=aw;}else if(nrm&&ZOOMPREF!=='off'){const z=Math.floor(Math.min(aw*2.4,(ah-12)*CW/H));if(z>aw*1.15){ww=z;zoom=true;}}
+  const ww0=ww;/* ver.518：指でつまんで・広げてズーム（絵が粗くならない範囲まで） */const uz=nrm&&CW===OW?UZ:1;if(uz>1.01)ww=Math.round(Math.min(ww0*uz,Math.max(ww0*(CW!==OW?1.6:1),1100)));
+  w.style.width=ww+'px';cv.style.aspectRatio=CW+'/'+H;st.classList.toggle('zoom',zoom&&uz<=1.01&&!TWN);st.classList.toggle('uzoom',uz>1.01&&!TWN);
   zctlPos(nrm);
-  if(nrm&&uz<=1.01){const ch=Math.ceil(ww0*H/OW)+2;if(ah-ch>40){app.classList.add('one');st.style.flex='0 0 '+ch+'px';}}
+  if(nrm&&uz<=1.01&&!TWN){const ch=Math.ceil(ww0*H/CW)+2;if(ah-ch>40){app.classList.add('one');st.style.flex='0 0 '+ch+'px';}}
   const tk=$('talk');if(tk){if(zoom){if(tk.parentElement!==app)app.appendChild(tk);const tp=Math.round(st.offsetTop+st.clientHeight*0.32)+'px';if(tk.style.top!==tp)tk.style.top=tp;if(tk.style.width!=='90%')tk.style.width='90%';tk.style.zIndex='4';}else if(tk.parentElement!==w){w.appendChild(tk);tk.style.top='36%';tk.style.width='';tk.style.zIndex='';}}
   const nav=$('onav');if(nav){if(zoom){if(nav.parentElement!==app)app.appendChild(nav);const tp=(st.offsetTop+4)+'px';if(nav.style.top!==tp)nav.style.top=tp;nav.classList.add('fixed');}else if(nav.parentElement!==w){w.appendChild(nav);nav.style.top='';nav.classList.remove('fixed');}}
-  const zk=zoom&&uz<=1.01?((S&&S.view)||'')+'|'+ww:'';if(zoom&&uz<=1.01&&layout.zk!==zk){layout.zk=zk;requestAnimationFrame(()=>{st.scrollLeft=(ww-st.clientWidth)/2;});}if(!zoom||uz>1.01)layout.zk='';}
+  const zk=zoom&&uz<=1.01?((S&&S.view)||'')+'|'+ww:'';if(zoom&&uz<=1.01&&layout.zk!==zk){layout.zk=zk;requestAnimationFrame(()=>{st.scrollLeft=(ww-st.clientWidth)/2;if(TWN)st.scrollTop=Math.max(0,(w.offsetHeight-st.clientHeight)*0.5);});}if(!zoom||uz>1.01)layout.zk='';}
 var UZ=1,UZMAX=3;
+/* 町：一本指でなぞると動く、二本指でつまむと寄る・引く */
+(function(){const st=document.getElementById('stage');if(!st)return;let T0=null;const sc=()=>TOW/Math.max(1,st.clientWidth);
+  const pts=e=>[...e.touches].map(t=>[t.clientX,t.clientY]);
+  st.addEventListener('touchstart',e=>{if(!S||S.view!=='town')return;const p=pts(e);T0={p,cx:TCAM.x,cy:TCAM.y,z:TZM,d:p.length>1?Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]):0,moved:false};},{passive:true});
+  st.addEventListener('touchmove',e=>{if(!S||S.view!=='town'||!T0)return;const p=pts(e);e.preventDefault();
+    if(p.length>1&&T0.p.length>1){const d=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);TZM=clamp(T0.z*d/Math.max(1,T0.d),0.8,5);T0.moved=true;return;}
+    if(p.length===1&&T0.p.length===1){const dx=p[0][0]-T0.p[0][0],dy=p[0][1]-T0.p[0][1];if(Math.abs(dx)+Math.abs(dy)>6)T0.moved=true;TCAM.x=clamp(T0.cx-dx*sc()/TZM,-620,620);TCAM.y=clamp(T0.cy-dy*sc()/TZM,-40,640);}},{passive:false});
+  st.addEventListener('touchend',e=>{if(e.touches.length===0)T0=null;else if(T0){T0.p=pts(e);T0.cx=TCAM.x;T0.cy=TCAM.y;T0.z=TZM;T0.d=T0.p.length>1?Math.hypot(T0.p[0][0]-T0.p[1][0],T0.p[0][1]-T0.p[1][1]):0;}});
+  /* パソコン：ドラッグで動かす */let M=null;st.addEventListener('mousedown',e=>{if(!S||S.view!=='town')return;M={x:e.clientX,y:e.clientY,cx:TCAM.x,cy:TCAM.y};});
+  addEventListener('mousemove',e=>{if(!M)return;TCAM.x=clamp(M.cx-(e.clientX-M.x)*sc()/TZM,-620,620);TCAM.y=clamp(M.cy-(e.clientY-M.y)*sc()/TZM,-40,640);});addEventListener('mouseup',()=>{M=null;});})();
 function zctlPos(on){/* ver.523：＋－ボタンはなし（ピンチだけ） */return;let z=$('zctl');if(!z){z=document.createElement('div');z.id='zctl';z.innerHTML='<button data-z="in" aria-label="寄る">＋</button><button data-z="out" aria-label="引く">－</button>';document.getElementById('app').appendChild(z);
     z.addEventListener('click',e=>{const b=e.target.closest('[data-z]');if(!b)return;e.stopPropagation();const st=$('stage');zoomTo(b.dataset.z==='in'?Math.min(UZMAX,UZ*1.5):Math.max(1,UZ/1.5),st.clientWidth/2,st.clientHeight/2);});}
   const st=$('stage');if(!on||!st){z.style.display='none';return;}z.style.display='flex';const r=st.getBoundingClientRect();z.style.left=Math.round(r.right-104)+'px';z.style.top=Math.round(r.bottom-54)+'px';
@@ -7687,13 +7705,13 @@ function zoomTo(nz,fx,fy){const st=$('stage'),w=$('officeWrap');if(!st||!w)retur
   UZ=clamp(nz,1,UZMAX);layout();const W1=w.offsetWidth,H1=w.offsetHeight;st.scrollLeft=px*W1-fx;st.scrollTop=py*H1-fy;}
 (function(){const st=$('stage');if(!st)return;let p0=null;
   const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-  st.addEventListener('touchstart',e=>{if(e.touches.length===2){const r=st.getBoundingClientRect();p0={d:dist(e.touches),z:UZ,fx:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,fy:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};e.preventDefault();}},{passive:false});
-  st.addEventListener('touchmove',e=>{if(p0&&e.touches.length===2){e.preventDefault();const k=dist(e.touches)/p0.d;const nz=clamp(p0.z*k,1,UZMAX);if(Math.abs(nz-UZ)>0.02)zoomTo(nz,p0.fx,p0.fy);}},{passive:false});
+  st.addEventListener('touchstart',e=>{if(S&&S.view==='town')return;if(e.touches.length===2){const r=st.getBoundingClientRect();p0={d:dist(e.touches),z:UZ,fx:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,fy:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};e.preventDefault();}},{passive:false});
+  st.addEventListener('touchmove',e=>{if(S&&S.view==='town')return;if(p0&&e.touches.length===2){e.preventDefault();const k=dist(e.touches)/p0.d;const nz=clamp(p0.z*k,1,UZMAX);if(Math.abs(nz-UZ)>0.02)zoomTo(nz,p0.fx,p0.fy);}},{passive:false});
   st.addEventListener('touchend',e=>{if(e.touches.length<2)p0=null;});
   /* iPhoneのSafari：ページ全体の拡大を止める */
   ['gesturestart','gesturechange'].forEach(k=>st.addEventListener(k,e=>e.preventDefault(),{passive:false}));
   /* パソコン：Ctrl＋ホイール（トラックパッドのピンチ）でも */
-  st.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();const r=st.getBoundingClientRect();zoomTo(UZ*Math.exp(-e.deltaY*0.01),e.clientX-r.left,e.clientY-r.top);},{passive:false});})();
+  st.addEventListener('wheel',e=>{if(S&&S.view==='town'){e.preventDefault();TZM=clamp(TZM*Math.exp(-e.deltaY*0.002),0.8,5);return;}if(!e.ctrlKey)return;e.preventDefault();const r=st.getBoundingClientRect();zoomTo(UZ*Math.exp(-e.deltaY*0.01),e.clientX-r.left,e.clientY-r.top);},{passive:false});})();
 document.addEventListener('focusin',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))setTimeout(()=>{try{t.scrollIntoView({block:'center'});}catch(_){}},350);});document.addEventListener('focusout',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))setTimeout(()=>{try{window.scrollTo(0,0);}catch(_){}layout();},300);});addEventListener('resize',()=>layout());try{window.visualViewport&&window.visualViewport.addEventListener('resize',()=>layout());}catch(e){}
 const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w,h);};
 const OB=(x,y,w,h,f)=>{P(x,y,w,h,OL);P(x+1,y+1,w-2,h-2,f);};
@@ -8027,7 +8045,7 @@ function seatPerson(s,x,y,back,rowY,opt){if((REP.has(s.id)&&presence(s)===1)||WK
   else if(pr&&pr.rep&&s.role==='tantou')TANREP.push({s,why:pr.why});}
 let lastT=performance.now(),lastSave=0,lastRender=0;
 // 月のなかば（昼）：応募がとどく・打診の返事・12月は年間の賞
-function midMonth(){refreshCands();try{draftNet();}catch(e){}nextSerNotice();try{eraEvents75();}catch(e){console.error(e);}try{ichiMonth();}catch(e){console.error(e);}try{if(S.m===10)shinGen();}catch(e){}try{shinJoin();}catch(e){}try{if(S.m===12&&S.mag.launched){awardsRun();}}catch(e){}try{taishoRun();}catch(e){console.error(e);}try{anGPRun();}catch(e){console.error(e);}try{anMagMonth();}catch(e){console.error(e);}try{shotenRun();}catch(e){console.error(e);}
+function midMonth(){refreshCands();try{draftNet();}catch(e){}nextSerNotice();try{eraEvents75();}catch(e){console.error(e);}try{ichiMonth();}catch(e){console.error(e);}try{if(S.m===10)shinGen();}catch(e){}try{shinJoin();}catch(e){}try{if(S.m===12&&S.mag.launched){awardsRun();}}catch(e){}try{townMonth();}catch(e){console.error(e);}try{taishoRun();}catch(e){console.error(e);}try{anGPRun();}catch(e){console.error(e);}try{anMagMonth();}catch(e){console.error(e);}try{shotenRun();}catch(e){console.error(e);}
   try{const n0=(S.dayq||[]).length;offerTick(null);deferPops();for(const q of S.dayq.slice(n0)){q.d=0;q.t=Math.min(0.95,Math.max(q.t,S.clock.t+0.06));q.on=false;}}catch(e){}
   if(S.staff.length<25)say(byRole('zatsumu')[0]?'秘書・'+byRole('zatsumu')[0].name:'社長',pick(['今月の募集に応募が来ています。「雇う」の「社員を採用」で面接しましょう。','求人を見た人たちから応募が届いています。','応募の履歴書がたまってきました。面接しますか？']));if(sheet==='staff'||sheet==='hire')drawSheet();showPop();}
 /* 全画面のイベント（対決・会議・ドラフト・確認など）が開いているあいだは、時間を進めない */
@@ -9613,7 +9631,580 @@ return {opx:OPX,headA,lookOf,roughLook,suitLook,shade:sh,toL,setHeadK,peek,peekW
 
 
 })();
-function setCvN(h){const W2=OW*4,H2=Math.round(h*4);if(cv.width===W2&&cv.height===H2&&CVH===h)return;CVH=h;cv.width=W2;cv.height=H2;g.setTransform(4,0,0,4,0,0);g.imageSmoothingEnabled=false;layout();}
+function setCvN(h){const W2=OW*4,H2=Math.round(h*4);if(cv.width===W2&&cv.height===H2&&CVH===h&&CVW===OW)return;CVH=h;CVW=OW;cv.width=W2;cv.height=H2;g.setTransform(4,0,0,4,0,0);g.imageSmoothingEnabled=false;layout();}
+/* ===== ver.525：町づくり（自社ビル用の土地を買ったら始まる） =====
+   安いけど不便な郊外。大通り（十字）と細い道で区切られた町に、大きさも形もちがう9つの区画がある。
+   自社ビルに移ると、社員の不満が出る。不満を解消すると便利になって、人が増え（〜3万人）、町が育つ */
+const TOWN_B={
+  hq:{n:'自社ビル',sz:2},
+  dorm:{n:'社員寮',sz:2,cost:1.2e8,fix:'commute',d:'遠くから通わなくてよくなる'},
+  ramen:{n:'ラーメン屋',sz:1,cost:1.5e7,fix:'lunch',rent:3e5,col:'#d8382a',d:'昼めしの定番。仕事帰りの一杯にも'},
+  teishoku:{n:'定食屋',sz:1,cost:1.5e7,fix:'lunch',rent:3e5,col:'#3f7a3a',d:'安くて、ごはんおかわり自由'},
+  cafe:{n:'喫茶店',sz:1,cost:1.8e7,fix:'lunch',rent:3e5,col:'#7a4a2a',d:'打ち合わせにも使える'},
+  pizza:{n:'バーガーショップ',sz:1,cost:2.5e7,fix:'night',rent:4e5,col:'#2a8a7a',d:'若い人が集まる。夜おそくまでやっている'},
+  rest:{n:'レストラン',sz:1,cost:3e7,fix:'night',rent:5e5,col:'#5a6a82',d:'ちょっといい夕食'}
+};
+const TOWN_SHOPS=['ramen','teishoku','cafe','pizza','rest'];
+const COMPL={commute:['前の家から遠くて、通うのがつらい','社員寮'],lunch:['昼めしを食う店がない','ラーメン屋・定食屋・喫茶店'],night:['仕事のあとに寄るところがない','バーガーショップ・レストラン'],station:['駅から遠い','バス路線']};
+const TOWN_NAMES=['桜ヶ丘','みどり台','ひばり野','若葉町','青葉台','つつじ野','かえで台','ほたる町'];
+/* 町の地図（マス）：0〜15。大通りは2車線＋歩道、細い道は1車線＋歩道 */
+/* ver.528：土地を広く（前の2倍） */const T_ROADS=[{ax:'h',at:14.0,w:2.0,main:1},{ax:'v',at:14.0,w:2.0,main:1},{ax:'h',at:5.2,w:1.1},{ax:'h',at:23.6,w:1.1},{ax:'v',at:5.2,w:1.1},{ax:'v',at:23.6,w:1.1}];
+const T_MAX=30;
+/* うちが買える9区画：角地の四角、細長い土地、小さい土地……。cols×rows がマス数 */
+const T_PLOTS=[
+  {x:17.5,y:17.5,w:4.0,d:4.0,cols:2,rows:2,nm:'大通りの角地'},
+  {x:21.9,y:17.5,w:1.5,d:5.9,cols:1,rows:3,nm:'東の細長い土地'},
+  {x:17.5,y:21.9,w:4.0,d:1.5,cols:2,rows:1,nm:'南の細長い土地'},
+  {x:7.2,y:17.5,w:6.6,d:2.8,cols:3,rows:1,nm:'大通りぞいの横長の土地'},
+  {x:7.2,y:20.6,w:3.2,d:2.8,cols:2,rows:1,nm:'裏通りの土地'},
+  {x:10.7,y:20.6,w:3.1,d:2.8,cols:1,rows:1,nm:'小さな土地'},
+  {x:17.5,y:7.2,w:2.8,d:6.6,cols:1,rows:2,nm:'北の縦長の土地'},
+  {x:20.7,y:10.5,w:2.7,d:3.3,cols:1,rows:1,nm:'北東の小さな土地'},
+  {x:7.2,y:10.6,w:6.6,d:3.2,cols:2,rows:1,nm:'駅へ向かう道ぞいの土地'}];
+function townInit(){if(S.town&&S.town.v===2)return S.town;
+  const old=S.town;S.town={v:2,name:(old&&old.name)||pick(TOWN_NAMES),plots:T_PLOTS.map(()=>({own:0,items:[]})),pop:old?Math.max(600,(old.pop||0)*10):600,bus:old?old.bus||0:0,y:S.y,sig:1};
+  const p=S.town.plots[0];p.own=1;p.items.push({k:'hq',c:0,o:'h'});
+  if(old&&old.plots)for(const op of old.plots)for(const it of op.items){if(it.k==='hq')continue;townPlace(it.k,true);}
+  return S.town;}
+function townHas(k){return !!(S.town&&S.town.plots.some(p=>p.items.some(it=>it.k===k)));}
+function townShops(){return S.town?S.town.plots.reduce((a,p)=>a+p.items.filter(it=>TOWN_SHOPS.includes(it.k)).length,0):0;}
+function townCompl(){if(!S.town||!S.hq)return [];const L=[];if(!townHas('dorm'))L.push('commute');if(!['ramen','teishoku','cafe'].some(townHas))L.push('lunch');if(!['pizza','rest'].some(townHas))L.push('night');if(!S.town.bus)L.push('station');return L;}
+function plotPrice(i){const P=T_PLOTS[i==null?0:i];const area=P?P.cols*P.rows:4;return Math.round(0.3e8*area*landF()*(1+((S.town&&S.town.pop)||0)/30000)/1e6)*1e6;}
+function townCost(k){return Math.round((TOWN_B[k].cost||0)*eraF()/1e5)*1e5;}
+function busCost(){return Math.round(5e7*eraF()/1e6)*1e6;}
+function plotUsed(i){const p=S.town.plots[i],P=T_PLOTS[i],u=new Set();for(const it of p.items){u.add(it.c);if(TOWN_B[it.k].sz===2)u.add(it.c+(it.o==='v'?P.cols:1));}return u;}
+function plotFreeN(i){return T_PLOTS[i].cols*T_PLOTS[i].rows-plotUsed(i).size;}
+/* 置ける場所：1マスならあいているマス、2マスなら横か縦にとなりあう2マス */
+function plotSlot(i,sz){const P=T_PLOTS[i],u=plotUsed(i),N=P.cols*P.rows;for(let c=0;c<N;c++){if(u.has(c))continue;if(sz===1)return {c};const cc=c%P.cols;if(cc+1<P.cols&&!u.has(c+1))return {c,o:'h'};if(c+P.cols<N&&!u.has(c+P.cols))return {c,o:'v'};}return null;}
+function townPlace(k,free){const T=S.town;for(let i=0;i<T.plots.length;i++){if(!T.plots[i].own&&!free)continue;const sl=plotSlot(i,TOWN_B[k].sz);if(sl){T.plots[i].own=1;T.plots[i].items.push(Object.assign({k},sl));return true;}}return false;}
+function townLvl(){const n=(S.town&&S.town.pop)||0;return n>=30000?3:n>=14000?2:n>=5000?1:0;}
+function townRent(){if(!S.town)return 0;let r=0;for(const p of S.town.plots)for(const it of p.items){const b=TOWN_B[it.k];if(b.rent)r+=b.rent;}return Math.round(r*eraF()*(1+S.town.pop/30000));}
+function townSigN(){const n=(S.town&&S.town.pop)||0;return n>=20000?9:n>=9000?5:n>=4000?3:1;}
+/* 毎月：家賃が入る・人口が動く・不満で情熱が下がる・人がふえると市が信号をふやす */
+function townMonth(){const T=S.town;if(!T)return;if(T.v!==2)townInit();const pe=(S.pendingEvents=S.pendingEvents||[]);
+  const rent=townRent();if(rent>0){S.money+=rent;T.rentAcc=(T.rentAcc||0)+rent;}
+  const nc=townCompl().length,resolved=S.hq?4-nc:0;
+  const target=Math.min(42000,600+(S.hq?2500:0)+resolved*2800+townShops()*1600+(townHas('dorm')?3000:0)+(T.bus?5000:0)+Math.max(0,S.y-1985)*400);
+  const lv0=townLvl();T.pop=Math.max(300,Math.round(T.pop+(target-T.pop)*0.05+(target>T.pop?ri(10,90):0)));const lv1=townLvl();
+  if(lv1>lv0)pe.push({dept:'運営部',who:'秘書',t:['','畑ばかりだった'+T.name+'に、家がちらほら建ちはじめました。人通りも増えてきましたね。','会社の前の通りに、お店が並びはじめましたよ！ もう「何もない町」とは言わせません。','社長、'+T.name+'の人口が3万人をこえたそうです！ ビルもどんどん建っています。'][lv1]});
+  const sg=townSigN();if(sg>(T.sig||1)){T.sig=sg;pe.push({dept:'運営部',who:'市役所',t:T.name+'の交通量が増えて、事故がふえてきたため、交差点に信号を増やしました。'});}
+  if(S.hq&&nc>0){for(const x of S.staff){if(x.hidden||['quit','retired'].includes(x.role))continue;x.jonetsu=clamp((x.jonetsu||50)-0.45*nc,0,100);}
+    if(!T.complAt||S.turns-T.complAt>=6){T.complAt=S.turns;const k=townCompl()[Math.floor(R()*nc)];const who=pick(S.staff.filter(x=>!x.hidden&&!['quit','retired'].includes(x.role)))||{name:'社員'};
+      pe.push({dept:'運営部',who:'社員・'+who.name,t:'社長……「'+COMPL[k][0]+'」って、みんな言ってますよ。（'+COMPL[k][1]+'があれば、解消できる）',warn:true});}}}
+function townMochiGap(){return S.town&&S.town.pop>=12000?2:3;}
+function townHireAdj(){if(!S.town||!S.hq||!S.cands)return;const nc=townCompl().length;if(nc>=2)S.cands=S.cands.slice(0,Math.max(4,S.cands.length-nc*2));
+  const b=townLvl();if(b>=1)for(const c of S.cands){for(const k of ['henshu','bigan','kikaku','eigyo','jimu']){if(c[k]!=null)c[k]=clamp(Math.round(c[k]+b*ri(1,3)),1,99);}}}
+
+/* ver.527：町の人（ちびキャラ・2.2頭身。町の画面だけで使う） */
+const TCHIBI=(()=>{
+/* ちびキャラ：頭が大きい（2.2頭身）。顔に目・眉・口・ほっぺ。歩くと腕と脚がふれる。front=手前向き、back=後ろ向き */
+function chibi(g,x,y,s,L,ph,back){L._ph=ph;PH=ph;g.save();g.translate(x,y);g.scale(s,s);if(L.flip)g.scale(-1,1);
+  const SIT=L.sit;const sw=SIT?0:Math.sin(ph),bob=SIT?0:Math.abs(Math.cos(ph))*0.6;g.translate(0,SIT?4.2:-bob);
+  const ol='#3a2a22';g.lineWidth=0.9;g.lineJoin='round';g.lineCap='round';
+  // 影
+  if(!SIT){g.fillStyle='rgba(0,0,0,0.18)';g.beginPath();g.ellipse(0,bob,7,2,0,0,7);g.fill();}
+  // すわり：うしろ向きは脚が見えない（カウンターの下）。前向きはひざを曲げて、すねが下にたれる
+  if(SIT&&!back){for(const dx of [-2.1,2.1]){g.fillStyle=L.pants;g.strokeStyle=ol;g.beginPath();g.roundRect(dx-1.5,-3.2,3,3.4,1.1);g.fill();g.stroke();g.fillStyle=L.shoe;g.beginPath();g.ellipse(dx,0.4,1.9,1.1,0,0,7);g.fill();g.stroke();g.fillStyle=L.skirt||L.pants;g.beginPath();g.roundRect(dx-2,-6.8,4,3.8,[1,1,1.8,1.8]);g.fill();g.stroke();}}
+  // 脚
+  const leg=(dx,a)=>{g.save();g.translate(dx,-6);g.rotate(a);g.fillStyle=L.pants;g.strokeStyle=ol;g.beginPath();g.roundRect(-1.6,0,3.2,5.4,1.2);g.fill();g.stroke();g.fillStyle=L.shoe;g.beginPath();g.ellipse(back?0:0.6,5.6,2.1,1.3,0,0,7);g.fill();g.stroke();g.restore();};
+  if(!SIT){if(L.skirt){leg(-1.8,sw*0.45);leg(1.8,-sw*0.45);}else{leg(-1.8,sw*0.5);leg(1.8,-sw*0.5);}}
+  // 腕（うしろ側）
+  const arm=(dx,a,front)=>{g.save();g.translate(dx,-13.5);g.rotate(a);g.fillStyle=L.sleeve||L.top;g.strokeStyle=ol;g.beginPath();g.roundRect(-1.4,0,2.8,6,1.3);g.fill();g.stroke();g.fillStyle=L.skin;g.beginPath();g.arc(0,6.4,1.4,0,7);g.fill();g.stroke();
+    if(front&&L.hold){g.translate(0,7);L.hold(g,ol);}g.restore();};
+  if(SIT)arm(back?4.6:-4.6,back?-0.75:0.5,false);else arm(back?4.6:-4.6,(back?-1:1)*sw*0.6,false);
+  // 胴
+  g.fillStyle=L.top;g.strokeStyle=ol;g.beginPath();g.roundRect(-4.6,-14.5,9.2,9.5,[3,3,2,2]);g.fill();g.stroke();
+  if(L.skirt){g.fillStyle=L.skirt;g.beginPath();g.moveTo(-5,-7);g.lineTo(5,-7);g.lineTo(6.2,-3.2);g.lineTo(-6.2,-3.2);g.closePath();g.fill();g.stroke();}
+  if(!back&&L.deco)L.deco(g,ol);
+  if(back&&L.backDeco)L.backDeco(g,ol);
+  // 頭
+  g.save();g.translate(0,-22);
+  if(L.hairBack&&!back)L.hairBack(g,ol);
+  g.fillStyle=L.skin;g.strokeStyle=ol;g.beginPath();g.ellipse(0,0,8.2,7.6,0,0,7);g.fill();g.stroke();
+  if(!back){// 顔
+    const ey=1.2;g.fillStyle=ol;
+    if(L.eye==='line'){g.lineWidth=0.9;g.beginPath();g.arc(-3,ey,1.2,Math.PI*1.1,Math.PI*1.9);g.stroke();g.beginPath();g.arc(3,ey,1.2,Math.PI*1.1,Math.PI*1.9);g.stroke();}
+    else{for(const ex of [-3,3]){g.fillStyle=ol;g.beginPath();g.ellipse(ex,ey,1.15,1.6,0,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(ex-0.35,ey-0.6,0.45,0,7);g.fill();}}
+    g.strokeStyle=ol;g.lineWidth=0.7;// 眉
+    const bt=L.brow||0;g.beginPath();g.moveTo(-4.4,-2.2+bt);g.lineTo(-1.8,-2.6-bt);g.moveTo(4.4,-2.2+bt);g.lineTo(1.8,-2.6-bt);g.stroke();
+    if(L.blush){g.fillStyle='rgba(240,120,120,0.45)';g.beginPath();g.ellipse(-5,3.2,1.4,0.8,0,0,7);g.ellipse(5,3.2,1.4,0.8,0,0,7);g.fill();}
+    g.strokeStyle=ol;g.lineWidth=0.8;g.beginPath();if(L.mouth==='open'){g.fillStyle='#b0483a';g.ellipse(0,4.2,1.2,0.9,0,0,7);g.fill();}else if(L.mouth==='flat'){g.moveTo(-1,4.3);g.lineTo(1,4.3);g.stroke();}else{g.arc(0,3.4,1.3,0.2,Math.PI-0.2);g.stroke();}
+    if(L.glasses){g.lineWidth=0.6;g.strokeStyle='#222';g.beginPath();g.arc(-3,1.2,2,0,7);g.moveTo(-1,1.2);g.lineTo(1,1.2);g.arc(3,1.2,2,Math.PI,Math.PI*3);g.stroke();}
+    if(L.mus){g.fillStyle='#ddd';g.beginPath();g.ellipse(-1.2,3.2,1.4,0.7,0.2,0,7);g.ellipse(1.2,3.2,1.4,0.7,-0.2,0,7);g.fill();}
+  }
+  g.lineWidth=0.9;L.hair(g,ol,back);
+  if(L.hat)L.hat(g,ol,back);
+  g.restore();
+  // 腕（手前）
+  if(SIT)arm(back?-4.6:4.6,back?0.75:-0.5,true);else arm(back?-4.6:4.6,(back?1:-1)*sw*0.6,true);
+  // すわり（うしろ向き）：おしりが座面にのっている
+  if(SIT&&back){g.fillStyle=L.skirt||L.pants;g.strokeStyle=ol;g.beginPath();g.roundRect(-5.2,-6.2,10.4,3.4,[1,1,2.5,2.5]);g.fill();g.stroke();}
+  g.restore();}
+/* 髪型 */
+const H={
+  nanasan:(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;g.beginPath();if(back){g.ellipse(0,-0.5,8.6,7.6,0,Math.PI,0);g.lineTo(8.6,2);g.lineTo(-8.6,2);}else{g.moveTo(-8.6,1);g.quadraticCurveTo(-9,-8.5,0,-8.4);g.quadraticCurveTo(9,-8.5,8.6,0);g.lineTo(6.5,-3.2);g.quadraticCurveTo(0,-5.2,-3,-2.6);g.lineTo(-6.8,-2);g.lineTo(-8.6,1);}g.closePath();g.fill();g.stroke();},
+  short:(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;g.beginPath();if(back){g.ellipse(0,-0.5,8.6,7.8,0,Math.PI*0.95,Math.PI*2.05);g.lineTo(7,4);g.lineTo(-7,4);}else{g.moveTo(-8.6,1.5);g.quadraticCurveTo(-9.4,-9,0,-8.6);g.quadraticCurveTo(9.4,-9,8.6,1.5);g.lineTo(7.2,-1.6);g.lineTo(5,-3.6);g.lineTo(3,-2.2);g.lineTo(0.5,-3.8);g.lineTo(-2,-2.2);g.lineTo(-4.6,-3.6);g.lineTo(-7.2,-1.6);}g.closePath();g.fill();g.stroke();},
+  perm:(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;for(const [px,py,r] of [[-6.5,-2,3.3],[-4,-6.5,3.4],[0,-8,3.6],[4,-6.5,3.4],[6.5,-2,3.3],[-7.4,2.5,2.6],[7.4,2.5,2.6]].concat(back?[[-3,-1,4],[3,-1,4],[0,2,4]]:[])){g.beginPath();g.arc(px,py,r,0,7);g.fill();g.stroke();}g.beginPath();for(const [px,py,r] of [[-6.5,-2,3.1],[-4,-6.5,3.2],[0,-8,3.4],[4,-6.5,3.2],[6.5,-2,3.1]].concat(back?[[-3,-1,3.8],[3,-1,3.8],[0,2,3.8]]:[]))g.arc(px,py,r,0,7);g.fill();},
+  pony:(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;
+    if(back){/* うしろ：頭ぜんぶ髪。結び目から下へたれるしっぽ（歩くとゆれる） */g.beginPath();g.ellipse(0,0,8.8,8.0,0,0,7);g.fill();g.stroke();
+      const sw=Math.sin(PH)*1.6;g.beginPath();g.moveTo(-1.6,-4.6);g.quadraticCurveTo(-2.6+sw,3,sw*1.4,9);g.quadraticCurveTo(2.6+sw,3,1.6,-4.6);g.closePath();g.fill();g.stroke();g.fillStyle='#e04a6a';g.beginPath();g.arc(0,-4.8,1.4,0,7);g.fill();return;}
+    /* 前：髪は前髪と横だけ。しっぽは頭のうしろ（hairBackで先に描く） */g.beginPath();g.moveTo(-8.6,3);g.quadraticCurveTo(-9.6,-9,0,-8.8);g.quadraticCurveTo(9.6,-9,8.6,3);g.lineTo(7.4,-1);g.quadraticCurveTo(2,-5.5,-1,-3);g.quadraticCurveTo(-4,-5,-7.4,-1);g.closePath();g.fill();g.stroke();},
+  bob:(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;g.beginPath();if(back){g.moveTo(-9,4.5);g.quadraticCurveTo(-10,-9.5,0,-9);g.quadraticCurveTo(10,-9.5,9,4.5);}else{g.moveTo(-9,4.5);g.quadraticCurveTo(-10,-9.5,0,-9);g.quadraticCurveTo(10,-9.5,9,4.5);g.lineTo(7,4.5);g.lineTo(7,-1.8);g.lineTo(-7,-1.8);g.lineTo(-7,4.5);}g.closePath();g.fill();g.stroke();},
+  bald:(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;g.beginPath();g.ellipse(-7.4,0.5,1.8,3,0.2,0,7);g.fill();g.stroke();g.beginPath();g.ellipse(7.4,0.5,1.8,3,-0.2,0,7);g.fill();g.stroke();if(back){g.beginPath();g.ellipse(0,3,7,2.4,0,0,Math.PI);g.fill();}g.fillStyle='rgba(255,255,255,0.5)';g.beginPath();g.ellipse(-2.5,-5.5,2,1,-0.4,0,7);g.fill();},
+  kid:(col)=>(g,ol,back)=>H.short(col)(g,ol,back)
+};
+/* 持ち物・飾り */
+const briefcase=(g,ol)=>{g.fillStyle='#5a3a24';g.strokeStyle=ol;g.beginPath();g.roundRect(-2.6,0,5.2,4,0.6);g.fill();g.stroke();g.beginPath();g.moveTo(-1,0);g.lineTo(-1,-1);g.lineTo(1,-1);g.lineTo(1,0);g.stroke();};
+const bag=(g,ol)=>{g.fillStyle='#f4f0e0';g.strokeStyle=ol;g.beginPath();g.roundRect(-2.6,0,5.2,5.4,1);g.fill();g.stroke();g.fillStyle='#4a8a3a';g.fillRect(-1.6,-0.8,1,2.2);g.fillStyle='#e8c040';g.beginPath();g.arc(0.8,0.3,1.1,0,7);g.fill();};
+const cane=(g,ol)=>{g.strokeStyle='#6a4a2a';g.lineWidth=1;g.beginPath();g.moveTo(0,0);g.lineTo(0.8,10);g.stroke();g.lineWidth=0.9;};
+const okamochi=(g,ol)=>{g.fillStyle='#b8b8bc';g.strokeStyle=ol;g.beginPath();g.roundRect(-3,0,6,5.5,0.6);g.fill();g.stroke();g.beginPath();g.moveTo(-1.2,0);g.lineTo(-1.2,-1.5);g.lineTo(1.2,-1.5);g.lineTo(1.2,0);g.stroke();g.fillStyle='#d8382a';g.font='bold 6px sans-serif';g.textAlign='center';g.fillText('来',0,4.2);};
+const tie=(col)=>(g,ol)=>{g.fillStyle='#fff';g.beginPath();g.moveTo(-1.8,-14.4);g.lineTo(0,-11.5);g.lineTo(1.8,-14.4);g.fill();g.fillStyle=col;g.strokeStyle=ol;g.lineWidth=0.5;g.beginPath();g.moveTo(-0.8,-13.6);g.lineTo(0.8,-13.6);g.lineTo(1,-8);g.lineTo(0,-6.8);g.lineTo(-1,-8);g.closePath();g.fill();g.stroke();g.lineWidth=0.9;};
+const apron=(g,ol)=>{g.fillStyle='#fff6e8';g.strokeStyle=ol;g.lineWidth=0.6;g.beginPath();g.roundRect(-3.6,-12,7.2,8,1.5);g.fill();g.stroke();g.fillStyle='#e87a8a';g.beginPath();g.arc(-1.4,-8,0.6,0,7);g.arc(1.4,-6.5,0.6,0,7);g.fill();g.lineWidth=0.9;};
+const sailor=(g,ol)=>{g.fillStyle='#24345a';g.beginPath();g.moveTo(-4.6,-14.4);g.lineTo(0,-10);g.lineTo(4.6,-14.4);g.lineTo(4.6,-13);g.lineTo(0,-8.5);g.lineTo(-4.6,-13);g.fill();g.fillStyle='#d83a3a';g.beginPath();g.moveTo(-1.4,-10.4);g.lineTo(1.4,-10.4);g.lineTo(0,-8);g.fill();};
+const gakuran=(g,ol)=>{g.fillStyle='#e8c040';for(const yy of [-12.5,-10,-7.5]){g.beginPath();g.arc(0,yy,0.6,0,7);g.fill();}g.strokeStyle='#111';g.lineWidth=0.6;g.beginPath();g.moveTo(-1.4,-14.4);g.lineTo(-1.4,-13.2);g.lineTo(1.4,-13.2);g.lineTo(1.4,-14.4);g.stroke();g.lineWidth=0.9;};
+const randoseru=(g,ol)=>{g.fillStyle='#1e1e22';g.strokeStyle=ol;g.beginPath();g.roundRect(-4.2,-14,8.4,8.4,2);g.fill();g.stroke();g.strokeStyle='#e8c040';g.beginPath();g.moveTo(-3,-9.5);g.lineTo(3,-9.5);g.stroke();g.strokeStyle=ol;};
+const capHat=(col)=>(g,ol,back)=>{g.fillStyle=col;g.strokeStyle=ol;g.beginPath();g.ellipse(0,-5.2,8.4,4.6,0,Math.PI,0);g.closePath();g.fill();g.stroke();if(!back){g.beginPath();g.ellipse(3.5,-4.6,5,1.6,0.08,0,Math.PI);g.fill();g.stroke();}};
+const cookHat=(g,ol,back)=>{g.fillStyle='#fff';g.strokeStyle=ol;g.beginPath();g.roundRect(-6,-10,12,4,1);g.fill();g.stroke();};
+let PH=0;
+const ponyBack=(col)=>(g,ol)=>{const sw=Math.sin(PH)*1.4;g.fillStyle=col;g.strokeStyle=ol;g.beginPath();g.moveTo(4,-7.6);g.quadraticCurveTo(13.5+sw,-8.5,12.6+sw*1.4,2.5);g.quadraticCurveTo(10.6+sw,-2,6.5,-4.2);g.closePath();g.fill();g.stroke();g.fillStyle='#e04a6a';g.beginPath();g.arc(7.2,-7.4,1.4,0,7);g.fill();};
+const shoulder=(g,ol)=>{g.fillStyle='rgba(255,255,255,0.25)';g.beginPath();g.roundRect(-5.6,-14.6,3,2.4,1);g.roundRect(2.6,-14.6,3,2.4,1);g.fill();};
+const SK='#f6d2b0';
+const PEOPLE=[
+ ['サラリーマン',{skin:SK,hair:H.nanasan('#2a2420'),top:'#5a6274',sleeve:'#5a6274',pants:'#4a5262',shoe:'#2a2220',deco:tie('#b23a2e'),hold:briefcase,brow:0.3,mouth:'flat'}],
+ ['部長',{skin:'#efcaa8',hair:H.nanasan('#9a9a9a'),top:'#6a5a44',sleeve:'#6a5a44',pants:'#5a4a38',shoe:'#2a2220',deco:tie('#2a4a8a'),hold:briefcase,glasses:1,brow:0.5,mouth:'flat'}],
+ ['若手社員',{skin:SK,hair:H.short('#5a3a24'),top:'#3a4a7a',sleeve:'#3a4a7a',pants:'#2e3a60',shoe:'#3a2a22',deco:tie('#e0a030'),mouth:'open',blush:1}],
+ ['女性社員',{skin:SK,hair:H.bob('#2a1a14'),top:'#4a4a5a',sleeve:'#4a4a5a',pants:'#3a3a48',shoe:'#2a2220',deco:(g,ol)=>{g.fillStyle='#fff';g.beginPath();g.moveTo(-1.8,-14.4);g.lineTo(0,-11);g.lineTo(1.8,-14.4);g.fill();},hold:briefcase}],
+ ['OL',{skin:SK,hair:H.bob('#4a2a1c'),top:'#e8d0d8',pants:'#3a3a48',skirt:'#5a5a7a',shoe:'#7a2a3a',deco:shoulder,blush:1}],
+ ['主婦',{skin:SK,hair:H.perm('#3a2418'),top:'#e8a050',pants:'#7a5a4a',skirt:'#8a6a5a',shoe:'#5a3a2a',deco:apron,hold:bag,blush:1,mouth:'open'}],
+ ['学生',{skin:SK,hair:H.short('#1a1614'),top:'#1e1e28',pants:'#1e1e28',shoe:'#2a2220',deco:gakuran,mouth:'open'}],
+ ['女子高生',{skin:SK,hair:H.pony('#3a2418'),hairBack:ponyBack('#3a2418'),top:'#f4f4f4',sleeve:'#f4f4f4',pants:'#24345a',skirt:'#24345a',shoe:'#3a2a22',deco:sailor,blush:1}],
+ ['おじいちゃん',{skin:'#eec8a6',hair:H.bald('#d8d8d8'),top:'#8a7a5a',pants:'#6a6a6a',shoe:'#4a3a2a',hold:cane,eye:'line',mus:1,glasses:1}],
+ ['小学生',{skin:SK,hair:H.short('#2a1a14'),deco:(g,ol)=>{g.fillStyle='#1e1e22';g.fillRect(-3.8,-14.4,1.6,8.5);g.fillRect(2.2,-14.4,1.6,8.5);},top:'#f0d040',pants:'#2a4a7a',shoe:'#e8e8e8',backDeco:randoseru,blush:1,mouth:'open'}],
+ ['出前のお兄さん',{skin:SK,hair:H.short('#2a1a14'),hat:cookHat,top:'#f8f8f4',sleeve:'#f8f8f4',pants:'#2a2a30',shoe:'#2a2220',hold:okamochi,brow:-0.3}]
+];
+
+return {chibi,PEOPLE};})();
+/* ---------- 町の絵（斜め上から見下ろす。お店は屋根なしで中が見える） ---------- */
+let TOWN_H=600;const TOW=400,TTW=40,TSC=3;/* ver.528：町はカメラで切り取って見せる（なぞると動く・二本指で寄る） */let TZM=1.6;const TCAM={x:0,y:150,init:0};
+/* ver.526：カメラを90度ずつ回せる（TROT＝0〜3） */let TROT=0;const TC=T_MAX/2;
+function tRot(x,y){const dx=x-TC,dy=y-TC;switch(TROT&3){case 1:return [TC-dy,TC+dx];case 2:return [TC-dx,TC-dy];case 3:return [TC+dy,TC-dx];default:return [x,y];}}
+function tIso(x,y,z){const r=tRot(x,y);return [(r[0]-r[1])*TTW/2,(r[0]+r[1])*TTW/4-(z||0)*TTW/2];}
+function tDep(x,y){const r=tRot(x,y);return r[0]+r[1];}
+function tRZ(x,y,w,d){return Math.max(tDep(x,y),tDep(x+w,y),tDep(x,y+d),tDep(x+w,y+d));}
+/* 回したあとで、どの面が手前を向いているか（0:+y 1:+x 2:-y 3:-x） */
+function tFaceVis(f){const N=[[0,1],[1,0],[0,-1],[-1,0]][f];const a=tRot(TC,TC),b=tRot(TC+N[0],TC+N[1]);const nx=b[0]-a[0],ny=b[1]-a[1];return ny>0.5?0.8:nx>0.5?0.64:0;}
+function tFacePts(x,y,w,d,f,z0,z1){const E=[[[x,y+d],[x+w,y+d]],[[x+w,y+d],[x+w,y]],[[x+w,y],[x,y]],[[x,y],[x,y+d]]][f];return [[E[0][0],E[0][1],z0],[E[1][0],E[1][1],z0],[E[1][0],E[1][1],z1],[E[0][0],E[0][1],z1]];}
+function tPoly(P,c){g.fillStyle=c;g.beginPath();P.forEach((p,i)=>{const q=tIso(p[0],p[1],p[2]);i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]);});g.closePath();g.fill();}
+function tShade(hex,k){const n=parseInt(hex.slice(1),16);const f=v=>Math.max(0,Math.min(255,Math.round(v*k)));return 'rgb('+f(n>>16)+','+f((n>>8)&255)+','+f(n&255)+')';}
+function tFloor(x,y,w,d,z,c){tPoly([[x,y,z],[x+w,y,z],[x+w,y+d,z],[x,y+d,z]],c);}
+function tBox(x,y,w,d,h,c,z0){z0=z0||0;for(let f=0;f<4;f++){const k=tFaceVis(f);if(k)tPoly(tFacePts(x,y,w,d,f,z0,z0+h),tShade(c,k));}tFloor(x,y,w,d,z0+h,c);}
+function tLine(a,b,col,lw){const p=tIso(...a),q=tIso(...b);g.strokeStyle=col;g.lineWidth=lw;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();}
+function tWin(x,y,w,d,h,floors,lit,z0){z0=z0||0;const c=lit?'#ffe39a':'#a7c6dc';const fh=h/floors;
+  for(let f=0;f<4;f++){const k=tFaceVis(f);if(!k)continue;const E=[[[x,y+d],[x+w,y+d]],[[x+w,y+d],[x+w,y]],[[x+w,y],[x,y]],[[x,y],[x,y+d]]][f];const L=Math.hypot(E[1][0]-E[0][0],E[1][1]-E[0][1]);const n=Math.max(1,Math.round(L*2.2));
+    for(let fl=0;fl<floors;fl++){const z=z0+fl*fh+fh*0.32;for(let i=0;i<n;i++){const t0=(i+0.22)/n,t1=t0+0.5/n;const P=t=>[E[0][0]+(E[1][0]-E[0][0])*t,E[0][1]+(E[1][1]-E[0][1])*t];const a=P(t0),b=P(t1);tPoly([[a[0],a[1],z],[b[0],b[1],z],[b[0],b[1],z+fh*0.42],[a[0],a[1],z+fh*0.42]],tShade(c,k===0.8?1:0.86));}}}}
+/* ちびキャラを町に置く：k＝何番目の人（服装）、ph＝歩きの位相、mv＝進む向き [dx,dy]（手前に来るなら前向き） */
+function tWalker(x,y,z,k,ph,mv,sc,sit,ov){const P=TCHIBI.PEOPLE[k%TCHIBI.PEOPLE.length][1];const q=tIso(x,y,z||0);let back=false,flip=false;
+  if(mv){const a=tIso(x,y,0),b=tIso(x+mv[0]*0.1,y+mv[1]*0.1,0);back=b[1]<a[1];flip=b[0]<a[0];}
+  const L=Object.assign({},P,ov||{},{flip,sit:!!sit});TCHIBI.chibi(g,q[0],q[1],sc||0.2,L,ph,back);}
+function tPerson(x,y,z,body,hair,sit){const q=tIso(x,y,z||0);const s=0.85;const bh=(sit?2.2:3.4)*s;g.fillStyle=body;g.fillRect(q[0]-1.2*s,q[1]-bh,2.4*s,bh);g.fillStyle='#f0c8a0';g.beginPath();g.arc(q[0],q[1]-bh-1.4*s,1.5*s,0,7);g.fill();g.fillStyle=hair;g.beginPath();g.arc(q[0],q[1]-bh-1.8*s,1.5*s,Math.PI,0);g.fill();}
+const T_BODY=['#3a5a8a','#8a3a3a','#4a6a3a','#6a4a7a','#c8a040','#2a2a30','#7a6a5a','#d06a8a'],T_HAIR=['#2a1e18','#4a3020','#1a1a1a','#6a4a2a','#888'];
+/* 屋根なしのお店 */
+/* 屋根なしのお店：奥の壁・床・家具・お客さん。お店ごとに中のつくりがちがう */
+function tBowl(x,y,z){const q=tIso(x,y,z);g.fillStyle='#fffdf6';g.strokeStyle='#6a4a3a';g.lineWidth=0.25;g.beginPath();g.ellipse(q[0],q[1],2.2,1.1,0,0,7);g.fill();g.stroke();g.fillStyle='#c88a3a';g.beginPath();g.ellipse(q[0],q[1]-0.15,1.6,0.7,0,0,7);g.fill();
+  const t=tick*0.08+x*3;g.strokeStyle='rgba(255,255,255,0.75)';g.lineWidth=0.35;for(const dx of [-0.5,0.5]){g.beginPath();g.moveTo(q[0]+dx,q[1]-1);g.quadraticCurveTo(q[0]+dx+Math.sin(t+dx)*0.8,q[1]-2.5,q[0]+dx,q[1]-4);g.stroke();}}
+function tPlate(x,y,z,c){const q=tIso(x,y,z);g.fillStyle='#fffdf6';g.beginPath();g.ellipse(q[0],q[1],2.0,1.0,0,0,7);g.fill();g.fillStyle=c;g.beginPath();g.ellipse(q[0],q[1]-0.15,1.2,0.6,0,0,7);g.fill();}
+/* ---- 細かい家具：円柱・イス・吹き出し ---- */
+function tCyl(x,y,r,h,z0,col,top){const a=tIso(x,y,z0),b=tIso(x,y,z0+h);const rx=r*TTW*0.71,ry=rx*0.5;
+  g.fillStyle=tShade(col,0.75);g.beginPath();g.ellipse(a[0],a[1],rx,ry,0,0,Math.PI);g.lineTo(b[0]-rx,b[1]);g.ellipse(b[0],b[1],rx,ry,0,Math.PI,0,true);g.closePath();g.fill();
+  g.fillStyle=top||col;g.beginPath();g.ellipse(b[0],b[1],rx,ry,0,0,7);g.fill();return b;}
+function tStool(x,y,spin){tCyl(x,y,0.03,0.28,0,'#9a9aa0');const t=tCyl(x,y,0.13,0.06,0.28,'#c83a2a','#e04a3a');g.strokeStyle='rgba(255,255,255,0.5)';g.lineWidth=0.4;g.beginPath();g.ellipse(t[0],t[1],2.2,1.1,0,spin,spin+1.2);g.stroke();}
+function tSay(x,y,z,t,col){const q=tIso(x,y,z);g.font='bold 5px sans-serif';const w=g.measureText(t).width+5;g.fillStyle='#fffdf6';g.strokeStyle='#3a2a22';g.lineWidth=0.5;g.beginPath();g.roundRect(q[0]-w/2,q[1]-9,w,7.5,2);g.fill();g.stroke();g.beginPath();g.moveTo(q[0]-1.5,q[1]-1.6);g.lineTo(q[0],q[1]+0.5);g.lineTo(q[0]+1.5,q[1]-1.6);g.fill();g.fillStyle=col||'#3a2a22';g.textAlign='center';g.fillText(t,q[0],q[1]-3.3);}
+function tSteam(q,t,n){g.strokeStyle='rgba(255,255,255,0.7)';g.lineWidth=0.5;for(let i=0;i<(n||3);i++){const dx=(i-1)*1.6;g.beginPath();g.moveTo(q[0]+dx,q[1]-1);g.quadraticCurveTo(q[0]+dx+Math.sin(t+i)*1.5,q[1]-4,q[0]+dx+Math.sin(t*1.3+i)*0.8,q[1]-7);g.stroke();}}
+/* ラーメン丼：チャーシュー・半熟たまご・ネギ・のり */
+function tRBowl(x,y,z,t,empty){const q=tIso(x,y,z);const R=2.5,r=1.25;
+  g.fillStyle='#d8cdb8';g.beginPath();g.ellipse(q[0],q[1],R,r,0,0,Math.PI);g.lineTo(q[0]-R*0.55,q[1]+1.9);g.ellipse(q[0],q[1]+1.9,R*0.55,r*0.5,0,Math.PI,0,true);g.closePath();g.fill();
+  g.strokeStyle='#4a3a2e';g.lineWidth=0.25;g.stroke();
+  g.fillStyle='#efe6d4';g.beginPath();g.ellipse(q[0],q[1],R,r,0,0,7);g.fill();g.stroke();
+  if(empty){g.fillStyle='#d8c8a8';g.beginPath();g.ellipse(q[0],q[1]+0.3,R*0.5,r*0.4,0,0,7);g.fill();g.strokeStyle='#c8a060';g.lineWidth=0.35;g.beginPath();g.moveTo(q[0]-1.6,q[1]-0.6);g.lineTo(q[0]+1.8,q[1]-0.2);g.moveTo(q[0]-1.5,q[1]-0.3);g.lineTo(q[0]+1.9,q[1]+0.1);g.stroke();return;}
+  g.fillStyle='#c8904a';g.beginPath();g.ellipse(q[0],q[1]+0.05,R*0.82,r*0.78,0,0,7);g.fill();
+  g.fillStyle='#1e2a20';g.fillRect(q[0]+0.7,q[1]-1.05,1.1,0.9);
+  g.fillStyle='#e6c0a4';g.strokeStyle='#a8684a';g.lineWidth=0.2;for(const [dx,dy] of [[-0.9,-0.2],[-0.2,0.25]]){g.beginPath();g.ellipse(q[0]+dx,q[1]+dy,0.75,0.42,0,0,7);g.fill();g.stroke();}
+  g.fillStyle='#fffbe8';g.beginPath();g.ellipse(q[0]+0.9,q[1]+0.2,0.55,0.38,0,0,7);g.fill();g.fillStyle='#f0a828';g.beginPath();g.ellipse(q[0]+0.9,q[1]+0.2,0.28,0.2,0,0,7);g.fill();
+  g.fillStyle='#5aa83a';for(const [dx,dy] of [[0.1,-0.4],[0.35,-0.25],[0.0,-0.15],[-0.5,0.45],[0.4,0.55]])g.fillRect(q[0]+dx,q[1]+dy,0.3,0.25);
+  if(t!=null)tSteam([q[0],q[1]-0.5],t,2);}
+/* 寸胴：低いコンロに銀色の大鍋＋銀のフタ */
+function tPot(x,y,t,lift){tCyl(x,y,0.15,0.1,0,'#3a3a40','#2a2a2e');
+  const b=tCyl(x,y,0.12,0.36,0.1,'#c8ccd2','#d4d8dc');const a=tIso(x,y,0.1);
+  g.strokeStyle='rgba(255,255,255,0.7)';g.lineWidth=0.5;g.beginPath();g.moveTo(a[0]-1.4,a[1]-0.5);g.lineTo(b[0]-1.4,b[1]+0.3);g.stroke();
+  g.strokeStyle='#8a8e94';g.lineWidth=0.6;for(const s of [-1,1]){g.beginPath();g.moveTo(b[0]+s*3.2,b[1]+1.4);g.lineTo(b[0]+s*4.1,b[1]+1.2);g.stroke();}
+  const L=lift?1.2:0;g.fillStyle='#e2e6ea';g.strokeStyle='#8a8e94';g.lineWidth=0.3;g.beginPath();g.ellipse(b[0],b[1]-0.3-L,3.6,1.8,0,0,7);g.fill();g.stroke();
+  g.fillStyle='#55585e';g.beginPath();g.ellipse(b[0],b[1]-0.9-L,0.8,0.4,0,0,7);g.fill();
+  const fl=tIso(x,y,0.1);g.fillStyle='rgba(80,140,255,0.55)';g.beginPath();g.ellipse(fl[0],fl[1]+0.3,3.0,1.0,0,0,Math.PI);g.fill();
+  tSteam([b[0]+(lift?0:2.5),b[1]-1-L],t,lift?3:1);}
+/* ラーメン屋：L字カウンターが厨房をかこむ。奥に寸胴3つ＋洗い場、カウンター側にゆで麺機と中華鍋。
+   食券→店員「ラーメン一丁！」→店主「あいよっ！」→ゆでる→湯切り→寸胴のスープ→「お待ち！」→お客さん「うまい！」 */
+function tRamen(x,y,w,d,busy,seed){const P=(u,v)=>[x+u*w,y+v*d];const O=[];const add=(u,v,f,dz)=>{const p=P(u,v);O.push({z:tDep(p[0],p[1])+(dz||0),f});};
+  const T=tick*0.11+seed*7;const CYC=15;const ph=((T/CYC)%1+1)%1;const order=Math.floor(T/CYC);
+  const K0=0.30,K1=0.96,CV0=0.40,CV1=0.48;
+  /* 厨房の床（タイル） */{const a=P(K0,0.03);tFloor(a[0],a[1],w*(K1-K0),d*(CV0-0.03),0.005,'#b8c4c8');for(let i=0;i<6;i++)for(let j=0;j<3;j++)if((i+j)%2){const b=P(K0+i*(K1-K0)/6,0.03+j*(CV0-0.03)/3);tFloor(b[0],b[1],w*(K1-K0)/6,d*(CV0-0.03)/3,0.006,'#a8b4b8');}}
+  /* 奥の壁に赤い幕と品書き */
+  {const wallTxt=['らーめん','ぎょうざ','チャーハン','らーめん'];for(let i=0;i<4;i++){const u0=0.06+i*0.235,u1=u0+0.21;const a=P(u0,0.012),b=P(u1,0.012);const A=tIso(a[0],a[1],0.53),B=tIso(b[0],b[1],0.53),C=tIso(b[0],b[1],0.38),D=tIso(a[0],a[1],0.38);
+    g.fillStyle='#fff8e8';g.strokeStyle='#8a2a1e';g.lineWidth=0.3;g.beginPath();g.moveTo(A[0],A[1]);g.lineTo(B[0],B[1]);g.lineTo(C[0],C[1]);g.lineTo(D[0],D[1]);g.closePath();g.fill();g.stroke();
+    g.fillStyle='#c8281e';g.font='bold 2.6px sans-serif';g.textAlign='center';g.fillText(wallTxt[i],(A[0]+C[0])/2,(A[1]+C[1])/2+1.4);
+    for(let j=0;j<3;j++){const p=P(u0+0.02+j*0.065,0.012);const s=tIso(p[0],p[1],0.33),e=tIso(p[0]+w*0.05,p[1],0.35);g.fillStyle=j===1?'#fff4c8':'#fffdf6';g.beginPath();g.moveTo(s[0],s[1]);g.lineTo(e[0],e[1]);g.lineTo(e[0],e[1]+4);g.lineTo(s[0],s[1]+4);g.fill();}}}
+  /* 奥の列：洗い場＋寸胴3つ */
+  add(0.42,0.1,()=>{const p=P(0.34,0.04);tBox(p[0],p[1],w*0.18,d*0.13,0.32,'#a4aab0');const c=P(0.43,0.105);const s=tIso(c[0],c[1],0.321);g.fillStyle='#5a646c';g.beginPath();g.ellipse(s[0],s[1],4.6,2.1,0,0,7);g.fill();g.fillStyle='rgba(160,200,230,0.6)';g.beginPath();g.ellipse(s[0],s[1]+0.4,3.4,1.5,0,0,7);g.fill();
+    const f=P(0.43,0.05);const fq=tIso(f[0],f[1],0.32),ft=tIso(f[0],f[1],0.5);g.strokeStyle='#c0c6cc';g.lineWidth=0.8;g.beginPath();g.moveTo(fq[0],fq[1]);g.lineTo(ft[0],ft[1]);g.lineTo(ft[0]+1.5,ft[1]+1.2);g.stroke();});
+  const potU=[0.6,0.74,0.88];const soupAt=ph>=0.56&&ph<0.68;
+  potU.forEach((u,i)=>add(u,0.12,()=>{const p=P(u,0.12);tPot(p[0],p[1],T+i*2,soupAt&&i===1);}));
+  /* カウンター側の列：ゆで麺機（左）と中華鍋のコンロ（右） */
+  const boiling=ph>=0.22&&ph<0.44;
+  add(0.41,0.34,()=>{const p=P(0.33,0.29);tBox(p[0],p[1],w*0.16,d*0.1,0.32,'#9aa0a6');const c=P(0.41,0.34);const s=tIso(c[0],c[1],0.321);g.fillStyle='#c8d8e0';g.beginPath();g.ellipse(s[0],s[1],5.2,2.4,0,0,7);g.fill();
+    for(let i=0;i<4;i++){const tx=s[0]-3.6+i*2.4,ty=s[1]+((i%2)?0.5:-0.5);const up=boiling&&i===order%4?-0.6*Math.abs(Math.sin(T*5)):0;g.fillStyle='#6a7078';g.beginPath();g.ellipse(tx,ty+up,1.1,0.55,0,0,7);g.fill();g.strokeStyle='#3a3a3e';g.lineWidth=0.5;g.beginPath();g.moveTo(tx,ty+up);g.lineTo(tx+0.8,ty-3+up);g.stroke();}
+    tSteam([s[0],s[1]-1],T*1.4,3);});
+  add(0.88,0.34,()=>{const p=P(0.8,0.29);tBox(p[0],p[1],w*0.15,d*0.1,0.3,'#7a7e84');const c=P(0.875,0.34);const s=tIso(c[0],c[1],0.30);
+    const fire=((T*2)|0)%3!==0;if(fire){g.fillStyle='rgba(255,140,40,0.85)';g.beginPath();g.ellipse(s[0],s[1],2.6,0.9,0,0,7);g.fill();g.fillStyle='rgba(255,230,120,0.9)';g.beginPath();g.ellipse(s[0],s[1]-0.3,1.4,0.5,0,0,7);g.fill();}
+    const jig=Math.sin(T*6)*0.5;g.fillStyle='#26262a';g.beginPath();g.ellipse(s[0]+jig,s[1]-1.2,3.2,1.5,0,0,7);g.fill();g.fillStyle='#e8c040';g.beginPath();g.ellipse(s[0]+jig,s[1]-1.3,1.8,0.7,0,0,7);g.fill();
+    g.strokeStyle='#26262a';g.lineWidth=0.7;g.beginPath();g.moveTo(s[0]+jig+3,s[1]-1.4);g.lineTo(s[0]+jig+6,s[1]-2.4);g.stroke();});
+  /* どんぶり置き（積んだ丼） */add(0.62,0.33,()=>{const c=P(0.62,0.33);for(let k=0;k<3;k++){const q=tIso(c[0],c[1],0.0+k*0.05);g.fillStyle='#efe6d4';g.strokeStyle='#4a3a2e';g.lineWidth=0.2;g.beginPath();g.ellipse(q[0],q[1],2.2,1.1,0,0,7);g.fill();g.stroke();}});
+  /* 席：長い辺に4つ（厨房を向く）、短い辺に2つ（入口側） */
+  const seats=[[0.38,0.57,[0,-1]],[0.54,0.57,[0,-1]],[0.70,0.57,[0,-1]],[0.86,0.57,[0,-1]],[0.17,0.3,[1,0]],[0.17,0.16,[1,0]]];
+  const nC=Math.min(busy,6);const tgt=order%Math.max(1,nC);
+  const bowlPos=i=>i<4?[seats[i][0],0.445]:[0.26,seats[i][1]];
+  /* L字カウンター：長い辺は区切って描く（前後の重なりのため） */
+  for(let i=0;i<4;i++){const u0=K0-0.08+i*(K1-K0+0.08)/4,uw=(K1-K0+0.08)/4;add(u0+uw/2,0.44,()=>{const a=P(u0,CV0);tBox(a[0],a[1],w*uw,d*(CV1-CV0),0.36,'#7a4e30');tFloor(a[0],a[1]-0.02,w*uw,d*(CV1-CV0)+0.02,0.365,'#c08a52');
+    const fpos=P(u0,CV1);for(let j=0;j<2;j++){const s=tIso(fpos[0]+w*uw*(0.12+j*0.45),fpos[1],0.3),e=tIso(fpos[0]+w*uw*(0.42+j*0.45),fpos[1],0.3);g.fillStyle=['#fff4c8','#fffdf6','#ffe0d8'][(i+j)%3];g.beginPath();g.moveTo(s[0],s[1]);g.lineTo(e[0],e[1]);g.lineTo(e[0],e[1]+4.5);g.lineTo(s[0],s[1]+4.5);g.fill();g.fillStyle='#c8281e';g.fillRect((s[0]+e[0])/2-1.5,(s[1]+e[1])/2+1,3,0.8);}});}
+  add(0.26,0.2,()=>{const a=P(0.22,0.04);tBox(a[0],a[1],w*0.08,d*(CV0-0.04),0.36,'#7a4e30');tFloor(a[0]-0.02,a[1],w*0.08+0.02,d*(CV0-0.04),0.365,'#c08a52');});
+  /* お客さんの状態：自分の番で注文→「お待ち！」で丼→食べる→次の番の少し前に「ごちそうさまでした！」（丼が空に）→番がきたら次のお客さん */
+  const cst=i=>{const k=(i-tgt+nC)%nC;if(k===0)return ph<0.8?'wait':'eat';if(k===1&&ph>=0.45)return 'done';return 'eat';};
+  const who=i=>{const v=Math.floor((order-i+nC*1000)/nC);return [0,1,2,3,4,5,6,8,9][(i*4+seed+v*5)%9];};
+  /* 丼 */
+  for(let i=0;i<nC;i++){const st=cst(i);if(st==='wait')continue;const b=bowlPos(i);add(b[0],b[1]+0.01,()=>{const p=P(b[0],b[1]);tRBowl(p[0],p[1],0.37,st==='eat'?T+i:null,st==='done');},0.02);}
+  /* イスとお客さん（すわった姿） */
+  seats.forEach(([u,v,f],i)=>{add(u,v-0.01,()=>{const p=P(u,v);tStool(p[0],p[1],T*0.5+i);});
+    if(i<nC)add(u,v,()=>{const p=P(u,v);const st=cst(i);tWalker(p[0],p[1],0.34,who(i),0,f,0.24,true);
+      if(st==='eat'){const q=tIso(p[0]+f[0]*0.06,p[1]+f[1]*0.06,0.95);const up=Math.sin(T*3+i)>0.2;g.strokeStyle='#c8a060';g.lineWidth=0.5;g.beginPath();g.moveTo(q[0],q[1]-(up?3:0));g.lineTo(q[0]+2,q[1]+(up?-1:2));g.stroke();}
+      if(st==='eat'&&i===tgt&&ph>=0.84&&ph<0.97)tSay(p[0],p[1],1.25,'うまい！','#b23a2e');
+      else if(st==='done'&&ph<0.62)tSay(p[0],p[1],1.25,'ごちそうさまでした！');
+      else if(st==='eat'&&i!==tgt&&((T/4+i*1.7)|0)%7===0)tSay(p[0],p[1],1.25,'ズルズル…');},0.01);});
+  /* 店員：食券を受けとって「ラーメン一丁！」 */
+  {const tb=bowlPos(tgt);const su=tgt<4?Math.min(0.78,Math.max(0.52,tb[0])):0.36,sv=tgt<4?0.34:0.12;const home=[0.6,0.22];const go=ph<0.18;const sp=go?[su,sv]:home;
+    add(sp[0],sp[1],()=>{const p=P(sp[0],sp[1]);tWalker(p[0],p[1],0,10,0,tgt<4&&go?[0,1]:go?[-1,0]:[0,1],0.25);
+      if(ph>=0.02&&ph<0.14){const q=tIso(p[0],p[1]+0.08,0.75);g.fillStyle='#fffdf6';g.strokeStyle='#888';g.lineWidth=0.2;g.fillRect(q[0]-0.9,q[1]-0.6,1.8,1.2);g.strokeRect(q[0]-0.9,q[1]-0.6,1.8,1.2);tSay(p[0],p[1],1.05,'ラーメン一丁！','#b23a2e');}});}
+  /* 店主：「あいよっ！」→ゆで麺機→湯切り→寸胴でスープ→カウンターへ「お待ち！」 */
+  {const tb=bowlPos(tgt);const serve=tgt<4?[Math.min(0.9,Math.max(0.4,tb[0])),0.33]:[0.36,0.14];
+    const ck=ph<0.22?[0.5,0.2]:ph<0.52?[0.42,0.24]:ph<0.68?[0.74,0.24]:serve;
+    add(ck[0],ck[1],()=>{const p=P(ck[0],ck[1]);const yg=ph>=0.44&&ph<0.52;const hop=yg?Math.abs(Math.sin(T*9))*0.12:0;
+      const face=ph<0.22?[0,1]:ph<0.52?[0,1]:ph<0.68?[0,-1]:tgt<4?[0,1]:[-1,0];tWalker(p[0],p[1],hop,10,0,face,0.27);
+      if(ph>=0.15&&ph<0.22)tSay(p[0],p[1],1.05,'あいよっ！');
+      if(yg){const q=tIso(p[0]+0.04,p[1]+0.1,0.6+hop);g.strokeStyle='#5a5a60';g.lineWidth=0.6;g.beginPath();g.moveTo(q[0]-3,q[1]-1);g.lineTo(q[0],q[1]);g.stroke();g.fillStyle='#6a7078';g.beginPath();g.ellipse(q[0],q[1],1.2,0.6,0,0,7);g.fill();g.fillStyle='rgba(180,220,255,0.8)';for(let k=0;k<3;k++)g.fillRect(q[0]-0.8+k*0.7,q[1]+1+((T*20+k*3)%3),0.3,0.6);if(((T*9)|0)%2)tSay(p[0],p[1],1.1,'チャッ！');}
+      if(ph>=0.56&&ph<0.68){const q=tIso(p[0],p[1]-0.1,0.6);g.strokeStyle='#9aa0a6';g.lineWidth=0.5;g.beginPath();g.moveTo(q[0],q[1]);g.lineTo(q[0]+1,q[1]-4);g.stroke();}
+      if(ph>=0.68&&ph<0.8){const q=tIso(p[0],p[1]+0.1,0.5);tRBowl(p[0],p[1]+0.08,0.55,T);tSay(p[0],p[1],1.15,'ラーメン、お待ち！','#b23a2e');}});}
+  /* 入口の券売機 */add(0.07,0.5,()=>{const p=P(0.04,0.46);tBox(p[0],p[1],0.14,0.1,0.5,'#e8e4dc');const s=tIso(p[0]+0.14,p[1]+0.05,0.4);g.fillStyle='#3a6ab0';g.fillRect(s[0]-1.4,s[1]-1.2,2.8,1.6);g.fillStyle='#e8382a';for(let k=0;k<3;k++)g.fillRect(s[0]-1.4+k*1.1,s[1]+1.2,0.7,0.5);});
+  /* うしろのテーブル席（4人がけ・2人がけ） */
+  const tb=(u,v,n,base)=>{add(u,v,()=>{const p=P(u,v);tBox(p[0]-0.18,p[1]-0.1,0.36,0.2,0.3,'#a8784a');tFloor(p[0]-0.2,p[1]-0.12,0.4,0.24,0.3,'#c8945a');if(busy>=base)tRBowl(p[0],p[1],0.31,T);});
+    const st=n===4?[[-0.1,-0.2],[0.1,-0.2],[-0.1,0.2],[0.1,0.2]]:[[0,-0.2],[0,0.2]];
+    st.forEach(([du,dv],j)=>{const uu=u+du/w,vv=v+dv/d;add(uu,vv,()=>{const p=P(uu,vv);tBox(p[0]-0.07,p[1]-0.07,0.14,0.14,0.18,'#6a4a30');if(busy>=base+j)tWalker(p[0],p[1],0.14,[2,5,6,8,3,0][(j+seed)%6],0,[0,dv>0?-1:1],0.24);});});};
+  if(d>1.2){tb(0.4,0.82,4,6);tb(0.78,0.84,2,8);}
+  O.sort((a,b)=>a.z-b.z);for(const o of O)o.f();}
+/* トレー：バーガー・ポテト・ドリンク（食べ終わると包み紙だけ） */
+function tTray(x,y,z,empty){const q=tIso(x,y,z);g.fillStyle='#d8702a';g.strokeStyle='#7a3a1a';g.lineWidth=0.25;g.beginPath();g.moveTo(q[0]-3.2,q[1]);g.lineTo(q[0],q[1]-1.6);g.lineTo(q[0]+3.2,q[1]);g.lineTo(q[0],q[1]+1.6);g.closePath();g.fill();g.stroke();
+  if(empty){g.fillStyle='#f4ecd8';g.beginPath();g.ellipse(q[0]-0.6,q[1],1.1,0.6,0.3,0,7);g.fill();g.fillStyle='#ddd';g.fillRect(q[0]+0.8,q[1]-1.4,0.9,1.3);return;}
+  g.fillStyle='#c8782a';g.beginPath();g.ellipse(q[0]-0.9,q[1]+0.2,1.3,0.7,0,0,7);g.fill();g.fillStyle='#5a3020';g.fillRect(q[0]-2.1,q[1]+0.3,2.4,0.35);g.fillStyle='#e0a040';g.beginPath();g.ellipse(q[0]-0.9,q[1]-0.1,1.2,0.65,0,Math.PI,0);g.fill();g.fillStyle='#6ab04a';g.fillRect(q[0]-1.9,q[1]+0.15,2,0.2);
+  g.fillStyle='#d8382a';g.fillRect(q[0]+0.3,q[1]-0.6,1.0,1.1);g.fillStyle='#f4d040';for(let k=0;k<3;k++)g.fillRect(q[0]+0.35+k*0.32,q[1]-1.3,0.2,0.8);
+  g.fillStyle='#fffdf6';g.fillRect(q[0]+1.5,q[1]-1.8,0.95,1.7);g.fillStyle='#2a8a7a';g.fillRect(q[0]+1.5,q[1]-1.1,0.95,0.35);g.strokeStyle='#d8382a';g.lineWidth=0.25;g.beginPath();g.moveTo(q[0]+2,q[1]-1.8);g.lineTo(q[0]+2.3,q[1]-2.7);g.stroke();}
+/* バーガーショップ：奥に光るメニュー板と厨房（鉄板・フライヤー・ドリンク機）、レジカウンター、手前に客席。
+   並ぶ→「いらっしゃいませ！」→鉄板で「ジュ〜」・ポテトが揚がる→「お待たせしました！」→トレーを持って席へ→食べる→「ごちそうさま！」 */
+function tBurger(x,y,w,d,busy,seed){const P=(u,v)=>[x+u*w,y+v*d];const O=[];const add=(u,v,f,dz)=>{const p=P(u,v);O.push({z:tDep(p[0],p[1])+(dz||0),f});};
+  const T=tick*0.11+seed*5;const CYC=14;const ph=((T/CYC)%1+1)%1;const order=Math.floor(T/CYC);
+  /* 厨房の床 */{const a=P(0.03,0.03);tFloor(a[0],a[1],w*0.94,d*0.33,0.005,'#c8ccd0');}
+  /* 客席の床：赤と白の市松 */for(let i=0;i<6;i++)for(let j=0;j<4;j++)if((i+j)%2){const b=P(0.03+i*0.94/6,0.45+j*0.52/4);tFloor(b[0],b[1],w*0.94/6,d*0.52/4,0.006,'#e8d0c8');}
+  /* 光るメニュー板（奥の壁） */
+  {const items=[['バーガー','#e0a040'],['ポテト','#f4d040'],['ドリンク','#4ab0d8'],['セット','#d8382a']];items.forEach(([t,c],i)=>{const u0=0.08+i*0.22,u1=u0+0.2;const a=P(u0,0.012),b=P(u1,0.012);const A=tIso(a[0],a[1],0.6),B=tIso(b[0],b[1],0.6),C=tIso(b[0],b[1],0.45),D=tIso(a[0],a[1],0.45);
+    g.fillStyle='#2a2a30';g.beginPath();g.moveTo(A[0],A[1]);g.lineTo(B[0],B[1]);g.lineTo(C[0],C[1]);g.lineTo(D[0],D[1]);g.closePath();g.fill();
+    const m=[(A[0]+C[0])/2,(A[1]+C[1])/2];g.fillStyle='rgba(255,250,220,0.95)';g.beginPath();g.moveTo(A[0]*0.85+C[0]*0.15,A[1]*0.85+C[1]*0.15);g.lineTo(B[0]*0.85+D[0]*0.15,B[1]*0.85+D[1]*0.15);g.lineTo(C[0]*0.85+A[0]*0.15,C[1]*0.85+A[1]*0.15);g.lineTo(D[0]*0.85+B[0]*0.15,D[1]*0.85+B[1]*0.15);g.closePath();g.fill();
+    g.fillStyle=c;g.beginPath();g.ellipse(m[0],m[1]-0.6,1.6,0.9,0,0,7);g.fill();g.fillStyle='#3a2a22';g.font='bold 1.6px sans-serif';g.textAlign='center';g.fillText(t,m[0],m[1]+1.8);});}
+  /* 厨房：左から 鉄板 → 組み立て台 → フライヤー → 塩ふり台 → ドリンク機 */
+  const L1=(a,b,k)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k];
+  /* 鉄板：奥に操作パネル、パティが2列×5枚。焼けると色が変わり、ヘラでひっくり返す */
+  const gp=Math.max(0,Math.min(1,(ph-0.1)/0.35));
+  add(0.19,0.12,()=>{const p=P(0.05,0.05);tBox(p[0],p[1],w*0.28,d*0.15,0.28,'#8a8e94');tFloor(p[0],p[1],w*0.28,d*0.15,0.282,'#4a4a50');
+    const bp=P(0.05,0.035);tBox(bp[0],bp[1],w*0.28,d*0.025,0.12,'#b8bcc2',0.28);for(let k=0;k<3;k++){const kq=tIso(bp[0]+w*(0.05+k*0.09),bp[1]+d*0.025,0.35);g.fillStyle='#2a2a30';g.fillRect(kq[0]-1.2,kq[1]-1.6,2.4,0.8);g.fillStyle='#e84a3a';g.fillRect(kq[0]-0.9,kq[1]-1.5,0.5,0.5);g.fillStyle='#fffdf6';g.beginPath();g.arc(kq[0],kq[1]+0.3,0.5,0,7);g.fill();}
+    for(let j=0;j<2;j++)for(let i=0;i<5;i++){const c=P(0.08+i*0.055,0.105+j*0.055);const flipNow=ph>=0.25&&ph<0.42&&((T*2)|0)%5===i&&j===((T*2)|0)%2;const q=tIso(c[0],c[1],0.283+(flipNow?0.06:0));
+      const cook=Math.min(1,gp+(i+j)*0.04);const r=Math.round(200-cook*90),gg=Math.round(120-cook*55),b=Math.round(96-cook*48);g.fillStyle=`rgb(${r},${gg},${b})`;g.beginPath();g.ellipse(q[0],q[1],1.3,0.62,0,0,7);g.fill();}
+    if(ph>=0.12&&ph<0.45){const sm=tIso(p[0]+w*0.14,p[1]+d*0.1,0.3);g.strokeStyle='rgba(255,255,255,0.6)';g.lineWidth=0.4;for(let k=0;k<3;k++){g.beginPath();g.moveTo(sm[0]-3+k*3,sm[1]);g.quadraticCurveTo(sm[0]-2+k*3+Math.sin(T*2+k),sm[1]-2.5,sm[0]-3+k*3,sm[1]-5);g.stroke();}}});
+  /* 組み立て台：バンズ→パティ→レタス→上のバンズ→紙で包む */
+  const st=ph<0.3?-1:Math.floor((ph-0.3)/0.05);
+  add(0.43,0.12,()=>{const p=P(0.35,0.05);tBox(p[0],p[1],w*0.16,d*0.15,0.3,'#c0c4c8');
+    const bs=tIso(p[0]+w*0.03,p[1]+d*0.05,0.301);for(let k=0;k<3;k++){g.fillStyle='#e0a040';g.beginPath();g.ellipse(bs[0],bs[1]-k*0.5,1.1,0.5,0,0,7);g.fill();}
+    const lb=tIso(p[0]+w*0.13,p[1]+d*0.04,0.301);g.fillStyle='#d8dce0';g.beginPath();g.ellipse(lb[0],lb[1],1.4,0.7,0,0,7);g.fill();g.fillStyle='#6ab04a';g.beginPath();g.ellipse(lb[0],lb[1]-0.2,1.0,0.45,0,0,7);g.fill();
+    const c=tIso(p[0]+w*0.08,p[1]+d*0.1,0.301);
+    if(st>=0&&st<=3){g.fillStyle='#d89a48';g.beginPath();g.ellipse(c[0],c[1],1.2,0.55,0,0,7);g.fill();if(st>=1){g.fillStyle='#6a3a22';g.beginPath();g.ellipse(c[0],c[1]-0.45,1.2,0.5,0,0,7);g.fill();}
+      if(st>=2){g.fillStyle='#6ab04a';g.beginPath();g.ellipse(c[0],c[1]-0.8,1.35,0.5,0,0,7);g.fill();}if(st>=3){g.fillStyle='#e0a040';g.beginPath();g.ellipse(c[0],c[1]-1.2,1.2,0.6,0,Math.PI,0);g.fill();}}
+    else if(st===4||st===5){g.fillStyle='#f4e8c0';g.strokeStyle='#c8a860';g.lineWidth=0.2;g.beginPath();g.roundRect(c[0]-1.4,c[1]-1.6,2.8,1.8,0.6);g.fill();g.stroke();g.fillStyle='#d8382a';g.fillRect(c[0]-0.4,c[1]-1.1,0.8,0.5);}});
+  /* フライヤー：油のなかにカゴ。揚げてる間は泡、あがったら持ち上げる */
+  const fryIn=ph>=0.12&&ph<0.44,fryUp=ph>=0.44&&ph<0.5;
+  add(0.62,0.12,()=>{const p=P(0.54,0.05);tBox(p[0],p[1],w*0.16,d*0.15,0.3,'#b0b4ba');
+    for(let v=0;v<2;v++){const a=P(0.555+v*0.075,0.07);tFloor(a[0],a[1],w*0.06,d*0.11,0.302,'#a8782a');
+      const lift=v===0&&fryUp?0.12:v===0&&fryIn?0:0.08;const bq=P(0.56+v*0.075,0.08);const s=tIso(bq[0],bq[1],0.3+lift),e=tIso(bq[0]+w*0.05,bq[1]+d*0.09,0.3+lift);
+      {const z=0.3+lift,bw=w*0.05,bd=d*0.09;const cs=[[bq[0],bq[1]],[bq[0]+bw,bq[1]],[bq[0]+bw,bq[1]+bd],[bq[0],bq[1]+bd]];g.fillStyle='rgba(200,206,212,0.35)';g.strokeStyle='#e8ecf0';g.lineWidth=0.3;g.beginPath();cs.forEach((c,ci)=>{const q=tIso(c[0],c[1],z);ci?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]);});g.closePath();g.fill();g.stroke();g.lineWidth=0.15;for(let m=1;m<4;m++){const a=tIso(bq[0]+bw*m/4,bq[1],z),b=tIso(bq[0]+bw*m/4,bq[1]+bd,z);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}}
+      if(v===0&&(fryIn||fryUp)){g.fillStyle='#f4d040';for(let k=0;k<5;k++)g.fillRect((s[0]+e[0])/2-1.5+k*0.7,(s[1]+e[1])/2-0.6-(k%2)*0.4,0.3,1.0);}
+      g.strokeStyle='#2a2a30';g.lineWidth=0.5;g.beginPath();g.moveTo((s[0]+e[0])/2,(s[1]+e[1])/2+1);g.lineTo((s[0]+e[0])/2+1,(s[1]+e[1])/2+3);g.stroke();
+      if(v===0&&fryIn){g.fillStyle='rgba(255,255,255,0.85)';for(let k=0;k<6;k++){g.beginPath();g.arc((s[0]+e[0])/2-2+((k*1.7+T*5)%4),(s[1]+e[1])/2-0.3+((k*3)%3)*0.4,0.3,0,7);g.fill();}}}});
+  /* 塩ふり台：オレンジのランプの下にポテト。塩をふって「カシャカシャ」 */
+  const salt=ph>=0.5&&ph<0.64;
+  add(0.79,0.12,()=>{const p=P(0.72,0.05);tBox(p[0],p[1],w*0.13,d*0.15,0.3,'#c0c4c8');const c=tIso(p[0]+w*0.065,p[1]+d*0.08,0.301);
+    const gl=g.createRadialGradient(c[0],c[1],0.5,c[0],c[1],5);gl.addColorStop(0,'rgba(255,190,80,0.75)');gl.addColorStop(1,'rgba(255,190,80,0)');g.fillStyle=gl;g.beginPath();g.ellipse(c[0],c[1],5,2.6,0,0,7);g.fill();
+    g.fillStyle='#a8acb2';g.beginPath();g.ellipse(c[0],c[1],2.6,1.2,0,0,7);g.fill();const jg=salt?Math.sin(T*14)*0.4:0;g.fillStyle='#f4d040';for(let k=0;k<9;k++)g.fillRect(c[0]-2+((k*0.47)%4)+jg,c[1]-0.6+((k*3)%3)*0.35,0.28,0.9);
+    const lp=tIso(p[0]+w*0.065,p[1]+d*0.03,0.55);g.fillStyle='#8a8e94';g.fillRect(lp[0]-2.4,lp[1]-0.6,4.8,1.0);g.fillStyle='rgba(255,170,60,0.9)';g.fillRect(lp[0]-2.1,lp[1]+0.3,4.2,0.4);
+    if(salt){const sh=[c[0]+1+Math.sin(T*10)*0.6,c[1]-4];g.fillStyle='#e8c040';g.fillRect(sh[0]-0.6,sh[1]-1.4,1.2,1.8);g.fillStyle='rgba(255,255,255,0.9)';for(let k=0;k<6;k++)g.fillRect(sh[0]-0.6+((k*0.37+T*3)%1.4),sh[1]+0.6+((k*0.9+T*8)%3),0.18,0.18);}});
+  /* ドリンク機：上が光るパネル、下に注ぎ口がならぶ。カップを置くと出てくる */
+  const pour=ph>=0.6&&ph<0.7;
+  add(0.91,0.12,()=>{const p=P(0.86,0.05);tBox(p[0],p[1],w*0.1,d*0.12,0.3,'#d8dce0');tBox(p[0],p[1],w*0.1,d*0.06,0.26,'#3a6ab0',0.3);
+    const f0=P(0.86,0.11);const C=tIso(f0[0]+w*0.1,f0[1],0.36),D=tIso(f0[0],f0[1],0.36);
+    ['#d8382a','#f4d040','#6ab04a','#e88a2a'].forEach((cc,k)=>{const t0=(k+0.5)/4;g.fillStyle=cc;g.fillRect(D[0]+(C[0]-D[0])*t0-0.6,D[1]+(C[1]-D[1])*t0-4.2,1.2,2.2);});
+    for(let k=0;k<4;k++){const t0=(k+0.5)/4;const nx=D[0]+(C[0]-D[0])*t0,ny=D[1]+(C[1]-D[1])*t0;g.fillStyle='#2a2a30';g.fillRect(nx-0.35,ny,0.7,1.0);}
+    if(pour||ph>=0.7&&ph<0.74){const t0=0.375;const nx=D[0]+(C[0]-D[0])*t0,ny=D[1]+(C[1]-D[1])*t0;const cy=ny+4.2;g.fillStyle='#fffdf6';g.strokeStyle='#888';g.lineWidth=0.2;g.beginPath();g.moveTo(nx-1,cy-2.2);g.lineTo(nx+1,cy-2.2);g.lineTo(nx+0.75,cy);g.lineTo(nx-0.75,cy);g.closePath();g.fill();g.stroke();
+      const lv=pour?Math.min(1,(ph-0.6)/0.1):1;g.fillStyle='#6a3a1a';g.fillRect(nx-0.8,cy-2.1*lv,1.6,2.1*lv-0.1);if(pour){g.fillStyle='rgba(106,58,26,0.85)';g.fillRect(nx-0.15,ny+1,0.3,cy-2.1*lv-ny-1);}}});
+  /* 厨房の人：鉄板係・組み立て係・ポテト係 */
+  add(0.19,0.24,()=>{const p=P(0.19,0.24);tWalker(p[0],p[1],0,10,0,[0,-1],0.25);if(ph>=0.25&&ph<0.42){const q=tIso(p[0]+0.05,p[1]-0.12,0.42);g.fillStyle='#c0c4c8';g.fillRect(q[0]-0.2+Math.sin(T*8)*0.8,q[1]-1.5,1.6,1.1);}
+    if(ph>=0.2&&ph<0.3)tSay(p[0],p[1],1.0,'ジュ〜ッ');});
+  add(0.43,0.24,()=>{const p=P(0.43,0.24);tWalker(p[0],p[1],0,10,0,[0,-1],0.25);if(st===4)tSay(p[0],p[1],1.0,'バーガーOK！');});
+  {const fp=salt?[0.785,0.24]:[0.62,0.24];add(fp[0],fp[1],()=>{const p=P(fp[0],fp[1]);tWalker(p[0],p[1],0,4,0,[0,-1],0.25);const q=tIso(p[0],p[1],0);g.fillStyle='#2a8a7a';g.beginPath();g.ellipse(q[0],q[1]-6.8,2.1,0.7,0,Math.PI,0);g.fill();
+    if(fryUp)tSay(p[0],p[1],1.0,'ポテトあがりました！');if(salt&&((T*4)|0)%2)tSay(p[0],p[1],1.0,'カシャカシャ');});}
+  /* レジカウンター（右側があいてて厨房へ出入りできる） */
+  for(let i=0;i<3;i++){const u0=0.05+i*0.22;add(u0+0.11,0.38,()=>{const a=P(u0,0.34);tBox(a[0],a[1],w*0.22,d*0.08,0.36,'#e8e4dc');tFloor(a[0],a[1],w*0.22,d*0.08,0.362,'#2a8a7a');
+    const f=P(u0,0.42);const s=tIso(f[0],f[1],0.22),e=tIso(f[0]+w*0.22,f[1],0.22);g.strokeStyle='#d8382a';g.lineWidth=0.9;g.beginPath();g.moveTo(s[0],s[1]);g.lineTo(e[0],e[1]);g.stroke();
+    if(i<2){const r=P(u0+0.11,0.37);tBox(r[0]-0.07,r[1]-0.05,0.14,0.1,0.08,'#3a3a40',0.36);const sc=tIso(r[0],r[1]-0.05,0.5);g.fillStyle='#2a2a30';g.fillRect(sc[0]-1.2,sc[1]-1,2.4,1.4);g.fillStyle='#7ae0a0';g.fillRect(sc[0]-0.9,sc[1]-0.8,1.8,0.7);}});}
+  /* 客席：2人がけのテーブル×3（向かい合わせ） */
+  const seats=[],tables=d>1.2?[[0.24,0.72],[0.56,0.72],[0.86,0.72]]:[[0.3,0.75],[0.75,0.75]];
+  tables.forEach(([u,v])=>{seats.push([u,v-0.13,[0,1]],[u,v+0.13,[0,-1]]);});
+  const nS=seats.length,nC=Math.min(nS,Math.max(1,busy+1)),tgt=order%nC;
+  const cst=i=>{const k=(i-tgt+nC)%nC;if(k===0)return ph<0.95?'away':'eat';if(k===1&&ph>=0.5)return 'done';return 'eat';};
+  const who=i=>{const v=Math.floor((order-i+nC*1000)/nC);return [0,2,3,4,5,6,7,9,1][(i*3+seed+v*5)%9];};
+  tables.forEach(([u,v],ti)=>{add(u,v,()=>{const p=P(u,v);tCyl(p[0],p[1],0.03,0.3,0,'#9a9aa0');tFloor(p[0]-0.14,p[1]-0.1,0.28,0.2,0.3,'#fffdf6');
+    for(const j of [0,1]){const si=ti*2+j;if(si>=nC)continue;const st=cst(si);if(st==='away')continue;tTray(p[0],p[1]+(j?0.05:-0.05),0.31,st==='done');}});});
+  seats.forEach(([u,v,f],i)=>{add(u,v,()=>{const p=P(u,v);tCyl(p[0],p[1],0.03,0.26,0,'#9a9aa0');tCyl(p[0],p[1],0.11,0.04,0.26,'#d8382a','#e84a3a');
+    if(i>=nC)return;const st=cst(i);if(st==='away')return;tWalker(p[0],p[1],0.3,who(i),0,f,0.24,true);
+    if(st==='done'&&ph<0.66)tSay(p[0],p[1],1.2,'ごちそうさま！');else if(st==='eat'&&((T/4+i*2.3)|0)%8===0)tSay(p[0],p[1],1.2,i%2?'おいしい！':'ポテトうま〜');},f[1]<0?0.01:-0.01);});
+  /* レジの店員とお客さん：並ぶ→注文→受けとって席へ */
+  {const reg=[0.16,0.37];const home=[0.16,0.28],dr=[0.91,0.24];const cp=ph<0.52?home:ph<0.6?L1(home,dr,(ph-0.52)/0.08):ph<0.7?dr:ph<0.76?L1(dr,home,(ph-0.7)/0.06):home;const cmv=ph>=0.52&&ph<0.6?[1,0]:ph>=0.6&&ph<0.7?[0,-1]:ph>=0.7&&ph<0.76?[-1,0]:[0,1];const cw=(ph>=0.52&&ph<0.6)||(ph>=0.7&&ph<0.76);
+    add(cp[0],cp[1],()=>{const p=P(cp[0],cp[1]);tWalker(p[0],p[1],0,3,cw?T*3:0,cmv,0.25);const q=tIso(p[0],p[1],0);
+      g.fillStyle='#2a8a7a';g.beginPath();g.ellipse(q[0],q[1]-6.8,2.1,0.7,0,Math.PI,0);g.fill();
+      if(ph<0.12)tSay(p[0],p[1],1.0,'いらっしゃいませ！');if(ph>=0.78&&ph<0.88)tSay(p[0],p[1],1.0,'お待たせしました！','#b23a2e');});
+    if(ph>=0.76&&ph<0.82)add(reg[0],0.385,()=>{const p=P(reg[0],0.385);tTray(p[0],p[1],0.37,false);},0.03);
+    const sT=seats[tgt];const line=[reg[0],0.52];let pos,mv;const tr=ph>=0.82;
+    if(ph<0.82){pos=line;mv=[0,-1];}else{const k=Math.min(1,(ph-0.82)/0.13);pos=[line[0]+(sT[0]-line[0])*k,line[1]+(sT[1]-line[1])*k];mv=[sT[0]-line[0],sT[1]-line[1]];}
+    if(ph<0.95)add(pos[0],pos[1],()=>{const p=P(pos[0],pos[1]);tWalker(p[0],p[1],0,who(tgt),tr?T*3:0,mv,0.24);if(tr){const q=P(pos[0],pos[1]);tTray(q[0]+mv[0]*0.03,q[1]+mv[1]*0.03,0.16,false);}
+      if(ph>=0.12&&ph<0.24)tSay(p[0],p[1],1.05,'バーガーセットください！');});
+    if(busy>=3){const nx=[reg[0],0.64];add(nx[0],nx[1],()=>{const p=P(nx[0],nx[1]);tWalker(p[0],p[1],0,who((tgt+1)%nC)+1,0,[0,-1],0.24);});}
+  }
+  O.sort((a,b)=>a.z-b.z);for(const o of O)o.f();}
+/* レストラン用：ウェイター（白シャツ＋黒ベスト＋蝶ネクタイ） */
+const T_WAITER={top:'#fffdf6',sleeve:'#fffdf6',pants:'#1a1a1e',shoe:'#1a1a1e',hold:null,mouth:'flat',
+  deco:(g,ol)=>{g.fillStyle='#1e1e24';g.fillRect(-4.4,-14,3.2,8.8);g.fillRect(1.2,-14,3.2,8.8);g.beginPath();g.moveTo(-1.6,-14.2);g.lineTo(0,-13.3);g.lineTo(1.6,-14.2);g.lineTo(1.6,-12.4);g.lineTo(0,-13.3);g.lineTo(-1.6,-12.4);g.closePath();g.fill();},
+  backDeco:(g,ol)=>{g.fillStyle='#1e1e24';g.fillRect(-4.4,-14,8.8,8.8);}};
+/* テーブルの上：お皿（料理）・ワイングラス・キャンドル */
+function tDish(x,y,z,state,seed){const q=tIso(x,y,z);g.fillStyle='#fffdf6';g.strokeStyle='#b8b0a0';g.lineWidth=0.2;g.beginPath();g.ellipse(q[0],q[1],1.9,0.95,0,0,7);g.fill();g.stroke();
+  if(state==='food'){const m=seed%3;if(m===0){g.fillStyle='#7a4228';g.beginPath();g.ellipse(q[0]-0.2,q[1],1.0,0.45,0,0,7);g.fill();g.fillStyle='#6ab04a';g.fillRect(q[0]+0.6,q[1]-0.3,0.5,0.4);g.fillStyle='#e8a040';g.fillRect(q[0]+0.5,q[1]+0.1,0.6,0.3);}
+    else if(m===1){g.fillStyle='#e8c068';g.beginPath();g.ellipse(q[0],q[1],1.1,0.5,0,0,7);g.fill();g.fillStyle='#d8482a';g.beginPath();g.ellipse(q[0],q[1]-0.1,0.6,0.25,0,0,7);g.fill();}
+    else{g.fillStyle='#e8885a';g.beginPath();g.ellipse(q[0]-0.2,q[1],0.9,0.4,0.3,0,7);g.fill();g.fillStyle='#fffdf6';g.fillRect(q[0]+0.4,q[1]-0.2,0.6,0.3);g.fillStyle='#6ab04a';g.fillRect(q[0]-0.6,q[1]-0.4,0.4,0.3);}}
+  else if(state==='done'){g.strokeStyle='#c8c0b0';g.lineWidth=0.25;g.beginPath();g.moveTo(q[0]-0.8,q[1]-0.2);g.lineTo(q[0]+0.9,q[1]+0.3);g.moveTo(q[0]-0.6,q[1]+0.1);g.lineTo(q[0]+1,q[1]+0.5);g.stroke();}}
+function tGlass(x,y,z,wine,lift){const q=tIso(x,y,z+(lift||0));g.strokeStyle='rgba(220,230,240,0.95)';g.lineWidth=0.25;g.beginPath();g.moveTo(q[0],q[1]);g.lineTo(q[0],q[1]-1.4);g.stroke();
+  g.fillStyle='rgba(230,240,250,0.6)';g.beginPath();g.moveTo(q[0]-0.6,q[1]-2.8);g.lineTo(q[0]+0.6,q[1]-2.8);g.lineTo(q[0]+0.4,q[1]-1.4);g.lineTo(q[0]-0.4,q[1]-1.4);g.closePath();g.fill();
+  if(wine){g.fillStyle='#8a1a2a';g.beginPath();g.moveTo(q[0]-0.5,q[1]-2.1);g.lineTo(q[0]+0.5,q[1]-2.1);g.lineTo(q[0]+0.4,q[1]-1.5);g.lineTo(q[0]-0.4,q[1]-1.5);g.closePath();g.fill();}}
+function tCandle(x,y,z){const q=tIso(x,y,z);g.fillStyle='#fffdf6';g.fillRect(q[0]-0.3,q[1]-2,0.6,2);const fl=0.8+Math.sin(tick*0.5+x*9)*0.15;g.fillStyle='rgba(255,200,90,0.35)';g.beginPath();g.arc(q[0],q[1]-2.6,1.6,0,7);g.fill();g.fillStyle='#ffc040';g.beginPath();g.ellipse(q[0],q[1]-2.5,0.3,0.55*fl,0,0,7);g.fill();}
+/* 壁のアーチ窓（奥の壁ぞい）。夜は街の灯り */
+function tArchWin(ax,ay,bx,by,t0,t1,night){const N=10;const z0=0.28,z1=0.66,r=(t1-t0)/2;const pts=[];const at=(t,z)=>tIso(ax+(bx-ax)*t,ay+(by-ay)*t,z);
+  pts.push(at(t0,z0),at(t1,z0));for(let i=0;i<=N;i++){const a=i/N*Math.PI;const tt=(t0+t1)/2+Math.cos(a)*r;const L=Math.hypot(bx-ax,by-ay);pts.push(at(tt,z1+Math.sin(a)*r*L*0.9));}
+  g.fillStyle=night?'#2a3a5e':'#bcd8ee';g.strokeStyle='#ffffff';g.lineWidth=0.8;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();g.fill();
+  if(night){g.fillStyle='#ffe08a';for(let k=0;k<6;k++){const p=at(t0+(t1-t0)*((k*0.37+0.1)%1),z0+0.04+((k*0.13)%0.2));g.fillRect(p[0],p[1],0.4,0.4);}}
+  else{const p=at(t0+(t1-t0)*0.3,z0),p2=at(t0+(t1-t0)*0.3,z0+0.12);g.fillStyle='#9ab0c4';g.fillRect(p2[0]-0.8,p2[1],1.6,p[1]-p2[1]);}
+  g.stroke();g.lineWidth=0.4;const m0=at((t0+t1)/2,z0),m1=at((t0+t1)/2,z1+r*Math.hypot(bx-ax,by-ay)*0.9);g.beginPath();g.moveTo(m0[0],m0[1]);g.lineTo(m1[0],m1[1]);const h0=at(t0,z1),h1=at(t1,z1);g.moveTo(h0[0],h0[1]);g.lineTo(h1[0],h1[1]);g.stroke();}
+/* レストラン：白い壁にアーチ窓、黒いベンチシート、木のテーブルとグレーのイス、白い丸ランプ。厨房は壁の奥でアーチの出入り口から料理が運ばれてくる */
+function tRest(x,y,w,d,busy,seed){const P=(u,v)=>[x+u*w,y+v*d];const O=[];const add=(u,v,f,dz)=>{const p=P(u,v);O.push({z:tDep(p[0],p[1])+(dz||0),f});};
+  const T=tick*0.11+seed*3;const CYC=16;const ph=((T/CYC)%1+1)%1;const order=Math.floor(T/CYC);const night=nowH()>=17||nowH()<6;
+  /* 寄せ木の床 */{for(let i=0;i<10;i++){const a=P(0.03+i*0.094,0.03);tFloor(a[0],a[1],w*0.094,d*0.94,0.004,i%2?'#cbbca4':'#c2b298');}}
+  /* 奥の壁のアーチ窓（見えていない側の壁＝奥の2面） */
+  for(let f=0;f<4;f++){if(tFaceVis(f))continue;const E=[[x,y+d,x+w,y+d],[x+w,y,x+w,y+d],[x,y,x+w,y],[x,y,x,y+d]][f];for(let k=0;k<3;k++){const t0=0.08+k*0.3;tArchWin(E[0],E[1],E[2],E[3],t0,t0+0.2,night);}}
+  /* 奥の厨房（白い壁で囲って、アーチの出入り口だけ見える） */
+  add(0.84,0.15,()=>{const a=P(0.72,0.03);tBox(a[0],a[1],w*0.25,d*0.22,0.9,'#eeeae2');const c=P(0.845,0.25);
+    const at=(t,z)=>tIso(c[0]+(t-0.5)*w*0.12,c[1],z);g.fillStyle=night?'#4a4038':'#5a5048';g.beginPath();const p0=at(0,0),p1=at(1,0);g.moveTo(p0[0],p0[1]);g.lineTo(p1[0],p1[1]);for(let i=0;i<=8;i++){const an=i/8*Math.PI;const q=at(0.5+Math.cos(an)*0.5,0.42+Math.sin(an)*0.12);g.lineTo(q[0],q[1]);}g.closePath();g.fill();
+    const lt=at(0.5,0.25);g.fillStyle='rgba(255,220,150,0.5)';g.beginPath();g.ellipse(lt[0],lt[1],1.6,3,0,0,7);g.fill();});
+  /* 黒いベンチシート（奥の壁ぞい） */
+  add(0.36,0.08,()=>{const a=P(0.03,0.03);tBox(a[0],a[1],w*0.66,d*0.06,0.36,'#2a2a30');tFloor(a[0],a[1],w*0.66,d*0.06,0.361,'#c8a878');const s=P(0.03,0.09);tBox(s[0],s[1],w*0.66,d*0.06,0.17,'#222228');});
+  /* テーブル：ベンチ側に3つ（2人）、手前に2つ（4人） */
+  const tabs=[[0.15,0.26,2],[0.37,0.26,2],[0.59,0.26,2],[0.3,0.72,4],[0.74,0.72,4]];
+  const nT=Math.min(tabs.length,Math.max(1,busy+1)),tgt=order%nT;
+  const tst=i=>{const k=(i-tgt+nT)%nT;if(k===0)return ph<0.72?'wait':'food';if(k===1&&ph>=0.55)return 'done';return 'food';};
+  const who=(i,j)=>{const v=Math.floor((order-i+nT*1000)/nT);return [2,3,4,5,6,7,8,1,0][(i*2+j*5+seed+v*3)%9];};
+  const lamp=(u,v)=>add(u,v,()=>{const p=P(u,v);const top=tIso(p[0],p[1],1.4),b=tIso(p[0],p[1],1.1);g.strokeStyle='rgba(80,80,80,0.6)';g.lineWidth=0.2;g.beginPath();g.moveTo(top[0],top[1]);g.lineTo(b[0],b[1]-1.4);g.stroke();
+    if(night){g.fillStyle='rgba(255,230,170,0.25)';g.beginPath();g.arc(b[0],b[1],4,0,7);g.fill();}g.fillStyle='#fbfaf6';g.strokeStyle='#d8d4cc';g.lineWidth=0.2;g.beginPath();g.arc(b[0],b[1],1.5,0,7);g.fill();g.stroke();g.strokeStyle='#e0dcd2';g.beginPath();g.ellipse(b[0],b[1]+0.2,1.5,0.5,0,0,Math.PI);g.stroke();},0.5);
+  const chair=(u,v,face,sitter,ov)=>{const p=P(u,v);add(u,v-0.002,()=>{tCyl(p[0],p[1],0.012,0.11,0,'#6a6a70');tBox(p[0]-0.05,p[1]-0.05,0.1,0.1,0.03,'#c0c0c6',0.1);tFloor(p[0]-0.05,p[1]-0.05,0.1,0.1,0.131,'#dcdce0');});
+    const back=()=>{const b=[p[0]-face[0]*0.05,p[1]-face[1]*0.05];const bw=face[1]?0.11:0.025,bd=face[1]?0.025:0.11;tBox(b[0]-bw/2,b[1]-bd/2,bw,bd,0.065,'#d4d4d8',0.13);};
+    if(face[1]<0||face[0]<0){if(sitter)add(u,v,()=>tWalker(p[0],p[1],0.13,sitter,0,face,0.24,true,ov));add(u,v+0.03,back,0.02);}
+    else{add(u,v-0.03,back,-0.02);if(sitter)add(u,v,()=>tWalker(p[0],p[1],0.13,sitter,0,face,0.24,true,ov));}};
+  tabs.forEach(([u,v,n],i)=>{const occ=i<nT;const st=occ?tst(i):'none';
+    const tw=n===2?0.24:0.38,td=0.2;add(u,v,()=>{const p=P(u,v);tCyl(p[0],p[1],0.03,0.26,0,'#3a3a40');tBox(p[0]-tw/2,p[1]-td/2,tw,td,0.025,'#c8a070',0.24);tFloor(p[0]-tw/2,p[1]-td/2,tw,td,0.266,'#e6c898');
+      tCandle(p[0]+tw*0.3,p[1]-0.03,0.27);if(n===4){const fq=tIso(p[0]-tw*0.32,p[1]-0.02,0.27);g.fillStyle='rgba(220,235,245,0.8)';g.fillRect(fq[0]-0.5,fq[1]-1.6,1,1.6);['#f4a0b8','#fffdf6','#f4c0d0'].forEach((c,k)=>{g.fillStyle=c;g.beginPath();g.arc(fq[0]-0.7+k*0.7,fq[1]-2.2-(k%2)*0.5,0.55,0,7);g.fill();});g.fillStyle='#6ab04a';g.fillRect(fq[0]-0.9,fq[1]-1.9,0.4,0.3);}
+      const ss=n===2?[[0,-1]]:[[-1,-1],[1,-1]];const sf=n===2?[[0,1]]:[[-1,1],[1,1]];
+      if(occ){[...ss,...sf].forEach(([a,b],j)=>{const dx=a*tw*0.25,dy=b*td*0.28;if(st!=='wait')tDish(p[0]+dx,p[1]+dy,0.27,st==='food'?'food':'done',i+j+order);const cheers=st==='food'&&((T/5+i*3.7)|0)%10===0;tGlass(p[0]+dx+0.06,p[1]+dy*0.4,0.27,true,cheers?0.08:0);});}
+      else{tGlass(p[0]-0.04,p[1],0.27,false);tGlass(p[0]+0.04,p[1],0.27,false);}});
+    lamp(u,v);
+    /* 席：ベンチ側の2人テーブルは「ベンチに1人・イスに1人」、4人テーブルは前後にイス2つずつ */
+    if(n===2){const bs=P(u,0.115);if(occ&&st!=='none')add(u,0.115,()=>tWalker(bs[0],bs[1],0.15,who(i,0),0,[0,1],0.24,true,{hold:null}));
+      chair(u,0.4,[0,-1],occ?who(i,1):0,{hold:null});}
+    else{for(const a of [-1,1]){chair(u+a*0.08,v-0.14,[0,1],occ?who(i,a<0?0:3):0,{hold:null});chair(u+a*0.08,v+0.14,[0,-1],occ?who(i,a<0?1:2):0,{hold:null});}}
+    if(occ){add(u,v+0.02,()=>{const p=P(u,v);if(st==='done'&&ph<0.68)tSay(p[0],p[1],1.0,'ごちそうさまでした');else if(st==='food'&&((T/5+i*3.7)|0)%10===0)tSay(p[0],p[1],1.0,'かんぱい♪');else if(st==='food'&&((T/4+i*3)|0)%9===0)tSay(p[0],p[1],1.0,'おいしいね');},0.6);}});
+  /* ウェイター：厨房のアーチから料理を持って出てきて、テーブルに置いて戻る */
+  {const door=[0.845,0.3],aisle=0.48;const tb=tabs[tgt];const dest=[tb[0]+(tb[2]===2?0.1:0.18),tb[2]===2?0.4:tb[1]];
+    const path=[door,[door[0],aisle],[dest[0],aisle],dest];const seg=(k)=>{let tot=0,L=[];for(let i=0;i<3;i++){const l=Math.hypot(path[i+1][0]-path[i][0],path[i+1][1]-path[i][1]);L.push(l);tot+=l;}let r=k*tot;for(let i=0;i<3;i++){if(r<=L[i]||i===2){const f=Math.min(1,r/L[i]);return [[path[i][0]+(path[i+1][0]-path[i][0])*f,path[i][1]+(path[i+1][1]-path[i][1])*f],[path[i+1][0]-path[i][0],path[i+1][1]-path[i][1]]];}r-=L[i];}};
+    let pos,mv,walk=false,carry=false;
+    if(ph<0.35){pos=door;mv=[0,1];}else if(ph<0.62){const s=seg((ph-0.35)/0.27);pos=s[0];mv=s[1];walk=true;carry=true;}else if(ph<0.74){pos=dest;mv=[-1,0];carry=ph<0.72;}else if(ph<0.98){const s=seg(1-(ph-0.74)/0.24);pos=s[0];mv=[-s[1][0],-s[1][1]];walk=true;}else{pos=door;mv=[0,1];}
+    if(ph>=0.35)add(pos[0],pos[1],()=>{const p=P(pos[0],pos[1]);tWalker(p[0],p[1],0,2,walk?T*3:0,mv,0.25,false,T_WAITER);
+      if(carry){const q=tIso(p[0],p[1],0.42);g.fillStyle='#fffdf6';g.strokeStyle='#b8b0a0';g.lineWidth=0.2;g.beginPath();g.ellipse(q[0]+1.5,q[1],1.8,0.8,0,0,7);g.fill();g.stroke();g.fillStyle='#7a4228';g.beginPath();g.ellipse(q[0]+1.4,q[1]-0.2,0.9,0.35,0,0,7);g.fill();g.fillStyle='rgba(255,255,255,0.6)';g.fillRect(q[0]+1.2,q[1]-2.5,0.3,1.6);}
+      if(ph>=0.62&&ph<0.74)tSay(p[0],p[1],1.05,'お待たせいたしました','#3a2a22');});}
+  O.sort((a,b)=>a.z-b.z);for(const o of O)o.f();}
+function tShop(x,y,w,d,k,busy){const b=TOWN_B[k];const H=k==='rest'?0.95:0.55;const P=(u,v)=>[x+u*w,y+v*d];
+  tFloor(x,y,w,d,0,k==='cafe'?'#d8c0a0':k==='rest'?'#e8e0d0':'#e8dcc4');
+  /* 床の市松（レストラン・喫茶店） */if(k==='rest'||k==='cafe'){for(let i=0;i<4;i++)for(let j=0;j<4;j++)if((i+j)%2)tFloor(x+i*w/4,y+j*d/4,w/4,d/4,0,k==='rest'?'#cfc6b4':'#c4a888');}
+  for(let f=0;f<4;f++)if(!tFaceVis(f))tPoly(tFacePts(x,y,w,d,f,0,H),tShade(k==='rest'?(f%2?'#f2efe8':'#a8b8c8'):b.col,f%2?1.1:0.95));
+  if(k!=='ramen'&&k!=='pizza'&&k!=='rest'){let bx=x+w*0.5,by=y;for(let f=0;f<4;f++)if(!tFaceVis(f)){const E=[[x+w/2,y+d],[x+w,y+d/2],[x+w/2,y],[x,y+d/2]][f];bx=E[0];by=E[1];break;}const s0=tIso(bx,by,H*0.5);g.fillStyle='#fffdf6';g.font='bold 5px sans-serif';g.textAlign='center';g.fillText(b.n,s0[0],s0[1]);}
+  const O=[];const add=(u,v,f)=>{const p=P(u,v);O.push({z:tDep(p[0],p[1]),f});};
+  const sitter=(u,v,i,face)=>{if(i>=busy)return;const p=P(u,v);add(u,v+0.001,()=>tWalker(p[0],p[1],0.12,[0,1,2,3,4,5,6,7,8,9][(i*3+k.length)%10],0,face?[face[0],face[1]]:null,0.22));};
+  if(k==='rest'){O.push({z:-1e9,f:()=>tRest(x,y,w,d,busy+1,Math.round(x*3+y*11))});}
+  else if(k==='ramen'){O.push({z:-1e9,f:()=>tRamen(x,y,w,d,busy+2,Math.round(x*7+y*3))});}
+  else if(k==='ramen_old'){
+    add(0.15,0.12,()=>{const p=P(0.08,0.06);tBox(p[0],p[1],w*0.84,d*0.16,0.42,'#9a9aa0');const q=P(0.3,0.14);tBox(q[0]-0.08,q[1]-0.08,0.16,0.16,0.22,'#c0c0c8',0.42);const r=P(0.6,0.14);tBox(r[0]-0.08,r[1]-0.08,0.16,0.16,0.18,'#c0c0c8',0.42);});
+    add(0.45,0.3,()=>{const p=P(0.45,0.3);tWalker(p[0],p[1],0,10,0,null,0.24);});
+    add(0.5,0.45,()=>{const p=P(0.08,0.42);tBox(p[0],p[1],w*0.84,d*0.12,0.38,'#a8784a');for(let i=0;i<Math.min(busy,4);i++){const c=P(0.2+i*0.2,0.48);tBowl(c[0],c[1],0.38);}});
+    for(let i=0;i<4;i++){const u=0.2+i*0.2;add(u,0.66,()=>{const p=P(u,0.66);tBox(p[0]-0.05,p[1]-0.05,0.1,0.1,0.2,'#c84a3a');});sitter(u,0.64,i,[0,-1]);}
+    const lt=P(0.92,0.1);add(0.92,0.1,()=>{const q=tIso(lt[0],lt[1],0.9);g.fillStyle='#e8382a';g.beginPath();g.ellipse(q[0],q[1],1.4,2,0,0,7);g.fill();});}
+  else if(k==='pizza'){O.push({z:-1e9,f:()=>tBurger(x,y,w,d,busy+1,Math.round(x*5+y*7))});}
+  else if(k==='pizza_old'){/* 奥にれんがの窯、手前にテーブル */
+    add(0.2,0.2,()=>{const p=P(0.06,0.06);tBox(p[0],p[1],w*0.34,d*0.3,0.5,'#b8583a');const q=tIso(p[0]+w*0.17,p[1]+d*0.3,0.18);g.fillStyle=(tick>>3)%2?'#ffb040':'#ff8a20';g.beginPath();g.arc(q[0],q[1],1.6,Math.PI,0);g.fill();});
+    add(0.65,0.2,()=>{const p=P(0.65,0.2);tWalker(p[0],p[1],0,10,0,null,0.24);});
+    [[0.35,0.62],[0.75,0.62]].forEach(([u,v],ti)=>{add(u,v,()=>{const p=P(u,v);tBox(p[0]-0.12,p[1]-0.1,0.24,0.2,0.26,'#f4f0e4');tPlate(p[0],p[1],0.26,'#d8582a');});sitter(u-0.14,v,ti*2,[1,0]);sitter(u+0.14,v,ti*2+1,[-1,0]);});}
+  else{/* 定食屋・喫茶店・レストラン：テーブルと向かい合わせの席 */
+    const tc={teishoku:'#b8945a',cafe:'#6a4a30',rest:'#fffdf6'}[k];const food={teishoku:'#e8b040',cafe:'#7a4a2a',rest:'#c84a4a'}[k];
+    add(0.15,0.12,()=>{const p=P(0.06,0.06);tBox(p[0],p[1],w*0.5,d*0.14,0.36,k==='rest'?'#8a7a6a':'#8a6a4a');});
+    add(0.75,0.15,()=>{const p=P(0.75,0.15);tWalker(p[0],p[1],0,k==='teishoku'?10:4,0,null,0.24);});
+    [[0.3,0.45],[0.72,0.45],[0.3,0.8],[0.72,0.8]].forEach(([u,v],ti)=>{if(ti>=3&&w<0.9)return;add(u,v,()=>{const p=P(u,v);tBox(p[0]-0.1,p[1]-0.08,0.2,0.16,0.24,tc);tPlate(p[0]-0.03,p[1],0.24,food);});
+      sitter(u,v-0.14,ti*2,[0,1]);sitter(u,v+0.14,ti*2+1,[0,-1]);});}
+  O.sort((a,b)=>a.z-b.z);for(const o of O)o.f();
+  for(let f=0;f<4;f++){const v=tFaceVis(f);if(v)tPoly(tFacePts(x,y,w,d,f,0,0.22),tShade(b.col,v===0.8?0.72:0.56));}}
+function tDorm(x,y,w,d,lit){tBox(x,y,w,d,3.0,'#d8cdb4');tWin(x,y,w,d,3.0,3,lit);tFloor(x,y,w,d,3.0,'#8a5a4a');const s=tIso(x+w*0.5,y+d,0.6);g.fillStyle='#3a3020';g.font='bold 5px sans-serif';g.textAlign='center';g.fillText('社員寮',s[0],s[1]);}
+function tHQ(x,y,w,d,lit){
+  if(S.hq){tBox(x,y,w,d,6.5,'#cfd6dc');tWin(x,y,w,d,6.5,6,lit);tFloor(x,y,w,d,6.5,'#8a949c');const s=tIso(x+w*0.5,y+d*0.5,6.9);g.fillStyle='#b23a2e';g.font='bold 6px sans-serif';g.textAlign='center';g.fillText(coName(),s[0],s[1]);return;}
+  if(S.hqBuild){const p=hqbP();const h=Math.max(0.3,6.5*p);tFloor(x-0.05,y-0.05,w+0.1,d+0.1,0,'#a89a80');if(p>0.45)tBox(x,y,w,d,h*0.9,'#bfc6cc');
+    for(let i=0;i<=4;i++){tLine([x+w*i/4,y+d,0],[x+w*i/4,y+d,h],'#6a6a70',0.3);tLine([x+w,y+d*i/4,0],[x+w,y+d*i/4,h],'#6a6a70',0.3);}
+    for(let f=1;f<=Math.ceil(h);f++){const z=Math.min(h,f);tLine([x,y+d,z],[x+w,y+d,z],'#6a6a70',0.3);tLine([x+w,y+d,z],[x+w,y,z],'#6a6a70',0.3);}
+    tLine([x+w,y,0],[x+w,y,h+2.4],'#e8b830',0.6);const c1=tIso(x+w,y,h+2.4);g.beginPath();g.moveTo(c1[0],c1[1]);g.lineTo(c1[0]-24,c1[1]+4);g.stroke();return;}
+  tFloor(x,y,w,d,0,'#b8a888');const s=tIso(x+w*0.5,y+d*0.5,0.8);g.fillStyle='#fffdf6';g.fillRect(s[0]-18,s[1]-8,36,11);g.fillStyle='#3a3020';g.font='bold 5px sans-serif';g.textAlign='center';g.fillText('建設予定地',s[0],s[1]);}
+/* 道路：歩道（明るい灰色）＋車道（暗い灰色）。大通りはセンターライン */
+function tRoads(lv){const sw='#cfc8b8',car=lv>=1?'#5e5e64':'#8a7a5c';
+  for(const r of T_ROADS){const s=r.main?0.25:0.16;if(r.ax==='h'){tFloor(0,r.at,T_MAX,r.w,0,lv>=1||r.main?sw:'#b8a47e');tFloor(0,r.at+s,T_MAX,r.w-2*s,0,car);}else{tFloor(r.at,0,r.w,T_MAX,0,lv>=1||r.main?sw:'#b8a47e');tFloor(r.at+s,0,r.w-2*s,T_MAX,0,car);}}
+  /* 交差点は車道で上書き */for(const a of T_ROADS.filter(r=>r.ax==='v'))for(const b of T_ROADS.filter(r=>r.ax==='h')){const sa=a.main?0.25:0.16,sb=b.main?0.25:0.16;tFloor(a.at+sa,b.at+sb,a.w-2*sa,b.w-2*sb,0,car);}
+  g.setLineDash([0.9,0.9]);for(const r of T_ROADS.filter(r=>r.main)){const m=r.at+r.w/2;if(r.ax==='h'){tLine([0,m,0],[14.0,m,0],'#f0e6b0',0.25);tLine([16.0,m,0],[T_MAX,m,0],'#f0e6b0',0.25);}else{tLine([m,0,0],[m,14.0,0],'#f0e6b0',0.25);tLine([m,16.0,0],[m,T_MAX,0],'#f0e6b0',0.25);}}g.setLineDash([]);
+  /* 大通りの横断歩道 */for(let i=0;i<6;i++){const a=14.3+i*0.26;tFloor(a,13.5,0.13,0.42,0,'#f4f0e4');tFloor(a,16.08,0.13,0.42,0,'#f4f0e4');tFloor(13.5,a,0.42,0.13,0,'#f4f0e4');tFloor(16.08,a,0.42,0.13,0,'#f4f0e4');}}
+/* 信号のある交差点（大通りの十字から順に、人口でふえる） */
+function tSigList(n){const L=[[14.0,14.0,2.0,2.0]];const sideV=[2.6,11.8],sideH=[2.6,11.8];
+  const more=[[14.0,5.2,2.0,1.1],[14.0,23.6,2.0,1.1],[5.2,14.0,1.1,2.0],[23.6,14.0,1.1,2.0],[5.2,5.2,1.1,1.1],[23.6,5.2,1.1,1.1],[5.2,23.6,1.1,1.1],[23.6,23.6,1.1,1.1]];return L.concat(more.slice(0,n-1));}
+function tSigPhase(){return Math.floor(tick/150)%2;}/* 0：横（東西）が青、1：縦（南北）が青 */
+function tSignal(ix,iy,w,d){const ph=tSigPhase();for(const [px,py,ax] of [[ix-0.1,iy-0.1,'h'],[ix+w+0.1,iy+d+0.1,'h'],[ix+w+0.1,iy-0.1,'v'],[ix-0.1,iy+d+0.1,'v']]){
+  const q=tIso(px,py,0);g.fillStyle='#4a4a50';g.fillRect(q[0]-0.6,q[1]-16,1.2,16);const go=(ax==='h')===(ph===0);g.fillStyle='#222';g.fillRect(q[0]-3.2,q[1]-19,6.4,3.4);g.fillStyle=go?'#3ad06a':'#3a2a2a';g.beginPath();g.arc(q[0]-1.6,q[1]-17.3,1.2,0,7);g.fill();g.fillStyle=go?'#3a2a2a':'#ff4a3a';g.beginPath();g.arc(q[0]+1.6,q[1]-17.3,1.2,0,7);g.fill();}}
+/* 車：交通量は人口しだい。信号が赤なら手前で止まる。前の車にもぶつからない */
+const TCARS=[];
+function tCarsTick(pop,sigs){const want=Math.min(24,Math.floor(pop/1600)+(pop>=600&&hash(Math.floor(tick/400))<0.5?1:0));
+  const lanes=[];for(const r of T_ROADS){const s=r.main?0.25:0.16,cw=r.w-2*s;if(r.main){lanes.push({r,off:r.at+s+cw*0.25,dir:-1},{r,off:r.at+s+cw*0.75,dir:1});}else lanes.push({r,off:r.at+r.w/2,dir:hash(r.at)<0.5?1:-1});}
+  while(TCARS.length<want){const L=lanes[Math.floor(R()*lanes.length)];TCARS.push({L,s:L.dir>0?-1:T_MAX+1,v:0.05+R()*0.025,col:['#d83a3a','#3a6ad8','#f0f0e8','#2a2a30','#e8c030','#5a8a5a'][Math.floor(R()*6)]});}
+  while(TCARS.length>want)TCARS.pop();
+  const ph=tSigPhase();
+  for(const c of TCARS){const ax=c.L.r.ax,dir=c.L.dir;let stop=false;
+    for(const [ix,iy,w,d] of sigs){const lo=ax==='h'?ix:iy,hi=lo+(ax==='h'?w:d);const green=(ax==='h')===(ph===0);if(green)continue;const line=dir>0?lo-0.15:hi+0.15;const dist=(line-c.s)*dir;if(dist>0&&dist<0.5)stop=true;}
+    for(const o of TCARS){if(o===c||o.L!==c.L)continue;const dd=(o.s-c.s)*dir;if(dd>0&&dd<0.85)stop=true;}
+    if(!stop)c.s+=c.v*dir;if(c.s<-1.5||c.s>T_MAX+1.5){c.s=dir>0?-1:T_MAX+1;}}}
+function tCar(c){const ax=c.L.r.ax,o=c.L.off;const len=0.55,wd=0.3;if(ax==='h')tBox(c.s-len/2,o-wd/2,len,wd,0.26,c.col);else tBox(o-wd/2,c.s-len/2,wd,len,0.26,c.col);}
+/* 町の家やビル：1つずつ、人口に応じて育つ */
+function tLotDraw(x,y,w,d,h0,pop,lit,cut){const a=600+h0*5000,b=8000+h0*11000,c=17000+h0*16000;
+  /* うちの区画の手前の建物は、途中で切って見せる（断面） */const CUT=cut?1.0:99;const tb=(X,Y,W,D,H,col)=>{if(H>CUT){tBox(X,Y,W,D,CUT,col);tFloor(X,Y,W,D,CUT,tShade(col,0.55));tFloor(X+W*0.12,Y+D*0.12,W*0.76,D*0.76,CUT,tShade(col,0.75));return CUT;}tBox(X,Y,W,D,H,col);return H;};
+  if(pop<a){tFloor(x,y,w,d,0,h0<0.5?'#8fb060':'#a8b868');g.strokeStyle='rgba(70,90,40,0.3)';g.lineWidth=0.25;for(let i=1;i<4;i++){const p=tIso(x+i*w/4,y,0),q=tIso(x+i*w/4,y+d,0);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();}
+    if(h0>0.8){tBox(x+w*0.2,y+d*0.2,w*0.55,d*0.5,0.8,'#c8b48a');tFloor(x+w*0.15,y+d*0.15,w*0.65,d*0.6,0.8,'#6a5040');}return;}
+  tFloor(x,y,w,d,0,'#c4bca8');
+  if(pop<b){tb(x+w*0.1,y+d*0.1,w*0.75,d*0.75,0.85,['#e8dcc0','#d8c8a8','#e0d0b8'][Math.floor(h0*3)]);tFloor(x+w*0.05,y+d*0.05,w*0.85,d*0.85,0.85,['#8a4a3a','#4a5a7a','#6a6a4a'][Math.floor(h0*3)]);return;}
+  if(pop<c){const hh=1.3+h0*1.2;const H2=tb(x+w*0.06,y+d*0.06,w*0.86,d*0.86,hh,['#e8e0d0','#d0c8b8','#e8d8c0','#c8d0d8'][Math.floor(h0*4)]);tWin(x+w*0.06,y+d*0.06,w*0.86,d*0.86,H2,Math.max(1,Math.round(H2*1.5)),lit);return;}
+  const hh=2.0+h0*3.0;const H2=tb(x+w*0.04,y+d*0.04,w*0.9,d*0.9,hh,['#c8d0d8','#b8c0c8','#d8d8d0','#a8b4c0'][Math.floor(h0*4)]);tWin(x+w*0.04,y+d*0.04,w*0.9,d*0.9,H2,Math.max(1,Math.round(H2)),lit);}
+/* 町の土地（区画以外）を、道で区切られたブロックから1マス前後で切り出す */
+let T_LOTS=null;
+function tLots(){if(T_LOTS)return T_LOTS;const xs=[[0,5.2],[6.3,14.0],[16.0,23.6],[24.7,T_MAX]];const L=[];
+  for(const [x0,x1] of xs)for(const [y0,y1] of xs){const nx=Math.max(1,Math.round((x1-x0)/2.3)),ny=Math.max(1,Math.round((y1-y0)/2.3));const cw=(x1-x0)/nx,cd=(y1-y0)/ny;
+    for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){const x=x0+i*cw+0.08,y=y0+j*cd+0.08,w=cw-0.16,d=cd-0.16;const cx=x+w/2,cy=y+d/2;
+      if(T_PLOTS.some(P=>x<P.x+P.w&&x+w>P.x&&y<P.y+P.d&&y+d>P.y))continue;L.push({x,y,w,d,h:hash(i*7.1+j*3.3+x0*1.7+y0*2.9)});}}
+  return T_LOTS=L;}
+/* 建物どうしは「どちらが完全に奥か」で並べる（大きな区画と小さなお店の重なり対策） */
+function tExt(b){const c=[tRot(b[0],b[1]),tRot(b[0]+b[2],b[1]),tRot(b[0],b[1]+b[3]),tRot(b[0]+b[2],b[1]+b[3])];return [Math.min(...c.map(q=>q[0])),Math.max(...c.map(q=>q[0])),Math.min(...c.map(q=>q[1])),Math.max(...c.map(q=>q[1]))];}
+function tDCmp(a,b){if(a.bx&&b.bx){const A=a.ex||(a.ex=tExt(a.bx)),B=b.ex||(b.ex=tExt(b.bx));const e=0.01;if(A[1]<=B[0]+e||A[3]<=B[2]+e)return -1;if(B[1]<=A[0]+e||B[3]<=A[2]+e)return 1;}return a.z-b.z;}
+function tDSort(D){D.sort((a,b)=>a.z-b.z);const slots=[],L=[];D.forEach((o,i)=>{if(o.bx){slots.push(i);L.push(o);}});
+  const n=L.length,done=new Array(n).fill(0),out=[];const visit=i=>{if(done[i])return;done[i]=1;for(let j=0;j<n;j++)if(j!==i&&!done[j]){const A=L[j].ex||(L[j].ex=tExt(L[j].bx)),B=L[i].ex||(L[i].ex=tExt(L[i].bx));const e=0.01;if((A[1]<=B[0]+e||A[3]<=B[2]+e)&&!(B[1]<=A[0]+e||B[3]<=A[2]+e))visit(j);}out.push(L[i]);};
+  for(let i=0;i<n;i++)visit(i);slots.forEach((si,k)=>{D[si]=out[k];});}
+function drawTown(bs){const T=S.town;if(!T)return;if(T.v!==2)townInit();const hh=nowH(),lit=hh>=17||hh<6;const lv=townLvl(),pop=T.pop;
+  g.fillStyle=lv>=2?'#a3ab9c':'#93b26a';g.fillRect(0,0,TOW,TOWN_H);
+  if(!TCAM.init){TCAM.init=1;const P=T_PLOTS[0];const c=tIso(P.x+P.w/2,P.y+P.d/2,0);TCAM.x=c[0];TCAM.y=c[1]-20;}
+  g.save();g.translate(TOW/2,TOWN_H/2);g.scale(TZM,TZM);g.translate(-TCAM.x,-TCAM.y);
+  const toScr=(q)=>[TOW/2+(q[0]-TCAM.x)*TZM,TOWN_H/2+(q[1]-TCAM.y)*TZM];
+  tRoads(lv);
+  const sigs=tSigList(T.sig||1);tCarsTick(pop,sigs);
+  /* 奥から順に描く（家・区画・車・人・信号をまとめて並べる） */
+  const D=[];const lunch=hh>=11&&hh<14,night=hh>=18&&hh<22;
+  {const ours=T_PLOTS.filter((P,i)=>T.plots[i].own||true);for(const l of tLots()){const lz=tRZ(l.x,l.y,l.w,l.d),lc=tIso(l.x+l.w/2,l.y+l.d/2,0);l.cut=ours.some(P=>{const pc=tIso(P.x+P.w/2,P.y+P.d/2,0);return lz>tRZ(P.x,P.y,P.w,P.d)-0.3&&Math.abs(lc[0]-pc[0])<TTW*1.6&&lc[1]>pc[1]&&lc[1]-pc[1]<TTW*2.2;});}}
+  for(const l of tLots())D.push({z:tRZ(l.x,l.y,l.w,l.d),bx:[l.x,l.y,l.w,l.d],f:()=>tLotDraw(l.x,l.y,l.w,l.d,l.h,pop,lit,l.cut)});
+  T_PLOTS.forEach((P,i)=>{const p=T.plots[i];
+    if(!p.own){D.push({z:tRZ(P.x,P.y,P.w,P.d)-P.w-P.d,f:()=>{tFloor(P.x,P.y,P.w,P.d,0,'#b4c070');g.setLineDash([0.7,0.7]);[[P.x,P.y,P.x+P.w,P.y],[P.x+P.w,P.y,P.x+P.w,P.y+P.d],[P.x+P.w,P.y+P.d,P.x,P.y+P.d],[P.x,P.y+P.d,P.x,P.y]].forEach(([a,b,c,d])=>tLine([a,b,0],[c,d,0],'rgba(255,255,255,0.8)',0.25));g.setLineDash([]);}});
+      const s=toScr(tIso(P.x+P.w/2,P.y+P.d/2,0));if(s[0]>-20&&s[0]<TOW+20&&s[1]>-10&&s[1]<TOWN_H+10)bs.push([s[0],s[1],'売地','sign']);return;}
+    D.push({z:tRZ(P.x,P.y,P.w,P.d)-P.w-P.d,f:()=>tFloor(P.x,P.y,P.w,P.d,0,'#cfc6ae')});
+    const cw=P.w/P.cols,cd=P.d/P.rows;
+    for(const it of p.items){const c0=it.c%P.cols,r0=Math.floor(it.c/P.cols);let x=P.x+c0*cw+0.05,y=P.y+r0*cd+0.05,w=cw-0.1,d=cd-0.1;if(TOWN_B[it.k].sz===2){if(it.o==='v')d+=cd;else w+=cw;}
+      const z=tRZ(x,y,w,d),bx=[x,y,w,d];
+      if(it.k==='hq')D.push({z,bx,f:()=>tHQ(x,y,w,d,lit)});else if(it.k==='dorm')D.push({z,bx,f:()=>tDorm(x,y,w,d,lit)});
+      else{const base=lunch||night?3:1;const busy=Math.min(4,Math.max(0,Math.floor(base+lv*0.6+hash(Math.floor(tick/40)+it.c*3+i*5)*2-0.5)));D.push({z,bx,f:()=>tShop(x,y,w,d,it.k,busy)});}}});
+  for(const c of TCARS){const ax=c.L.r.ax;const z=ax==='h'?tDep(c.s,c.L.off):tDep(c.L.off,c.s);D.push({z:z+0.2,f:()=>tCar(c)});}
+  /* 歩道を歩く人 */
+  const nP=Math.min(34,2+Math.floor(pop/1000));
+  for(let i=0;i<nP;i++){const r=T_ROADS[i%T_ROADS.length];const side=i%2?r.at+0.1:r.at+r.w-0.1;const sp=0.008+0.004*(i%4);const t=((tick*sp*(i%3===0?-1:1)+i*3.7)%T_MAX+T_MAX)%T_MAX;
+    const x=r.ax==='h'?t:side,y=r.ax==='h'?side:t;const dir=i%3===0?-1:1;const mv=r.ax==='h'?[dir,0]:[0,dir];const kk=Math.floor(hash(i*5.3)*10);D.push({z:tDep(x,y)+0.1,f:()=>tWalker(x,y,0,kk,tick*0.32+i,mv,0.26)});}
+  if(T.bus){const t=((tick*0.03)%(T_MAX+3))-1.5;const o=14.0+0.25+1.5*0.75;D.push({z:tDep(t,o)+0.3,f:()=>tBox(t-0.55,o-0.18,1.1,0.36,0.42,'#e8e0c8')});const st=tIso(16.4,17.3,0);D.push({z:tDep(16.4,17.3),f:()=>{g.fillStyle='#3a5aa8';g.fillRect(st[0]-0.5,st[1]-10,1,10);g.beginPath();g.arc(st[0],st[1]-10.5,2.2,0,7);g.fill();}});}
+  for(const [ix,iy,w,d] of sigs)D.push({z:tRZ(ix,iy,w,d)+0.3,f:()=>tSignal(ix,iy,w,d)});
+  tDSort(D);for(const o of D)o.f();
+  g.restore();
+  if(lit){g.fillStyle='rgba(18,22,52,0.3)';g.fillRect(0,0,TOW,TOWN_H);}
+  {const lb=T.name+'　人口 '+pop.toLocaleString()+'人';g.font='bold 15px sans-serif';const w=g.measureText(lb).width+16;const cx=Math.max(w/2+4,Math.min(TOW-w/2-4,TOW/2));g.fillStyle='rgba(20,18,14,0.6)';g.fillRect(cx-w/2,TOWN_H-28,w,23);g.fillStyle='#fffdf6';g.textAlign='center';g.fillText(lb,cx,TOWN_H-11);}}
+
+/* ---------- 町の画面（シート） ---------- */
+function sheetTown(){const T=S.town;if(T.v!==2)townInit();let h=head('🏙 '+esc(T.name))+'<div class="sh-body">';
+  const nc=townCompl();
+  h+='<div class="card"><div class="line"><span>人口</span><b>'+T.pop.toLocaleString()+'人</b></div><div class="line"><span>町のようす</span><b>'+['畑ばかり','家がちらほら','お店が並ぶ','ビルが建つ町'][townLvl()]+'</b></div><div class="line"><span>信号のある交差点</span><b>'+(T.sig||1)+'か所</b></div>'+(townRent()?'<div class="line"><span>お店の家賃（毎月）</span><b>'+yen(townRent())+'</b></div>':'')+'<div class="s" style="font-size:16px">便利になるほど人が増える。人が増えると、持ち込みの新人や、いい社員が来やすくなる。</div></div>';
+  h+='<div class="card"><div class="who">社員の不満</div>'+(!S.hq?'<div class="s" style="font-size:17px">自社ビルに移ると、不便さに文句が出てくる。先に手を打っておくのもあり。</div>':'')
+    +Object.keys(COMPL).map(k=>{const bad=S.hq?nc.includes(k):!(k==='commute'?townHas('dorm'):k==='lunch'?['ramen','teishoku','cafe'].some(townHas):k==='night'?['pizza','rest'].some(townHas):T.bus);return '<div class="line" style="font-size:17px"><span>'+(bad?'<b style="color:#e07a6e">✖</b> ':'<b style="color:#7ad08a">✔</b> ')+COMPL[k][0]+'</span><span class="s">'+COMPL[k][1]+'</span></div>';}).join('')
+    +(S.hq&&nc.length?'<div class="s" style="font-size:16px;color:#e07a6e">不満があるあいだ、社員の情熱が毎月少しずつ下がる。</div>':'')+'</div>';
+  if(!T.bus)h+='<div class="card"><div class="line"><span><b>🚌 バス路線を呼ぶ</b><br><span class="s">駅までのバスを、会社の前に通してもらう。</span></span><button class="btn" data-act="townbus"'+(S.money<busCost()?' disabled':'')+'>'+yen(busCost())+'</button></div></div>';
+  h+='<div class="sec">区画（9つ）</div>';
+  T_PLOTS.forEach((P,i)=>{const p=T.plots[i],N=P.cols*P.rows;
+    if(!p.own){h+='<div class="card"><div class="line"><span><b>'+P.nm+'</b>　<span class="s">'+N+'マス・空き地</span></span><button class="btn" data-act="townbuy" data-arg="'+i+'"'+(S.money<plotPrice(i)?' disabled':'')+'>買う '+yen(plotPrice(i))+'</button></div></div>';return;}
+    const fr=plotFreeN(i);h+='<div class="card"><div class="who">'+P.nm+'（'+N+'マス'+(fr?'・あと'+fr+'マス':'・いっぱい')+'）</div>'+(p.items.length?'<div class="s" style="font-size:17px">'+p.items.map(it=>TOWN_B[it.k].n).join('・')+'</div>':'');
+    if(fr){h+='<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">';
+      for(const k of ['dorm',...TOWN_SHOPS]){const b=TOWN_B[k];if(k==='dorm'&&townHas('dorm'))continue;if(!plotSlot(i,b.sz))continue;h+='<button class="btn" style="font-size:16px;text-align:left" data-act="townbuild" data-arg="'+i+':'+k+'"'+(S.money<townCost(k)?' disabled':'')+'>'+b.n+'（'+yen(townCost(k))+'）<br><span style="font-size:14px;opacity:.8">'+b.d+'・'+b.sz+'マス</span></button>';}
+      h+='</div>';}h+='</div>';});
+  h+='<div class="card"><div class="line"><span>町の名前</span><span style="display:flex;gap:6px"><input id="townname" maxlength="8" value="'+esc(T.name)+'" style="font-size:18px;width:8em;padding:4px;border-radius:6px"><button class="btn" data-act="townname">決める</button></span></div></div>';
+  return h+'</div>';}
+function townAct(a,arg){const T=S.town;if(!T)return false;if(T.v!==2)townInit();
+  if(a==='townbuy'){const i=+arg,p=T.plots[i],pr=plotPrice(i);if(p.own||S.money<pr)return true;S.money-=pr;S.feeAcc=(S.feeAcc||0)+pr;p.own=1;toast(T_PLOTS[i].nm+'を買った（'+yen(pr)+'）');say('社長',T.name+'の'+T_PLOTS[i].nm+'を買った。'+yen(pr)+'。');}
+  else if(a==='townbuild'){const [i,k]=arg.split(':');const b=TOWN_B[k],sl=plotSlot(+i,b.sz),cost=townCost(k);if(!sl||S.money<cost)return true;S.money-=cost;S.feeAcc=(S.feeAcc||0)+cost;T.plots[+i].items.push(Object.assign({k},sl));
+    toast(b.n+(k==='dorm'?'を建てた！':'を呼んだ！'));(S.pendingEvents=S.pendingEvents||[]).push({dept:'運営部',who:k==='dorm'?'丸山工務店':TOWN_B[k].n+'の店主',t:k==='dorm'?'社員寮が建ちました！ これで、遠くから通わなくてすみますね。':'社長、お店を出させてもらいました！ 社員のみなさん、どうぞごひいきに！'});}
+  else if(a==='townbus'){const c=busCost();if(T.bus||S.money<c)return true;S.money-=c;S.feeAcc=(S.feeAcc||0)+c;T.bus=1;toast('バス路線が通った！');(S.pendingEvents=S.pendingEvents||[]).push({dept:'運営部',who:'バス会社',t:T.name+'の会社の前に、バス停ができました。駅まで15分ですよ！'});}
+  else if(a==='townname'){const el=document.getElementById('townname');const v=el&&el.value.trim();if(v){T.name=v.slice(0,8);toast('町の名前を「'+T.name+'」にした');}}
+  else return false;save();drawSheet();render();return true;}
+
+/* ver.528：町は広い（横に約2画面ぶん）。解像度も上げる */function setCvT(){const st=$('stage');const aw=st?st.clientWidth:400,ah=st?st.clientHeight:600;TOWN_H=Math.max(200,Math.round(TOW*ah/Math.max(1,aw)));const K=Math.min(4,Math.max(2,(window.devicePixelRatio||2)*aw/TOW));const W2=Math.round(TOW*K),H2=Math.round(TOWN_H*K);if(cv.width===W2&&cv.height===H2&&CVW===TOW&&CVH===TOWN_H)return;CVH=TOWN_H;CVW=TOW;cv.width=W2;cv.height=H2;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=true;setCvT.K=K;layout();}
 function drawOffice(){
   tick++;if(S)applyPres();
   if(OP)setCvN(NR.heightL('henshu'));else if(sheet==='title')setCvH(OH);
@@ -9623,16 +10214,17 @@ function drawOffice(){
   REP.clear();for(const it of (S.kq||[])){const sp=kqSpeaker(it.kessai);if(sp&&!REP.has(sp.id))REP.set(sp.id,{s:sp,k:it.kessai});}
   timeTick();
   S.rooms=S.rooms||{};
-  const view=S.view==='unei'?'unei':'henshu';
-  setCvN(NR.heightL(view));layout();
+  if(S.view==='town'&&!S.town)S.view='henshu';
+  const view=S.view==='unei'?'unei':S.view==='town'?'town':'henshu';
+  if(view==='town')setCvT();else setCvN(NR.heightL(view));layout();
   const bs=[];
-  if(view==='unei')NR.unei(bs);else NR.henshu(bs);
+  if(view==='town')drawTown(bs);else if(view==='unei')NR.unei(bs);else NR.henshu(bs);
   if(S.intro&&view==='henshu'){const ln=S.intro[S.introI]||'';const v=twTick(ln,16,false)+(TW.n>=ln.length?' ▼':'');const el=$('talk');if(el.hidden)el.hidden=false;if(el.textContent!==v)el.textContent=v;}
   if((!S.intro||view==='unei')&&!$('talk').hidden)$('talk').hidden=true;
   newsTick();
   for(const x of S.staff){if(x.hello&&OSPOT[x.id]&&presence(x)===1){x.hello++;x.hello=0;}}
   {const hh=nowH();const a=hh>=17?Math.min(0.55,(hh-17)/5*0.55):hh<7?0.25:0;if(a>0){g.fillStyle='rgba(18,22,52,'+a.toFixed(3)+')';g.fillRect(0,0,OW,CVH);}}
-  {const posOf=(x,t,cl)=>(cl==='sign'?x:(()=>{const hw=Math.min(90,Math.max(14,String(t).length*(/ev/.test(cl)?5.2:3.8)+6));return Math.max(hw,Math.min(OW-hw,x));})())/OW*100;
+  {const posOf=(x,t,cl)=>(cl==='sign'?x:(()=>{const hw=Math.min(90,Math.max(14,String(t).length*(/ev/.test(cl)?5.2:3.8)+6));return Math.max(hw,Math.min((CVW||OW)-hw,x));})())/(CVW||OW)*100;
    const skey=view+JSON.stringify(bs.map(b=>[b[2],b[3],b[4]]));const box=$('bubbles');
    if(skey!==drawOffice.k){drawOffice.k=skey;
      /* ver.519：吹き出しは作り直さず使い回す（タップした瞬間に作り直されて、押しても反応しないことがあったため） */
