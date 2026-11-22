@@ -633,7 +633,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='551';
+const GAME_VER='552';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -898,6 +898,11 @@ function koumeiAns(v){const K=S.koumei;const m=koumeiM();S.popups=(S.popups||[])
       {rid:'st',news:'story',who:'pres',t:'専属料は「金のために描くんじゃない」と、相場の半分でいいそうだ。……この先生に、うちの看板を背負ってもらおう'});
     S.pendingEvents=S.pendingEvents||[];S.pendingEvents.push({dept:'編集部',who:'社長',t:'伏見孔明先生（臥竜）と専属契約。得意は'+gen+'。看板もまかせられる。「漫画家 → 専属」にいるよ。'});}
   save();render();showPop();}
+/* ver.552：だれのせりふか分かるように、しっぽを話している人に向けて、名前の札をつける */
+function kBub(g,s,spx,y,a,nm){if(a<=0)return;g.save();g.globalAlpha=Math.min(1,a);g.font="12px 'Mochiy Pop One',sans-serif";const bw=g.measureText(s).width+20,h=22;const x=Math.max(bw/2+4,Math.min(356-bw/2,spx));
+  a2.rr(g,x-bw/2,y-h/2,bw,h,h/2,'#fffdf6');g.strokeStyle='#2a2220';g.lineWidth=1.6;g.stroke();const tx0=Math.max(x-bw/2+14,Math.min(x+bw/2-14,spx));
+  g.fillStyle='#fffdf6';g.beginPath();g.moveTo(tx0-5,y+h/2-1);g.lineTo(tx0+5,y+h/2-1);g.lineTo(tx0+(spx-tx0)*0.5,y+h/2+10);g.closePath();g.fill();g.stroke();g.fillRect(tx0-4.5,y+h/2-2.5,9,3);
+  a2.tx(g,s,x,y+0.5,12,'#2a2220');const nw=nm.length*10+10;const nx=Math.max(4,Math.min(356-nw,tx0-nw/2));a2.rr(g,nx,y-h/2-12,nw,13,4,nm==='社長'?'#2a4a7a':'#3e5a3a');a2.tx(g,nm,nx+nw/2,y-h/2-5.5,9,'#fff');g.restore();}
 /* 3つの場面：一度目＝晴れ・アパートの戸口で門前払い／二度目＝雪・アシスタント帰りの先生と／三度目＝春・縁側で話を聞く（最後に問い） */
 function koumeiAnim(stage,m){const {eo,cl,rr,tx}=a2;const PL=NR.lookOf(PRES);PL.tie=PL.tie||'#b23a2e';const KL=koumeiLook(m);const mg=((S.mag&&S.mag.name)||'うちの雑誌');
   const pn=(S.pres&&S.pres.name)?String(S.pres.name).split(/[\s　]/)[0]+'社長':'社長';
@@ -925,7 +930,7 @@ const DUR=[13.4,15.2,19][stage];const SEASON=['day','snow','spring'][stage];
     if(kOn){const kxx=stage===1?Math.max(260,340-Math.min(1,t/2.2)*80):kx;a2Person(g,kxx,stage===2?178:200,1.0,KL,'left',{sit:stage===2?1:0,walk:stage===1&&t<2.2?t*8:undefined,arms:stage===2?'cross':'down'});
       if(stage===1){rr(g,kxx-20,150,18,24,2,'#c8a870');g.fillStyle='#8a6a40';g.fillRect(kxx-18,154,14,2);}}
     for(let i=0;i<L.length;i++){const [t0,w,s2]=L[i];const t1=i+1<L.length?L[i+1][0]:DUR-0.2;if(t<t0||t>t1)continue;const a=cl((t-t0)/0.25,0,1)*cl((t1-t)/0.2,0,1);
-      g.font="12px 'Mochiy Pop One',sans-serif";const bw=g.measureText(s2).width+20;const want=w==='p'?px:w==='v'?279:(stage===1?280:kx);const x=Math.max(bw/2+4,Math.min(356-bw/2,want));const y=w==='p'?78:w==='v'?84:stage===2?64:70;a2Bub(g,s2,x,y,12,a);}
+      const spx=w==='p'?px:w==='v'?279:(stage===1?Math.max(260,340-Math.min(1,t/2.2)*80):kx);const y=w==='p'?78:w==='v'?84:stage===2?64:70;kBub(g,s2,spx,y,a,w==='p'?'社長':'伏見');}
     if(SEASON==='snow'){g.fillStyle='rgba(255,255,255,0.9)';for(let i=0;i<70;i++){const x=(i*53+t*14*(1+(i%3)*0.3))%370,y=(i*29+t*30*(1+(i%4)*0.2))%225;g.beginPath();g.arc(x,y,1+(i%3)*0.5,0,7);g.fill();}}
     if(SEASON==='spring'){for(let i=0;i<26;i++){const x=(i*61+t*20)%370,y=(i*37+t*18)%225;g.fillStyle=i%2?'#f8c0d0':'#fbd8e0';g.beginPath();g.ellipse(x,y,2.2,1.3,i+t,0,7);g.fill();}}
     if(t<1.4){g.globalAlpha=cl(1-(t-0.9)/0.5,0,1);rr(g,8,8,120,24,5,'rgba(20,16,12,0.75)');tx(g,['一度目の訪問','二度目の訪問','三度目の訪問'][stage],68,20.5,12,'#fff');g.globalAlpha=1;}
@@ -1952,25 +1957,30 @@ function a2Beats(A){if(A.steps)return A.steps.slice();const out=[];try{const c=d
 function a2TextAt(A,t,c){const g=c.getContext('2d');const ft=g.fillText;let set=new Map();g.fillText=function(z,...a){const k=String(z);if(k.replace(/[0-9,，.．%％冊部円万億＋+\-−\s]/g,'').length>=1&&g.globalAlpha>0.05)set.set(k,Math.max(set.get(k)||0,g.globalAlpha));return ft.call(g,z,...a);};
   g.setTransform(2,0,0,2,0,0);g.save();try{A.draw(g,t);}catch(e){}g.restore();g.fillText=ft;return set;}
 function a2Seek(A,t){const c=document.createElement('canvas');c.width=720;c.height=440;const sv=window.sfx,vv=window.voice;window.sfx=()=>{};window.voice=()=>{};
-  try{const s0=a2TextAt(A,t,c);const key=m=>{let v=0;for(const [k,a] of m)v+=k.length*Math.min(1,a);return v;};
-    let base=s0,started=s0.size>0,best=t,bv=key(s0),full=null,next=null;
-    for(let u=t+0.05;u<=Math.min(A.dur,t+8);u+=0.05){const m=a2TextAt(A,u,c);const nw=[...m.keys()].some(k=>!base.has(k));
-      if(!started){if(m.size){started=true;base=m;best=u;bv=key(m);}continue;}
-      if(nw){next=u;break;}const v=key(m);if(v>bv+0.01){bv=v;best=u;}}
-    full=best;return {full,next};}finally{window.sfx=sv;window.voice=vv;}}
+  /* ver.552：文字が1文字ずつ出る（パラパラ）ときは、のびた文字列は「同じせりふのつづき」とみなす */
+  try{const key=m=>{let v=0;for(const [k,a] of m)v+=k.length*Math.min(1,a);return v;};const cont=(k,base)=>{for(const b of base.keys())if(k.startsWith(b)||b.startsWith(k))return true;return false;};
+    let base=a2TextAt(A,t,c),prev=base,started=base.size>0,best=t,bv=key(base),next=null;
+    for(let u=t+0.04;u<=Math.min(A.dur,t+10);u+=0.04){const m=a2TextAt(A,u,c);
+      if(!started){if(m.size){started=true;base=m;prev=m;best=u;bv=key(m);}continue;}
+      const fresh=[...m.keys()].filter(k=>!cont(k,base));const gone=[...prev.keys()].some(k=>(prev.get(k)||0)>0.3&&![...m.keys()].some(q=>q.startsWith(k)||k.startsWith(q)));
+      /* 新しいせりふ：まとまった文字が急に出た、または前の文字が消えて別の文字が出た（折り返しの2行目は、短い文字から出るのでつづきあつかい） */
+      if(fresh.some(k=>k.length>3)||(fresh.length&&gone)){next=u;break;}
+      const v=key(m);if(v>bv+0.01){bv=v;best=u;}base=new Map([...base,...m]);if(m.size)prev=m;}
+    return {full:best,next};}finally{window.sfx=sv;window.voice=vv;}}
 function a2Overlay(A,next,story){if(S.animOff&&!story){animSkipNote();next&&next();return;}/* story：物語の大事な場面。アニメオフでも流す */const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(10,8,6,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span data-k="hint" style="color:#cfc6ae;font-size:16px">タップで全文</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">⏭ とばす</button></div>';document.body.appendChild(ov);
+  ov.innerHTML='<canvas width="720" height="440" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));aspect-ratio:36/22;border-radius:10px;background:#1a1410"></canvas><div style="display:flex;gap:16px;align-items:center"><span data-k="hint" style="color:#cfc6ae;font-size:16px">タップ：全文 → 次へ</span><button class="btn" data-k="pause" style="font-size:16px">⏸ 止める</button><button class="btn" data-k="skip" style="font-size:16px">⏭ とばす</button></div>';document.body.appendChild(ov);
   const c=ov.querySelector('canvas'),g2=c.getContext('2d');const CK=ovClock();let done=false;OVN++;const fin=()=>{if(done)return;done=true;OVN=Math.max(0,OVN-1);ov.remove();if(next)next();if(!OVN&&showPop.later){showPop.later=0;if($('pop').hidden)showPop();}};
   /* タップすると「読む」モード：いまのせりふを出しきったところで止まって、次のタップを待つ */
   let hold=false;const hint=ov.querySelector('[data-k=hint]');
   const holdAt=()=>{};
-  ov.addEventListener('pointerdown',e=>{e.preventDefault();const k=e.target.closest('[data-k]');if(k&&k.dataset.k==='pause'){const pz=CK.toggle();k.textContent=pz?'▶ 再開':'⏸ 止める';if(hint)hint.textContent=pz?'タップで次へ ▶':'タップで全文';return;}if(k&&k.dataset.k==='skip'){fin();return;}
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();const k=e.target.closest('[data-k]');if(k&&k.dataset.k==='pause'){const pz=CK.toggle();k.textContent=pz?'▶ 再開':'⏸ 止める';return;}if(k&&k.dataset.k==='skip'){fin();return;}
     /* ver.516：画面タップで「止める ⇔ 自動で進む」。最後まで来ていたら閉じる */
     /* ver.525：流れているときにタップ → いまのせりふを最後まで出して止まる。止まっているときにタップ → また自動で進む */
     const t=CK.now();if(t>=A.dur-0.05){fin();return;}const pb=ov.querySelector('[data-k=pause]');
     /* ver.535：流れているときにタップ → 今のせりふを全部出して止まる。止まっているときにタップ → 次のせりふへ進んで、また自動で流れる */
-    if(CK.paused()){const r=a2Seek(A,t);if(r.next!=null)CK.jump(Math.max(0,r.next-0.05-t));CK.toggle();if(pb)pb.textContent='⏸ 止める';if(hint)hint.textContent='タップで全文';return;}
-    const r=a2Seek(A,t);const to=Math.min(A.dur-0.05,Math.max(t,r.full+0.05));CK.jump(to-t);CK.toggle();if(pb)pb.textContent='▶ 再開';if(hint)hint.textContent='タップで次へ ▶';});
+    /* ver.552：タップで止めない。せりふが流れている途中 → いっきに全文。もう全文が出ている → 次のせりふへ */
+    if(CK.paused()){CK.toggle();if(pb)pb.textContent='⏸ 止める';}
+    const r=a2Seek(A,t);if(r.full>t+0.06)CK.jump(r.full+0.02-t);else if(r.next!=null)CK.jump(Math.max(0,r.next-0.02-t));});
   /* ver.485：どこかの場面で描けなくても、止まらずに先へ進む（原因は下に小さく出す） */let aerr=null;
   const step=()=>{if(done)return;let t=CK.now();if(!isFinite(t))t=0;g2.setTransform(2,0,0,2,0,0);g2.globalAlpha=1;g2.globalCompositeOperation='source-over';g2.shadowBlur=0;g2.clearRect(0,0,360,220);g2.save();
     try{A.draw(g2,Math.min(t,A.dur));}catch(e){if(!aerr){aerr=String((e&&e.message)||e).slice(0,70);try{console.error(e);S.lastAnimErr=aerr;}catch(_){}}}g2.restore();
