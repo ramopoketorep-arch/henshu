@@ -633,7 +633,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='553';
+const GAME_VER='558';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -3408,10 +3408,13 @@ function kSales(){const L=pubRanking();const e=L.find(x=>x.name===kPub()&&!x.me)
 function kbuyState(){const km=kiryuMag();if(!S.ousted||!km)return null;const B=S.kbuy=S.kbuy||{parts:0};
   if(B.done)return {km,B,done:1};
   const L=pubRanking();const mi=L.findIndex(x=>x.me),ki=L.findIndex(x=>x.name===kPub()&&!x.me);
-  const ahead=ki<0||mi<ki;
+  /* ver.554：自社ビルに移って三誌体制になるまでは、ハヤテは買えない（子会社にして専務を立てる体制が、まだない）。途中まで買っていたセーブはそのまま進められる */
+  const locked=!S.tri&&!B.parts&&!(S.hqBuild||S.hq);
+  const ahead=(ki<0||mi<ki)&&!locked;
   const price=B.price||Math.max(1e8,Math.round(kSales()*0.6/1e7)*1e7);
-  return {km,B,ahead,mi:mi+1,ki:ki+1,price,part:Math.ceil(price/3/1e6)*1e6};}
+  return {km,B,ahead,locked,passed:ki<0||mi<ki,mi:mi+1,ki:ki+1,price,part:Math.ceil(price/3/1e6)*1e6};}
 function kbuyMonth(){const st=kbuyState();if(!st||st.done)return;const B=st.B;
+  if(st.locked&&st.passed&&!B.toldLock){B.toldLock=1;const sc=secOf();rivNews(sc?'秘書・'+sc.name:'業界ニュース','社長！ 出版社ランキングで、桐生の「'+kPub()+'」を抜きました！<br>……ただ、ハヤテを子会社にして立て直すには、まだ体制が足りません。<b>まずは自社ビル</b>です。建てはじめたら、買収の話を進めましょう。');}
   if(st.ahead&&!B.told){B.told=1;const sc=secOf();rivNews(sc?'秘書・'+sc.name:'業界ニュース','社長！ 出版社ランキングで、桐生の「'+kPub()+'」を抜きました！<br>……いまなら、買収の話を持ちかけられるかもしれません。「本社」の「買収」から進められます。');}}
 function kbuyHTML(){const st=kbuyState();if(!st)return '<div class="card"><div class="s">まだ、買収できる相手はいない。</div></div>';
   const {km,B}=st;
@@ -3423,6 +3426,7 @@ function kbuyHTML(){const st=kbuyState();if(!st)return '<div class="card"><div c
     +'<div class="card"><label class="s" for="grpname">グループの名前（出版社ランキングに出る）</label><input type="text" id="grpname" value="'+esc(groupName())+'" maxlength="14"></div>'+'<div class="sec">子会社の社員（本社に呼べる）</div>'+subRows(true)+'<div class="sec">「'+esc(S.sub.mag)+'」に人を送る（出向）</div>'+subSendHTML();}
   let h='<div class="card"><div class="who">桐生の会社「'+esc(kPub())+'」</div><div class="s">社長・桐生 健一。もとは、うちの会社だった。いまの雑誌は「'+esc(km.name)+'」。</div>'
     +'<div class="line"><span>出版社ランキング</span><b>うち '+st.mi+'位 ／ '+esc(kPub())+' '+(st.ki||'—')+'位</b></div></div>';
+  if(st.locked)return h+'<div class="card"><div class="t" style="font-size:18px">'+(st.passed?'ランキングでは抜いた。でも、':'')+'いまのうちには、ハヤテを子会社にして立て直す体制がない。</div><div class="s" style="font-size:17px"><b>自社ビルを建てはじめたら</b>、買収の話を進められる。引っ越しまでに買えば、編成会議は専務を入れた<b>四誌</b>で。あとで買えば、重役会議で専務を決めて再編成する。</div></div>';
   if(!st.ahead&&!B.parts)return h+'<div class="card"><div class="t" style="font-size:18px">出版社ランキングで「'+esc(kPub())+'」を抜くと、買収の話を持ちかけられる。</div></div>';
   const left=st.price-B.parts*st.part;const rest=Math.max(0,st.price-(B.parts)*st.part);
   h+='<div class="card"><div class="who">買収</div><div class="line"><span>買収の値段</span><b>'+yen(st.price)+'</b></div><div class="line"><span>買い取った分</span><b>'+B.parts+' / 3</b></div>'
@@ -3668,7 +3672,7 @@ function reoShowEnd(moved){const u=$('reoui');if(u)u.innerHTML='';const b=$('reo
   b.innerHTML='<div style="font-size:22px;color:#ffd970;font-weight:700">再編成ドラフト、終了。</div>'+(moved&&moved.length?'<div style="font-size:18px;color:#fffdf6;line-height:1.7;margin-top:6px;max-height:40vh;overflow:auto">'+moved.map(esc).join('<br>')+'</div>':'<div style="font-size:18px;color:#fffdf6;margin-top:6px">だれも動かなかった。</div>')+'<button class="btn pri" data-act="reoend" style="margin-top:12px;font-size:21px;width:100%;padding:12px">閉じる</button>';
   try{b.scrollIntoView({block:'start',behavior:'smooth'});}catch(e){}}
 function reoEnd(){const ov=$('reoov');if(ov)ov.remove();clearTimeout(reoSay.h);clearInterval(reoSay.ti);S.reo=null;save();try{render();}catch(e){console.error(e);}
-  rivNews('業界ニュース','「'+S.sub.mag+'」の新体制が決まった。専務のもと、四誌で巻き返しをはかる。');say('社長','再編成ドラフトが終わった。ハヤテは「本社」の「買収」で見られる。');showPop();}
+  rivNews('業界ニュース','「'+S.sub.mag+'」の新体制が決まった。専務のもと、四誌で巻き返しをはかる。');say('社長','再編成ドラフトが終わった。ハヤテは「本社」の「買収」で見られる。');if(S.org&&S.org.fourGo&&!S.org.fourShown){S.org.fourShown=1;try{triFix();}catch(e){}save();openSheet('honsha','soshiki');try{orgChartOpen(3);}catch(e){}}showPop();}
 
 // ========== 子会社の社員（名前と能力つき）・人の行き来・援軍の連絡 ==========
 const SUB_CAP={senmu:1,chief:1,vice:2,tantou:9,eigyo:3,senden:2,keiri:2};
@@ -4491,9 +4495,17 @@ function execPop(){const el=$('pop');const st=S.execPick||(S.execPick={});const 
     +(cs.length<2?'<div class="card"><div class="s">部長がそろっていないので、副社長に選べる人がいない。本部長が、副社長の代理もつとめる。</div><button class="btn" data-act="execpick" data-arg="fuku:0">本部長に代理を頼む</button></div>':'')+'</div>';el.hidden=false;}
 function execPick(arg){const st=S.execPick||(S.execPick={});const [role,id]=String(arg).split(':');if(role==='fuku'&&+id===0){st.fuku=-1;save();if(st.hon)execDone();else execPop();return;}st.ask=[role,+id];save();execPop();}
 function execAnswer(yes){const st=S.execPick||{};if(yes&&st.ask){st[st.ask[0]]=st.ask[1];}st.ask=null;save();if(st.hon&&(st.fuku||execCands().length<2&&st.fuku===-1))execDone();else execPop();}
-function execDone(){const st=S.execPick;S.exec={hon:st.hon,fuku:st.fuku>0?st.fuku:st.hon,dairi:!(st.fuku>0),open:false};save();$('pop').hidden=true;const a=staffById(st.hon),b=st.fuku>0?staffById(st.fuku):null;
+/* ver.556：引っ越しまでにハヤテを買っていたら、極秘人事で「専務」も決める（編成会議が四誌になる） */
+function fourOK(){return !!(S.sub&&S.sub.staff&&!S.sub.reoDone&&!S.tri);}
+function execSenmuPop(){const st=S.execPick;const C=S.staff.filter(x=>!x.hidden&&x.id!==st.hon&&x.id!==st.fuku&&['chief','vice','eibu','senbu','keibu'].includes(x.role)).sort((a,b)=>keyVal(b,KEY.chief)-keyVal(a,KEY.chief));const el=$('pop');
+  el.innerHTML='<div class="box"><h3 id="pop-h">専務も決める</h3><div class="t" style="font-size:18px">「'+esc(S.sub.mag)+'」がある。……ハヤテを立て直す<b>専務</b>の席もつくろう。</div><div class="s" style="font-size:17px">専務はハヤテに移って、ハヤテを回す。編成会議は、専務・本部長・副社長・社長の4人で、人と先生を取り合う。ハヤテの立て直しが最優先なので、専務がいちばん先に、1巡目は2人指名できる。</div>'
+    +C.map(x=>'<button class="btn" data-act="execsenmu" data-arg="'+x.id+'" style="display:flex;justify-content:space-between;align-items:center;width:100%;font-size:18px;padding:10px;margin-top:8px"><span style="text-align:left">'+esc((ROLES[x.role]||'')+'・'+x.name)+'<br><span class="s">'+x.age+'歳</span></span><b>専務の適性 '+rank(keyVal(x,KEY.chief))+'</b></button>').join('')
+    +(C.length?'':'<div class="s">専務をまかせられる人がいない……。ハヤテの立て直しは、あとで重役会議を開いてやろう。</div>')+'<button class="btn" data-act="execsenmu" data-arg="0" style="width:100%;margin-top:10px">専務は、あとで決める（三誌で会議をする）</button></div>';el.hidden=false;}
+function execSenmu(id){S.exec.senmu=+id||0;save();$('pop').hidden=true;execDone();}
+function execDone(){const st=S.execPick;S.exec=Object.assign({hon:st.hon,fuku:st.fuku>0?st.fuku:st.hon,dairi:!(st.fuku>0),open:false},S.exec&&S.exec.senmu!=null?{senmu:S.exec.senmu}:{});save();$('pop').hidden=true;
+  if(fourOK()&&S.exec.senmu==null){execSenmuPop();return;}const a=staffById(st.hon),b=st.fuku>0?staffById(st.fuku):null;const sm=S.exec.senmu?staffById(S.exec.senmu):null;
   const L=x=>Object.assign(['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x)),{sei:x.sei||String(x.name).split(' ')[0]});
-  const fin=()=>{say('社長','本部長は'+a.name+(b?'、副社長は'+b.name:'')+'。……発表は、編成会議のあとだ。');save();const el=$('pop');el.innerHTML='<div class="box" style="border-color:#c8302a"><h3 id="pop-h" style="color:#e07a6e;text-align:center">㊙ 極秘</h3><div class="t">本部長・'+esc(a.name)+(b?'<br>副社長・'+esc(b.name):'')+'</div><div class="s">まだ社員には知らせていない。今夜、役員会議室で「三誌同時発売」の編成会議を開く。</div><div class="row" style="justify-content:center"><button class="btn pri" data-act="execok" style="min-width:120px">よし</button></div></div>';el.hidden=false;};
+  const fin=()=>{say('社長',(sm?'専務は'+sm.name+'、':'')+'本部長は'+a.name+(b?'、副社長は'+b.name:'')+'。……発表は、編成会議のあとだ。');save();const el=$('pop');el.innerHTML='<div class="box" style="border-color:#c8302a"><h3 id="pop-h" style="color:#e07a6e;text-align:center">㊙ 極秘</h3><div class="t">'+(sm?'専務・'+esc(sm.name)+'<br>':'')+'本部長・'+esc(a.name)+(b?'<br>副社長・'+esc(b.name):'')+'</div><div class="s">まだ社員には知らせていない。今夜、役員会議室で'+(sm?'「'+esc(S.sub.mag)+'」もふくめた<b>四誌</b>の':'「三誌同時発売」の')+'編成会議を開く。</div><div class="row" style="justify-content:center"><button class="btn pri" data-act="execok" style="min-width:120px">よし</button></div></div>';el.hidden=false;};
   if(b)a2Overlay(whisperAnim2({pres:NR.lookOf(PRES),a:L(a),b:L(b)}),fin);else fin();}
 // ===== 極秘 編成会議（三誌同時発売）=====
 // 本部長＝1冊目を守る／副社長＝2冊目／社長＝3冊目（プレイヤー）。秘書が議事録
@@ -4503,7 +4515,7 @@ function orgArtPool(){const O=S.org;const out=new Set([...O.ar.fuku,...O.ar.pres
 function orgStart(){const pols=Object.keys(POLICY);S.org={phase:'genre',round:1,log:[],g:{hon:S.mag.policy},st:{prot:[],fuku:[],pres:[]  ,ref:[]},ar:{fuku:[],pres:[],ref:[]},cur:null};
   const ov=document.createElement('div');ov.id='orgov';ov.style.cssText='position:fixed;inset:0;z-index:9000;background:#0e0c0a;display:flex;flex-direction:column;align-items:center;overflow:auto;padding:8px 0 20px';
   ov.innerHTML='<div style="color:#e07a6e;font-size:18px;font-weight:700;letter-spacing:.2em;margin:4px 0">㊙ 極秘 編成会議</div><canvas id="orgcv" width="720" height="380" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));aspect-ratio:72/38;border-radius:10px;background:#1a1410"></canvas><div id="orgui" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));margin-top:8px"></div><div id="orglog" style="width:min(96vw,620px,calc((100dvh - 76px)*36/22));margin-top:8px;background:#f4efe2;color:#2a2220;border-radius:6px;padding:8px 12px;font-size:14px;line-height:1.7;max-height:30vh;overflow:auto"></div>';
-  document.body.appendChild(ov);orgLoop();orgSay('pres','では、始めよう。三誌同時発売の編成会議だ。',()=>orgSay('hon','「'+S.mag.name+'」は、これまでどおり「'+S.mag.policy+'」でいく。',()=>{O().g.fuku=orgFukuGenre();orgSay('fuku','わたしは「'+O().g.fuku+'」をやらせてください。',()=>{orgLog('ジャンル：「'+O().g.hon+'」（本部長）・「'+O().g.fuku+'」（副社長）');orgUI();});}));}
+  document.body.appendChild(ov);orgLoop();if(S.exec.senmu&&fourOK())S.org.four=1;orgSay('pres',S.org.four?'では、始めよう。「'+S.sub.mag+'」もふくめた、四誌の編成会議だ。':'では、始めよう。三誌同時発売の編成会議だ。',()=>orgSay('hon','「'+S.mag.name+'」は、これまでどおり「'+S.mag.policy+'」でいく。',()=>{O().g.fuku=orgFukuGenre();orgSay('fuku','わたしは「'+O().g.fuku+'」をやらせてください。',()=>{orgLog('ジャンル：「'+O().g.hon+'」（本部長）・「'+O().g.fuku+'」（副社長）');orgUI();});}));}
 const O=()=>S.org;
 function orgFukuGenre(){const f=staffById(S.exec.fuku);const left=Object.keys(POLICY).filter(k=>k!==S.mag.policy);const pref=f&&f.eigyo>f.bigan?['青年誌','大人向け','少年誌']:['少女誌','SF・ファンタジー誌','児童誌'];return pref.find(k=>left.includes(k))||left[0];}
 function orgName(k){const id=k==='hon'?S.exec.hon:k==='fuku'?S.exec.fuku:null;if(k==='pres')return '社長';if(k==='sec')return '秘書';const x=staffById(id);return (k==='hon'?'本部長':'副社長'+(S.exec.dairi?'（代理）':''))+'・'+(x?(x.sei||x.name.split(' ')[0]):'');}
@@ -4524,6 +4536,7 @@ function orgDraw(g,T){const {rr,tx}=a2;
   rr(g,96,140,168,16,6,'#2a1a10');g.fillStyle='rgba(255,255,255,0.08)';g.fillRect(100,141,160,2);
   a2Person(g,86,178,1.05,L(S.exec.hon),'right',{sit:'chair',mouth:sp('hon')?'open':'flat'});
   a2Person(g,276,178,1.05,L(S.exec.fuku),'left',{sit:'chair',mouth:sp('fuku')?'open':'flat'});
+  if(S.org&&S.org.four&&S.exec.senmu){a2Person(g,330,184,1.0,L(S.exec.senmu),'left',{sit:'chair',mouth:'flat'});g.save();rr(g,306,120,48,12,3,'#ffd970');tx(g,'専務',330,126.5,8,'#2a2220');g.restore();}
   a2Person(g,30,186,0.8,SL,'right',{sit:'chair',arms:sp('sec')&&ORGB.phone?'fwd':'fwd',hands:sp('sec')&&ORGB.text.includes('もしもし')?[[2,-60],[10,-20]]:[[10,-18+Math.sin(T*12)*1.5],[14,-18]],mouth:sp('sec')?'open':'flat'});
   rr(g,40,160,30,6,2,'#6a4a2a');
   if(who&&ORGB){const pos={pres:[180,30],hon:[96,70],fuku:[266,70],sec:[70,96]}[who];const n=Math.min(ORGB.text.length,Math.floor((performance.now()-ORGB.t0)/1000*18));a2Bub(g,ORGB.text.slice(0,n)||'…',pos[0],pos[1],9,1);
@@ -4586,10 +4599,11 @@ function orgAIRoles(){const o=O();o.roles=o.roles||{};const Rr=x=>o.roles[x.id]|
 const MAGNAMES={'児童誌':['月刊 コロコロ天国','月刊 わんぱくランド','月刊 ぴかぴか'],'少年誌':['週刊 少年ライジン','月刊 少年ホムラ','月刊 少年カゼ'],'青年誌':['週刊 ヤングアッパー','月刊 青年ジャーナル','ビッグ劇場'],'少女誌':['月刊 りぼんの花','月刊 プチ・ローズ','月刊 なかよし星'],'SF・ファンタジー誌':['月刊 コスモス','月刊 ファンタジア','月刊 銀河通信'],'大人向け':['漫画 大人の時間','月刊 夜のまんが','漫画 ゴールド']};
 function orgMagName(pol,avoid){const L=MAGNAMES[pol]||['月刊 新まんが'];return L.find(n=>!avoid.includes(n))||L[0];}
 function orgGenre(k){const o=O();o.g.pres=k;o.names={1:S.mag.name};o.names[2]=orgMagName(o.g.fuku,[S.mag.name]);o.cur='name';o.namePend=orgMagName(k,[S.mag.name,o.names[2]]);orgUI();}
-function orgName3(){const o=O();const v=($('orgname3')||{}).value||o.namePend;o.names[3]=v.trim()||o.namePend;o.cur=null;const k=o.g.pres;o.phase='staff';orgUI();orgSay('pres','うちは「'+k+'」。誌名は「'+o.names[3]+'」だ。',()=>{orgLog('ジャンル：「'+o.names[3]+'」'+k+'（社長）／「'+o.names[2]+'」'+o.g.fuku+'（副社長）');orgSay('pres','次は、人の振り分けだ。全7巡。',()=>orgStaffRound());});}
+function orgName3(){const o=O();const v=($('orgname3')||{}).value||o.namePend;o.names[3]=v.trim()||o.namePend;o.cur=null;const k=o.g.pres;o.phase='staff';orgUI();orgSay('pres','うちは「'+k+'」。誌名は「'+o.names[3]+'」だ。',()=>{orgLog('ジャンル：「'+o.names[3]+'」'+k+'（社長）／「'+o.names[2]+'」'+o.g.fuku+'（副社長）');if(o.four){orgSay('pres','人と先生は、専務も入れた4人で取り合う。ハヤテの立て直しが最優先だ。専務からいこう。',()=>{o.phase='done';o.cur=null;orgLog('―― 人と先生の振り分けは、専務・本部長・副社長・社長の4人で');save();orgUI();});return;}orgSay('pres','次は、人の振り分けだ。全7巡。',()=>orgStaffRound());});}
 function orgChief(id){const o=O();o.chief=id||null;o.phase='done';const x=id?staffById(id):null;orgUI();
   orgSay('pres',x?'うちの新雑誌の編集長は、'+x.name+'くんだ。':'編集長は……あとで探す。',()=>{orgLog(x?MQ(3)+'の編集長：'+x.name:MQ(3)+'の編集長：未定');orgSec('（カリカリ……）以上で、編成会議を終わります。',()=>{save();orgUI();});});}
 function orgEnd(){const ov=$('orgov');if(ov)ov.remove();S.org.closed=1;S.exec.open=true;save();render();
+  if(S.org.four){S.org.afterDone=1;triStart();fourGo();return;}
   const O0=S.org;const L=x=>['chief','vice','tantou'].includes(x.role)?NR.roughLook(x,NR.lookOf(x)):NR.suitLook(x,NR.lookOf(x));const P=a=>a[Math.floor(Math.random()*a.length)];const ppl=[];
   for(const id of O0.st.pres.slice(0,2)){const x=staffById(id);if(x)ppl.push({lk:L(x),line:P(['やった！社長の雑誌だ！','社長に呼ばれた……！','腕が鳴るぜ！']),good:2});}
   for(const id of O0.st.fuku.slice(0,2)){const x=staffById(id);if(x)ppl.push({lk:L(x),line:P(['副社長のところか……','マジかよ……','まあ、やるしかないか。']),good:0});}
@@ -4699,7 +4713,7 @@ function orgResume(){if(!S||S.tri)return;
     return;}
   const o=S.org;
   if(!o.closed){setTimeout(()=>{if($('orgov')||S.tri)return;toast('編成会議を、はじめからやり直します');orgStart();},400);}
-  else if(o.afterDone){triStart();save();render();}
+  else if(o.afterDone){triStart();save();render();if(o.four&&!o.fourGo)setTimeout(fourGo,400);}
   else setTimeout(()=>{if(!S.tri)orgAfter();},400);}
 /* 3冊目の役職を整える：「あとで決める」のまま／編集長が2人／副編集長が同じシマ、を直す */
 function triFix(){if(!S||!S.tri)return;const L=[];const ed=x=>(x.henshu||0)+(x.bigan||0);
@@ -4717,6 +4731,19 @@ function triZero(){S.triZero=1;ichiZero();S.titleIdx=0;S.titleBy=null;S.yearly=S
   {const nb=Math.min(2,((S.org&&S.org.res3Stores)||0));for(let i=0;i<nb;i++)S.dist.promised.push(i);}
 }
 function ichiZero(){S.ichiHist=[];S.boothBest=0;for(const m of S.manga||[]){delete m.ichiLast;delete m.ichiPrev;}}
+/* 四誌：三誌に分けたあと、専務をハヤテに置いて、4人の振り分け（再編成ドラフトと同じしくみ）へ */
+function fourGo(){if(!S.tri||!S.sub||!S.sub.staff)return;subMangaInit();const id=S.exec.senmu;let x=null;for(const arr of [S.staff,...[1,2].map(k=>S.tri.mags[k]&&S.tri.mags[k].staff).filter(Boolean)]){const f=arr.find(y=>y.id===id);if(f){x=f;break;}}
+  if(!x){save();render();openSheet('honsha','soshiki');showPop();return;}
+  reoRemove(x);x.role='senmu';x.sub=1;x.hidden=0;x.jonetsu=clamp((x.jonetsu??60)+15,0,100);S.sub.staff.push(x);S.sub.senmu=x.id;S.org.fourGo=1;save();
+  const Lm=[{who:'社長',o:PRES,t:'「'+S.sub.mag+'」もふくめた、四誌の体制でいく。'},{who:'社長',o:PRES,t:'専務の席を新しくつくる。……'+x.name+'、ハヤテをたのむ。'},{who:'専務・'+x.name,o:x,t:'わたしが、ですか……。わかりました。かならず立て直してみせます。'},{who:'社長',o:PRES,t:'では、人と先生の振り分けだ。専務、本部長、副社長、そして私。4人で取り合う。'}];Lm.goal='四誌で、大鷲社に挑む！';Lm.sub='〜 四誌の編成会議 〜';
+  a2Overlay(execMeetAnim(Lm),()=>reoStart(),true);}
+function magRenList(){const L=[];if(S.mag&&S.mag.name)L.push(['main',S.mag.name]);if(S.tri)for(const k of [1,2]){const M=S.tri.mags[k];if(M)L.push(['t'+k,M.name]);}if(S.sub&&S.sub.staff&&S.sub.mag)L.push(['sub',S.sub.mag]);return L;}
+function magRenPop(k){const L=magRenList().find(x=>x[0]===k);if(!L)return;const el=$('pop');
+  el.innerHTML='<div class="box"><h3 id="pop-h">雑誌の名前を変える</h3><div class="s" style="font-size:17px">いまの名前：'+esc(L[1])+'</div><input type="text" id="magrenv" value="'+esc(L[1])+'" maxlength="14" style="font-size:20px;width:100%;margin-top:8px"><div class="row"><button class="btn pri" style="font-size:18px" data-act="magrenok" data-arg="'+k+'">この名前にする</button><button class="btn" style="font-size:18px" data-act="magrenno">やめる</button></div></div>';el.hidden=false;}
+function magRen(k){const v=(($('magrenv')||{}).value||'').trim();$('pop').hidden=true;if(!v)return;const L=magRenList().find(x=>x[0]===k);if(!L)return;const old=L[1];if(v===old)return;
+  if(k==='main')S.mag.name=v;else if(k==='t1'||k==='t2'){S.tri.mags[+k[1]].name=v;}else if(k==='sub'){S.sub.mag=v;const r=(S.rivals||[]).find(r=>r.sub);if(r)r.name=v;}
+  for(const r of (S.rivals||[]))if(r.own&&r.name===old)r.name=v;
+  say('社長','「'+old+'」は、今日から「'+v+'」だ。');save();render();if(sheet)drawSheet();}
 function triStart(){if(S.tri||!S.org||!S.org.closed)return;S.triZero2=1;S.triZero3=1;const o=S.org;
   const pres=new Set(o.st.pres),fuku=new Set(o.st.fuku);const ar3=new Set(o.ar.pres),ar2=new Set(o.ar.fuku);
   const hon=S.exec.hon,fk=S.exec.dairi?S.exec.hon:S.exec.fuku;
@@ -6071,7 +6098,7 @@ function era(){return S.y+'年';}
 /* ver.473：桐生に追い出されたあと、出版社ランキングで「うち」と「桐生の会社」が何位かを、いつも下に出す（抜けば買収できる） */
 function rkStatus(){try{if(!S.ousted||!S.mag.launched)return '';if(S._rkT!==S.turns){S._rkT=S.turns;const L=pubRanking();const mi=L.findIndex(x=>x.me),ki=L.findIndex(x=>x.name===kPub()&&!x.me);S._rk=[mi+1,ki+1];}
   const [mi,ki]=S._rk||[0,0];if(!mi)return '';const done=S.kbuy&&S.kbuy.done;
-  return '<span class="rk">出版社ランキング　うち <b>'+mi+'位</b>'+(!done&&ki?'　'+esc(kPub())+' <b>'+ki+'位</b>'+(mi<ki?'<span class="ok">　抜いた！買収できる</span>':''):'')+'</span>';}catch(e){return '';}}
+  return '<span class="rk">出版社ランキング　うち <b>'+mi+'位</b>'+(!done&&ki?'　'+esc(kPub())+' <b>'+ki+'位</b>'+(mi<ki?(S.tri||S.hqBuild||S.hq||(S.kbuy&&S.kbuy.parts)?'<span class="ok">　抜いた！買収できる</span>':'<span class="ok">　抜いた！</span>'):''):'')+'</span>';}catch(e){return '';}}
 function triAfter(r){return !S.tri||(r.y*12+r.m>S.tri.y*12+S.tri.m);}
 function yearlyOf(y){S.yearly=S.yearly||{};if(S.tri&&y===S.tri.y)return (S.records||[]).filter(r=>r.y===y&&triAfter(r)).reduce((a,x)=>a+x.inc,0);if(S.yearly[y]==null){const rs=(S.records||[]).filter(r=>r.y===y);if(rs.length)S.yearly[y]=rs.reduce((a,x)=>a+x.inc,0);}return S.yearly[y]||0;}
 function nextTitle(){for(let i=S.titleIdx+1;i<TITLES.length;i++)if(TITLES[i][0]>1)return TITLES[i];return null;}
@@ -6140,7 +6167,7 @@ const TIPS={
  'staff/lvup':'レベルが上がった人は、ここで<b>能力を1つずつ上げられます</b>。<br>ポイントは<b>自動では使われない</b>ので、たまったら来てくださいね。',
  'honsha/hoshin':'連載陣のジャンルを<b>目指すカラー</b>にそろえると、読者が離れにくくなります。<br>増刊号は、持ち駒の先生を試す場ですよ。',
  'honsha/bank':'電話は、ここからいつでもかけられます。<br>お金が足りないときは<b>銀行</b>、設備は<b>建築業者</b>です。',
- 'honsha/baishu':'桐生の会社を<b>出版社ランキングで抜く</b>と、ここから買収を進められます。<br>いまの順位は、画面下にいつも出ています。',
+ 'honsha/baishu':'<b>自社ビルを建てはじめて</b>、桐生の会社を<b>出版社ランキングで抜く</b>と、ここから買収を進められます。<br>いまの順位は、画面下にいつも出ています。',
  'data/mag':'ここは<b>見るだけ</b>の画面です。<br>上の大きいボタン（雑誌・お金・人・記録）で分野を選んでください。'};
 function tipCard(){const k=sheet+'/'+tab;const t=TIPS[k];S.tips=S.tips||{};if(!t||S.tips[k])return '';const sc=secOf();
   return '<div class="card" style="border-color:#c9a24a"><div class="row" style="align-items:flex-start;gap:10px;flex-wrap:nowrap">'+(sc?'<canvas class="fc" data-fid="'+sc.id+'" width="32" height="32"></canvas>':'')+'<div style="flex:1;min-width:0"><div class="who" style="color:#c9a24a">📋 '+(sc?'秘書・'+esc(sc.name):'秘書')+'</div><div class="t" style="font-size:17px;line-height:1.6">'+t+'</div><button class="btn" style="margin-top:6px;font-size:17px" data-act="tipok" data-arg="'+k+'">わかった</button></div></div></div>';}
@@ -6666,6 +6693,8 @@ function sheetHonsha(){
   else if(tab==='pres'){
     const years=S.y-START_Y;
     h+=heirHTML();
+    /* ver.558：雑誌の名前は、いつでも変えられる */
+    {const L=magRenList();if(L.length)h+='<div class="card"><div class="who">雑誌の名前</div>'+L.map(([k,nm])=>'<div class="line" style="font-size:18px"><span>'+esc(nm)+'</span><button class="btn" style="font-size:17px" data-act="magren" data-arg="'+k+'">名前を変える</button></div>').join('')+'</div>';}
     h+='<div class="card"><div class="row" style="align-items:center;gap:12px;flex-wrap:nowrap"><canvas class="fc" data-fid="pres" width="32" height="32"></canvas><div><div class="who">'+esc(coName())+' 社長</div><div class="t" style="font-size:20px"><b>'+esc(presName())+'</b></div><div class="s">創業'+(START_Y)+'年・'+(years?years+'年目':'1年目')+'・称号「'+esc(TITLES[S.titleIdx][1])+'」</div></div></div></div>';
     if(skipOK())h+='<div class="card"><div class="who">早送り（テスト用）</div><div class="s">次のできごとまで、月をどんどん進める。止めるときは下の「⏩中…」を押す。</div><div class="row"><button class="btn" data-act="skipev">⏩ 飛ばす</button></div></div>';
     {let dm=null;try{dm=JSON.parse(LS.get(SAVEKEY+'-sdemo')||'null');}catch(e){}if(dm&&DEVM)h+='<div class="card"><div class="who">後半テスト用（無料版のおわりから）</div><div class="s">'+esc(dm.meta||'')+'<br>無料版が終わった時点のデータから、何度でもやり直せる。いまのデータは上書きされるので、残したいときは先にスロットに保存してね。</div><div class="row"><button class="btn" data-act="loaddemo">▶ ここから始める</button></div></div>';}
@@ -7653,6 +7682,10 @@ function actRest(a,arg,b){
       case 'execyes':execAnswer(true);break;
       case 'execno':execAnswer(false);break;
       case 'execok':$('pop').hidden=true;orgStart();break;
+      case 'execsenmu':execSenmu(arg);break;
+      case 'magren':magRenPop(arg);break;
+      case 'magrenok':magRen(arg);break;
+      case 'magrenno':$('pop').hidden=true;break;
       case 'orggenre':orgGenre(arg);break;
       case 'orgpick':orgPick(+arg);break;
       case 'orgconf':{const o=O();o.confK=arg[0];o.confId=+arg.slice(1);o.cur='conf';orgUI();break;}
@@ -8243,8 +8276,10 @@ function autoDecide(){
 }
 function monthEnd(){
   S.dayq=S.dayq||[];
-  for(const e of S.dayq){if(e.kind==='door'){const m=S.manga.find(x=>x.id===e.o.mochi);if(m&&m.status==='pending'){m.status='gone';}}else (S.popups=S.popups||[]).push(e.o);}
-  S.dayq=[];S.meetK=null;
+  /* ver.557：電話で「伺います」と約束した先生（visit）は、その日に来られなくても次の日に来る。もう一度電話からやり直さない */
+  const carry=[];
+  for(const e of S.dayq){if(e.kind==='door'){const m=S.manga.find(x=>x.id===e.o.mochi);if(m&&m.status==='pending'){m.status='gone';}}else if(e.kind==='visit'){e.d=0;e.t=0.12+R()*0.12;e.on=false;e.called=0;carry.push(e);}else (S.popups=S.popups||[]).push(e.o);}
+  S.dayq=carry;S.meetK=null;
   if((S.kq||[]).length){say('社長','今月は報告を聞きそびれた……。部長たちの判断で進めてもらった。');S.kq=[];}
   if(S.halfDue){openSheet('half');return;}
   S.meetP=null;autoDecide();doNext();
