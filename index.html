@@ -633,7 +633,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='552';
+const GAME_VER='553';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -7508,7 +7508,15 @@ function twTick(text,cps,fem){
 function introNext(){if(!S.intro)return;const ln=S.intro[S.introI]||'';if(TW.n<ln.length){TW.n=ln.length;return;}S.introI++;sfx();if(S.introI>=S.intro.length){S.intro=null;}save();drawOffice.k=null;}
 let busy=false;let DEVN=0,DEVM=false;/* タイトルのロゴを5回タップで、開発用メニュー */
 function nearBub(e){const w=$('officeWrap');if(!w||!w.contains(e.target))return null;let best=null,bd=64;for(const el of document.querySelectorAll('#bubbles .bub.ev[data-act]')){const r=el.getBoundingClientRect();const dx=Math.max(r.left-e.clientX,0,e.clientX-r.right),dy=Math.max(r.top-e.clientY,0,e.clientY-r.bottom);const d=Math.hypot(dx,dy);if(d<bd){bd=d;best=el;}}return best;}
+/* ver.553：事務所の呼び出し（電話・ピンポーンなど）は、押した瞬間に反応させる。
+   吹き出しは描き直しのたびに並び順が入れかわるので、指をはなす前に動いてしまい「クリック」が成立しないことがあった（倍速だと特に） */
+let BUBDN=0;
+document.addEventListener('pointerdown',e=>{if(busy||OP||(S&&S.intro))return;const w=$('officeWrap');if(!w||!w.contains(e.target))return;if(e.target.closest('button,.btn,input,select,textarea'))return;
+  let t=e.target.closest('#bubbles .bub.ev[data-act]');if(!t&&!(S&&S.placeMode))t=nearBub(e);if(!t)return;
+  e.preventDefault();BUBDN=performance.now();const snap={dataset:{act:t.dataset.act,arg:t.dataset.arg}};busy=true;t.classList.add('pressed');sfx();
+  setTimeout(()=>{busy=false;t.classList.remove('pressed');act(snap);},180);},{capture:true});
 document.addEventListener('click',e=>{
+  if(performance.now()-BUBDN<900){const w=$('officeWrap');if(w&&w.contains(e.target)&&!e.target.closest('button,.btn')){e.preventDefault();return;}}
   if(OP&&!OP.enter&&!e.target.closest('[data-act]')){e.preventDefault();opTap();return;}
   if(S&&S.intro&&!OP&&!sheet&&$('pop').hidden&&!e.target.closest('[data-act=bgm]')){e.preventDefault();introNext();return;}
   let b=e.target.closest('[data-act]');if(!b&&!(S&&S.placeMode))b=nearBub(e);if(!b||b.disabled||busy)return;
