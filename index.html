@@ -637,7 +637,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='563';
+const GAME_VER='564';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -4571,7 +4571,7 @@ function orgUI(){const el=$('orgui');if(!el)return;const o=O();let h='';
   else if(o.cur==='name'){h='<div class="card"><div class="t">社長の新しい雑誌の名前は？</div><input type="text" id="orgname3" value="'+esc(o.namePend)+'" maxlength="14" style="font-size:18px;width:100%"><button class="btn pri" style="margin-top:8px" data-act="orgname3">この名前にする</button></div>';}
   else if(o.phase==='genre'){const left=Object.keys(POLICY).filter(k=>k!==o.g.hon&&k!==o.g.fuku);h='<div class="card"><div class="t">社長の新しい雑誌は、残ったジャンルから選ぶ。</div>'+left.map(k=>'<button class="btn" style="margin:4px" data-act="orggenre" data-arg="'+k+'">'+k+'<br><span class="s">'+POLICY[k].join('・')+'</span></button>').join('')+'</div>';}
   else if(o.phase==='staff'&&o.cur==='pres'){const P2=orgPool().sort((a,b)=>orgV(b)-orgV(a));h='<div class="card"><div class="t">第'+o.round+'巡（全7巡）：社長の指名。ほしい人を1人。</div>'+P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgconf" data-arg="s'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・企画 '+rank(x.kikaku)+'・審美 '+rank(x.bigan)+'・営業 '+rank(x.eigyo)+'・事務 '+rank(x.jimu)+'・信頼 '+Math.round(x.trust||50)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgpick" data-arg="0">この巡は見送る</button></div>';}
-  else if(o.cur==='role'){const x=staffById(o.pend);h='<div class="card"><div class="t"><b>'+esc(x.name)+'</b>（いまは'+esc(ROLES[x.role]||'')+'）を、社長の新雑誌の何にする？</div><div class="s">いまより上の役職で声をかけると、受けてもらいやすい。</div>'+ORG_ROLES.map(r=>{const full=['chief','eibu','senbu','keibu','zatsumu'].includes(r)&&o.st.pres.some(id=>(o.roles||{})[id]===r);return '<button class="btn" style="margin:4px" data-act="orgrole" data-arg="'+r+'"'+(full?' disabled':'')+'>'+(r==='later'?'あとで決める':ROLES[r])+(full?'（決まり）':'')+'</button>';}).join('')+'</div>';}
+  else if(o.cur==='role'){const x=staffById(o.pend);h='<div class="card"><div class="t"><b>'+esc(x.name)+'</b>（いまは'+esc(ROLES[x.role]||'')+'）を、社長の新雑誌の何にする？</div><div class="s">いまより上の役職で声をかけると、受けてもらいやすい。</div>'+ORG_ROLES.map(r=>{const full=['chief','eibu','senbu','keibu','zatsumu'].includes(r)&&o.st.pres.some(id=>(o.roles||{})[id]===r);return '<button class="btn" style="margin:4px" data-act="orgrole" data-arg="'+r+'"'+(full?' disabled':'')+'>'+(r==='later'?'あとで決める':ROLES[r])+(full?'（決まり）':'')+'</button>';}).join('')+'<div class="row" style="margin-top:8px"><button class="btn" style="font-size:18px" data-act="orgroleback">戻る（人を選びなおす）</button></div></div>';}
   else if(o.phase==='art'&&o.cur==='pres'){const P2=orgArtPool().sort((a,b)=>mLevel(b)-mLevel(a));h='<div class="card"><div class="t">漫画家 第'+o.round+'巡（全9巡）：社長の指名。</div>'+P2.map(m=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgconf" data-arg="a'+m.id+'"><b>'+esc(m.name)+'</b>（'+esc(bestGenre(m))+'）　<span class="s">総合 '+mRank(m)+'・アイデア '+rank(m.idea)+'・話 '+rank(m.story)+'・画 '+rank(m.ga)+'</span></button>').join('')+'<button class="btn" style="margin-top:8px" data-act="orgart" data-arg="0">この巡は見送る</button></div>';}
   else if(o.phase==='chiefpick'){const P2=o.st.pres.map(staffById).filter(x=>x&&['tantou','vice'].includes(x.role));h='<div class="card"><div class="t">最後に、社長の新雑誌の編集長を決める。社長が取った担当・副編集長の中から。</div>'+(P2.length?P2.map(x=>'<button class="btn" style="width:100%;text-align:left;margin-top:6px" data-act="orgchief" data-arg="'+x.id+'"><b>'+esc((ROLES[x.role]||'')+'・'+x.name)+'</b>　<span class="s">編集 '+rank(x.henshu)+'・審美 '+rank(x.bigan)+'・情熱 '+Math.round(x.jonetsu||0)+'</span></button>').join(''):'<div class="s">担当も副編集長も取れなかった……。編集長は、あとで外から探すしかない。</div><button class="btn" data-act="orgchief" data-arg="0">しかたない</button>')+'</div>';}
   else if(o.phase==='done'){h='<div class="card"><div class="t">編成会議、終了。発表は、あすの朝。</div><button class="btn pri" data-act="orgend">閉じる</button></div>';}
@@ -7571,8 +7571,18 @@ document.addEventListener('click',e=>{
   busy=true;b.classList.add('pressed');sfx();
   setTimeout(()=>{busy=false;b.classList.remove('pressed');act(b);},400);
 });
+/* ver.564：取り消せない選択は、決定の前に「決定／戻る」で確かめる */
+function cfText(a,arg){const nm=id=>{const x=senmuById(+id);return x?'<b>'+esc(x.name)+'</b>':'この人';};
+  if(a==='orggenre')return '社長の新しい雑誌は<br><b>「'+esc(arg)+'」</b><br>でいく？';
+  if(a==='orgrole')return arg==='later'?'役職は、<b>あとで決める</b>？':'<b>'+esc(ROLES[arg]||arg)+'</b>として迎える？';
+  if(a==='orgchief')return +arg?nm(arg)+'を<br>新雑誌の<b>編集長</b>にする？':'編集長は、<b>あとで探す</b>？';
+  if((a==='orgpick'||a==='orgart'||a==='reopick')&&String(arg)==='0')return 'この巡は<b>見送る</b>？';
+  if(a==='execsenmu')return +arg?nm(arg)+'を<br><b>専務</b>にする？':'専務は<b>あとで決める</b>？<br>（三誌で会議をする）';
+  if(a==='senmupick'&&+arg)return nm(arg)+'を<br><b>専務</b>にする？';
+  return null;}
 function act(b){
   const a=b.dataset.act,arg=b.dataset.arg;
+  if(!b._cf){const cf=cfText(a,arg);if(cf){gAsk(cf,()=>act({dataset:{act:a,arg},_cf:1}),'決定','戻る');return;}}
   switch(a){
     case 'haizoku':{const[id,r]=arg.split(':');const st=staffById(+id);if(st){if(r!=='mi'){if(byRole(r).length>=capOf(r)){toast(ROLES[r]+'の席がいっぱいです');break;}st.role=r;assignTeam(st);say('人事',st.name+'を'+ROLES[r]+'に配属しました。');}else say('人事',st.name+'は未配属のまま。「社員」からあとで配属できる。');}(S.popups||[]).shift();save();render();showPop();break;}
     case 'mlvup':{const[id,k]=arg.split(':');const m=S.manga.find(x=>x.id===+id);if(m&&m.pts>0&&m[k]<m.cap){const b=rank(m[k]);m[k]=Math.min(m.cap,m[k]+ptGain(m[k]));m.pts--;toast(m.name+'先生の'+({story:'話',ga:'絵',kousei:'構成',enshutsu:'演出'})[k]+'が上がった'+(b!==rank(m[k])?'（'+b+'→'+rank(m[k])+'）':''));save();drawSheet();render();}break;}
@@ -7712,6 +7722,7 @@ function actRest(a,arg,b){
       case 'orgart':orgArt(+arg);break;
       case 'orgchief':orgChief(+arg);break;
       case 'orgrole':orgPickRole(arg);break;
+      case 'orgroleback':{const o=O();o.pend=null;o.cur='pres';orgUI();break;}
       case 'orgnext':orgAfter.next();break;
       case 'orgname3':orgName3();break;
       case 'orgend':orgEnd();break;
