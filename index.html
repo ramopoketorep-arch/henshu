@@ -637,7 +637,7 @@ function titleFor(g){const w=TITLE_W[g]||TITLE_W['ストーリー'];const used=n
   /* 続編は作らない：言葉を組み合わせて新しいタイトル */const P=titleParts(g);for(let k=0;k<60;k++){let t;try{t=tgOne(g);}catch(e){t=pick(P[0])+pick(P[1]);}if(!used.has(t)&&!TG_NG.has(t)&&t.length<=13&&!/(..).*\1/.test(t))return t;}if(free.length)return pick(free);for(const gg of Object.keys(TITLE_P)){const Q=titleParts(gg);for(let k=0;k<20;k++){const t=pick(Q[0])+pick(Q[1]);if(!used.has(t))return t;}}return pick(P[0])+pick(P[1]);}
 
 /* タイトル画面に出すバージョン（新しくするたびにここを上げる） */
-const GAME_VER='564';
+const GAME_VER='565';
 const START_Y=1980;/* ゲームは1980年1月から1999年12月まで（20年） */
 function freshState(){
   uid=1;
@@ -3713,7 +3713,7 @@ function subPower(){if(!S.sub||!S.sub.staff)return 40;const c=subRole('chief')[0
 function sb_j(){const L=(S.sub&&S.sub.staff)||[];return L.length?L.reduce((a,x)=>a+(x.jonetsu??60),0)/L.length:60;}
 /* 本社から送る：行き先の役割（その人の得意で決める） */
 function subDest(x){if(x.role==='chief')return subRole('chief').length?'vice':'chief';if(SUB_CAP[x.role])return x.role;const b=bestRole(x);return SUB_CAP[b]?b:'tantou';}
-function subSend(x,role,quiet){if(!S.sub||!S.sub.staff)return;role=role||subDest(x);if(subRole(role).length>=SUB_CAP[role]){if(!quiet)toast('子会社の'+SUB_RJ[role]+'の席がいっぱいです');return false;}
+function subSend(x,role,quiet,swap){if(!S.sub||!S.sub.staff)return;role=role||subDest(x);if(swap&&role==='chief'){for(const c of subRole('chief')){c.role=subRole('vice').length<SUB_CAP.vice?'vice':'tantou';if(!quiet)say('社長','「'+S.sub.mag+'」の'+c.name+'は、'+SUB_RJ[c.role]+'にまわってもらう。');}}if(subRole(role).length>=SUB_CAP[role]){if(!quiet)toast('子会社の'+SUB_RJ[role]+'の席がいっぱいです');return false;}
   S.staff=S.staff.filter(y=>y!==x);for(const m of S.manga)if(m.tantou===x.id){m.tantou=null;try{if(['serial','queue','stock'].includes(m.status))assignTantou(m);}catch(e){}}
   /* 出向は「出世」：上の役につくとき、伸びきったベテランを送るときは、情熱が上がる */
   const RANK={chief:3,vice:2,eibu:2,senbu:2,keibu:2};const up=(RANK[role]||1)>(RANK[x.role]||1);const maxed=keyVal(x,KEY[x.role]||KEY.tantou)>=(x.pot||99)-2;
@@ -3759,12 +3759,18 @@ function subHead(){const sb=S.sub,km=subMag();if(!sb||!km)return '';const sh=sub
     +(sh.length?'<div class="s" style="color:var(--red);font-size:17px">人手不足：'+sh.join('、')+'</div>':'<div class="s" style="color:var(--green)">人はそろっている。</div>')+'</div>';}
 /* 部屋の切りかえで見る子会社（見るだけ。命令はできない） */
 function subPanelHTML(){if(!S.sub)return '';return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><button class="btn" data-act="room" style="font-size:17px">◀ 子会社 ▶</button><span class="s">'+(S._clk||'')+'</span></div><div style="font-size:15px;color:#cfc6ae;margin:2px 0 8px">子会社のようす（ここでは見るだけ。人の行き来は「本社」の「買収」から。「社員」の「配置・解雇」からも送れる）</div>'+subHead()+subRows(false);}
+/* ver.565：出向させるときの役職は、自分で選ぶ */
+const SUB_PICK=['chief','vice','tantou','eigyo','senden','keiri'];
+function subOpts(x){const d=subDest(x);return SUB_PICK.map(r=>{const full=subRole(r).length>=SUB_CAP[r];const cur=r==='chief'?subRole('chief')[0]:null;return {r,full,swap:full&&!!cur,cur,rec:r===d,ab:keyVal(x,KEY[r]||KEY.tantou)};});}
+function subOptBtn(x,o,act){const dis=o.full&&!o.swap;return '<button class="btn'+(o.rec?' pri':'')+'" data-act="'+act+'" data-arg="'+x.id+':'+o.r+(o.swap?':1':'')+'"'+(dis?' disabled':'')+' style="font-size:17px;margin:4px">'+SUB_RJ[o.r]+'として（適性 '+rank(o.ab)+'）'+(o.rec?'<br><span style="font-size:14px">おすすめ</span>':'')+(o.swap?'<br><span style="font-size:14px">今の'+esc(o.cur.name)+'は'+(subRole('vice').length<SUB_CAP.vice?'副編集長':'担当')+'へ</span>':dis?'<br><span style="font-size:14px">席がいっぱい</span>':'')+'</button>';}
+function subSendPop(id){const x=staffById(+id);if(!x||!S.sub||!S.sub.staff)return;const el=$('pop');
+  el.innerHTML='<div class="box"><h3 id="pop-h">「'+esc(S.sub.mag)+'」に出向</h3><div class="t" style="font-size:19px"><b>'+esc(x.name)+'</b>（いまは'+esc(ROLES[x.role]||x.role)+'・'+x.age+'歳）を、何として送る？</div><div class="s" style="font-size:16px">いまより上の役で送ると、本人の情熱が上がる。送った人は本社からいなくなるよ。</div><div style="margin-top:8px">'+subOpts(x).map(o=>subOptBtn(x,o,'subsendgo')).join('')+'</div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn" data-act="popclose2" style="font-size:18px;min-width:140px">やめる</button></div></div>';el.hidden=false;}
 function subSendHTML(){const ks=kiryuStaff();const cand=S.staff.filter(x=>!x.hidden&&!x.kiryu&&x!==ks&&!['quit','retired','kenshu'].includes(x.role));
   return '<div class="card"><div class="who">本社から送る（出向）</div><div class="s">未配属や倉庫番の人が、子会社で日の目を見ることもある。送った人は本社からいなくなるよ。</div></div>'
-    +cand.map(x=>{const d=subDest(x);const opts=[...new Set(['chief','vice',d])].filter(r=>subRole(r).length<SUB_CAP[r]);
+    +cand.map(x=>{
       const maxed=keyVal(x,KEY[x.role]||KEY.tantou)>=(x.pot||99)-2;
       return '<div class="card"><div class="line" style="align-items:center"><span style="font-size:18px">'+esc(x.name)+'<span class="s">（'+esc(ROLES[x.role]||x.role)+'・'+x.age+'歳）</span>'+(maxed?' <b style="color:var(--accent);font-size:15px">伸びきった</b>':'')+'</span></div>'
-        +'<div class="row" style="margin-top:6px">'+(opts.length?opts.map(r=>'<button class="btn" data-act="subsend" data-arg="'+x.id+':'+r+'" style="font-size:16px">'+SUB_RJ[r]+'として（'+rank(keyVal(x,KEY[r]||KEY.tantou))+'）</button>').join(''):'<span class="s">合う席が空いていない</span>')+'</div></div>';}).join('')
+        +'<div class="row" style="margin-top:6px">'+subOpts(x).map(o=>subOptBtn(x,o,'subsendgo')).join('')+'</div></div>';}).join('')
     +'<div class="card"><div class="s">上の役（編集長・副編集長）につけたり、伸びきった人を送ったりすると、「出世」として情熱が上がるよ。</div></div>';}
 
 
@@ -4946,9 +4952,9 @@ function mortMonth(){const M=S.mort;if(!M||M.bal<=0)return;const it=Math.round(M
   M.pk=Math.max(M.pk||M.lf,landF());if(!M.warned&&S.y>=1991&&(val<M.bal*1.6||landF()<M.pk*0.93)){M.warned=1;M.demand={amt:Math.round(M.bal*0.3),t:S.turns+6};(S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'🏦 銀行の担当者がやってきた。<br>「社長……土地の値打ちが、ずいぶん下がりましてね。担保が足りないんです。<br>半年以内に、残りのうち <b>'+yen(M.demand.amt)+'</b> を返していただけませんか」<br><span class="s">半年後に、自動で引き落とされる。お金を用意しておこう。</span>'});}
   if(M.demand&&S.turns>=M.demand.t){const a=Math.min(M.demand.amt,M.bal);S.money-=a;M.bal-=a;M.demand=null;(S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'🏦 銀行に、'+yen(a)+' を返した。'+(S.money<0?'<br><b style="color:var(--red)">お金が足りない……！</b>':'')});}
   if(M.bal<=0){M.bal=0;(S.popups=S.popups||[]).push({rid:'st',news:'story',who:'nar',t:'🏦 土地の借金を、すべて返しおえた！'});}}
-function gAsk(t,ok,yes,no){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9300;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+function gAsk(t,ok,yes,no,ng){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9300;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
   o.innerHTML='<div style="max-width:420px;width:100%;border:2px solid #c9a24a;border-radius:14px;background:#211b15;color:#fffdf6;padding:18px 16px;box-shadow:0 8px 30px rgba(0,0,0,.6)"><div class="t" style="font-size:20px;line-height:1.7;text-align:center;margin:6px 0 14px">'+t+'</div><div class="row" style="justify-content:center;gap:10px"><button class="btn pri" style="font-size:19px;min-width:120px" data-g="y">'+(yes||'はい')+'</button><button class="btn" style="font-size:19px;min-width:120px" data-g="n">'+(no||'やめる')+'</button></div></div>';
-  o.addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;e.stopPropagation();try{sfx();}catch(x){}o.remove();if(b.dataset.g==='y')ok();},true);document.body.appendChild(o);}
+  o.addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;e.stopPropagation();try{sfx();}catch(x){}o.remove();if(b.dataset.g==='y')ok();else if(ng)ng();},true);document.body.appendChild(o);}
 function loadDemo(){try{const d=LS.get(SAVEKEY+'-sdemo');if(d){LS.set(SAVEKEY,d);if(load()){migrate();S.saved=true;sheet=null;closeSheet();render();toast('無料版のおわりから再開しました');setTimeout(showPop,50);}}}catch(e){toast('読みこめませんでした');}}
 function zkPool(){return S.manga.filter(m=>m.status==='stock'&&!m.senpai);}
 function zkCan(){const n=(S.zkLog||[]).filter(z=>z.y===S.y).length;return !S.zkPending&&S.mag.launched&&zkPool().length>=6&&n<2&&!(S.zkLog||[]).some(z=>z.t===S.turns);}
@@ -7739,7 +7745,9 @@ function actRest(a,arg,b){
     case 'wincont':{S.over=null;S.wonCont=1;save();closeSheet();render();showPop();break;}
     case 'subpol':{if(S.sub){S.sub.pol=arg;say('社長','子会社の配当の方針を「'+SUB_DIV[arg].l+'」にした。');save();}drawSheet();break;}
     case 'subpull':{subPull(+arg);save();drawSheet();render();break;}
-    case 'subsendask':{const x=staffById(+arg);if(!x||!S.sub)break;const r=subDest(x);gAsk(esc(x.name)+'を「'+esc(S.sub.mag)+'」の'+(SUB_RJ[r]||'')+'として出向させる？<br><span style="font-size:16px">うちの雑誌からはいなくなる。</span>',()=>{if(subSend(x,r)){save();toast(x.name+'を出向させた');}drawSheet();render();},'出向させる');break;}
+    case 'subsendask':subSendPop(arg);break;
+    case 'popclose2':$('pop').hidden=true;break;
+    case 'subsendgo':{const [sid,sr,sw]=String(arg).split(':');const x=staffById(+sid);if(!x||!S.sub)break;const fromPop=!$('pop').hidden;$('pop').hidden=true;gAsk(esc(x.name)+'を「'+esc(S.sub.mag)+'」の<br><b>'+(SUB_RJ[sr]||'')+'</b>として出向させる？<br><span style="font-size:16px">うちの雑誌からはいなくなる。</span>',()=>{if(subSend(x,sr,false,sw==='1')){save();toast(x.name+'を出向させた');}drawSheet();render();},'出向させる','戻る',()=>{if(fromPop)subSendPop(sid);});break;}
     case 'subsend':{const [sid,sr]=String(arg).split(':');const x=staffById(+sid);if(x&&subSend(x,sr)){save();}drawSheet();render();break;}
     case 'diffdown':{const ord=['easy','normal','hard'];const k=arg;if(!DIFF[k]||ord.indexOf(k)>=ord.indexOf(S.diff||'normal'))break;gAsk('難易度を「'+DIFF[k][0]+'」に下げる？<br><span style="font-size:16px">もとには戻せない。'+((S.diff==='hard')?'入金待ちのお金は、予定どおり届く。':'')+'</span>',()=>{S.diff=k;save();toast('難易度を「'+DIFF[k][0]+'」にした');drawSheet();render();},'下げる');break;}
     case 'mraise':{const m=S.manga.find(x=>x.id===+arg);if(!m||(m.raise||0)>=3||(m.raiseT!=null&&S.turns<m.raiseT+12))break;const f0=pageFee(m)*PAGES;
